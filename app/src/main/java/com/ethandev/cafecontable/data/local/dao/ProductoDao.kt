@@ -20,4 +20,10 @@ interface ProductoDao {
 
     @Query("SELECT * FROM producto WHERE activo = 1 ORDER BY nombre")
     suspend fun listar(): List<ProductoEntity>
+
+    @Query("SELECT * FROM producto WHERE nombre = :nombre LIMIT 1")
+    suspend fun getByNombre(nombre: String) :ProductoEntity?
+
+    @Insert (onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(producto: ProductoEntity)
 }

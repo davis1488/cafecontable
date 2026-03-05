@@ -10,6 +10,7 @@ import com.ethandev.cafecontable.core.AppModule
 import com.ethandev.cafecontable.ui.screen.productos.ProductosScreen
 import com.ethandev.cafecontable.ui.screen.productos.ProductosViewModel
 import com.ethandev.cafecontable.ui.theme.CafecontableTheme
+import com.ethandev.cafecontable.ui.screen.compras.CompraCafeScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -30,16 +31,24 @@ class MainActivity : ComponentActivity() {
         )
 
         // Cargar UI
+//        setContent {
+//
+//            CafecontableTheme {
+//
+//                Surface {
+//
+//                    ProductosScreen(viewModel)
+//
+//                }
+//
+//            }
+//        }
+        val registrarCompraUC = AppModule.provideCompraUseCase(this)
+        val compraVm = com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel(registrarCompraUC)
+
         setContent {
-
             CafecontableTheme {
-
-                Surface {
-
-                    ProductosScreen(viewModel)
-
-                }
-
+                CompraCafeScreen(compraVm)
             }
         }
     }

@@ -12,6 +12,11 @@ import com.ethandev.cafecontable.data.repository.ProductoRepositoryImpl
 import com.ethandev.cafecontable.domain.usecase.CrearProductoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarProductosUseCase
 import com.ethandev.cafecontable.domain.repository.ProductoRepository
+import com.ethandev.cafecontable.data.repository.CompraRepositoryImpl
+import com.ethandev.cafecontable.domain.repository.CompraRepository
+import com.ethandev.cafecontable.domain.usecase.RegistrarCompraCafeUseCase
+
+
 object AppModule {
 
     private var db: AppDatabase? = null
@@ -33,4 +38,15 @@ object AppModule {
         val repo = provideProductoRepository(context)
         return CrearProductoUseCase(repo) to ListarProductosUseCase(repo)
     }
+
+    fun provideCompraRepository(context: android.content.Context): CompraRepository {
+        val database = provideDatabase(context)
+        return CompraRepositoryImpl(database)
+    }
+
+    fun provideCompraUseCase(context: android.content.Context): RegistrarCompraCafeUseCase {
+        val repo = provideCompraRepository(context)
+        return RegistrarCompraCafeUseCase(repo)
+    }
+
 }
