@@ -50,4 +50,24 @@ interface InventarioDao {
         GROUP BY productoId
     """)
     suspend fun inventarioGeneral(): List<InventarioResumen>
+
+    @Query("""
+    SELECT 
+        p.id AS productoId,
+        p.nombre AS nombre,
+        p.unidad AS unidad,
+        COALESCE(SUM(
+            CASE
+                WHEN k.tipo IN ('ENTRADA','AJUSTE') THEN k.cantidad
+                WHEN k.tipo = 'SALIDA' THEN -k.cantidad
+                ELSE 0
+            END
+        ), 0) AS existencia
+    FROM producto p
+    LEFT JOIN kardex_mov k ON k.productoId = p.id
+    WHERE p.activo = 1
+    GROUP BY p.id, p.nombre, p.unidad
+    ORDER BY p.nombre
+""")
+    suspend fun inventarioDetalle(): List<com.ethandev.cafecontable.data.local.entity.InvenarioItem>
 }
