@@ -13,13 +13,22 @@ import com.ethandev.cafecontable.domain.usecase.CrearProductoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarProductosUseCase
 import com.ethandev.cafecontable.domain.repository.ProductoRepository
 import com.ethandev.cafecontable.data.repository.CompraRepositoryImpl
+import com.ethandev.cafecontable.data.repository.CuentaPorCobrarRepositoryImpl
+import com.ethandev.cafecontable.data.repository.HistorialCompraRepositoryImpl
+import com.ethandev.cafecontable.data.repository.HistorialVentaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.InventarioRepositoryImpl
+import com.ethandev.cafecontable.data.repository.VentaRepositoryImpl
 import com.ethandev.cafecontable.domain.repository.CompraRepository
 import com.ethandev.cafecontable.domain.repository.InventarioRepository
+import com.ethandev.cafecontable.domain.repository.VentaRepository
+import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerExistenciaUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialComprasUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialVentasUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarCompraCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarEntradaInventarioUseCase
+import com.ethandev.cafecontable.domain.usecase.RegistrarVentaCafeUseCase
 
 
 object AppModule {
@@ -72,4 +81,30 @@ object AppModule {
             ObtenerExistenciaUseCase(repo),
             ListarInventarioUseCase(repo)
         )
-    }}
+    }
+
+    fun provideVentaRepository(context: Context): VentaRepository {
+        val database = provideDatabase(context)
+        return VentaRepositoryImpl(database)
+    }
+
+    fun provideVentaUseCase(context: Context): RegistrarVentaCafeUseCase {
+        val repo = provideVentaRepository(context)
+        return RegistrarVentaCafeUseCase(repo)
+    }
+
+    fun provideHistorialCompraUseCase(context: Context): ObtenerHistorialComprasUseCase {
+        val repo = HistorialCompraRepositoryImpl(provideDatabase(context).compraDao())
+        return ObtenerHistorialComprasUseCase(repo)
+    }
+
+    fun provideHistorialVentaUseCase(context: Context): ObtenerHistorialVentasUseCase {
+        val repo = HistorialVentaRepositoryImpl(provideDatabase(context).ventaDao())
+        return ObtenerHistorialVentasUseCase(repo)
+    }
+
+    fun provideCuentaPorCobrarUseCase(context: Context): ListarCuentasPorCobrarUseCase {
+        val repo = CuentaPorCobrarRepositoryImpl(provideDatabase(context).cuentaPorCobrarDao())
+        return ListarCuentasPorCobrarUseCase(repo)
+    }
+}

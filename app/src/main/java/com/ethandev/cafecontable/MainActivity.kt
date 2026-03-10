@@ -1,61 +1,4 @@
-//package com.ethandev.cafecontable
-//
-//import android.os.Bundle
-//import androidx.activity.ComponentActivity
-//import androidx.activity.compose.setContent
-//import androidx.activity.enableEdgeToEdge
-//import androidx.compose.material3.MaterialTheme
-//import androidx.compose.material3.Surface
-//import com.ethandev.cafecontable.core.AppModule
-//import com.ethandev.cafecontable.ui.screen.productos.ProductosScreen
-//import com.ethandev.cafecontable.ui.screen.productos.ProductosViewModel
-//import com.ethandev.cafecontable.ui.theme.CafecontableTheme
-//import com.ethandev.cafecontable.ui.screen.compras.CompraCafeScreen
-//
-//class MainActivity : ComponentActivity() {
-//
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//
-//        super.onCreate(savedInstanceState)
-//
-//        enableEdgeToEdge()
-//
-//        // Crear dependencias
-//        val (crearProductoUseCase, listarProductosUseCase) =
-//            AppModule.provideProductoUseCases(this)
-//
-//        // Crear ViewModel
-//        val viewModel = ProductosViewModel(
-//            crearProductoUseCase,
-//            listarProductosUseCase
-//        )
-//
-//        // Cargar UI
-////        setContent {
-////
-////            CafecontableTheme {
-////
-////                Surface {
-////
-////                    ProductosScreen(viewModel)
-////
-////                }
-////
-////            }
-////        }
-//        val registrarCompraUC = AppModule.provideCompraUseCase(this)
-//        val compraVm = com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel(registrarCompraUC)
-//
-//        setContent {
-//            CafecontableTheme {
-//                CompraCafeScreen(compraVm)
-//            }
-//        }
-//    }
-//}
 
-
-////////////////////////////////////////////////////////
 package com.ethandev.cafecontable
 
 import android.os.Bundle
@@ -63,56 +6,57 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.ethandev.cafecontable.core.AppModule
-import com.ethandev.cafecontable.ui.screen.inventario.InventarioScreen
+import com.ethandev.cafecontable.ui.navigation.AppNavGraph
+import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
+import com.ethandev.cafecontable.ui.screen.cuentasporcobrar.CuentasPorCobrarViewModel
+import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
+import com.ethandev.cafecontable.ui.screen.historialventas.HistorialVentasViewModel
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
+import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeViewModel
 import com.ethandev.cafecontable.ui.theme.CafecontableTheme
 
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         enableEdgeToEdge()
 
-        val (_, _, listarInventarioUseCase) = AppModule.provideInventarioUseCases(this)
+        val compraVm = CompraCafeViewModel(
+            AppModule.provideCompraUseCase(this)
+        )
 
+        val ventaVm = VentaCafeViewModel(
+            AppModule.provideVentaUseCase(this)
+        )
+
+        val (_, _, listarInventarioUseCase) = AppModule.provideInventarioUseCases(this)
         val inventarioVm = InventarioViewModel(
             listarInventarioUseCase
         )
 
+        val historialComprasVm = HistorialComprasViewModel(
+            AppModule.provideHistorialCompraUseCase(this)
+        )
+
+        val historialVentasVm = HistorialVentasViewModel(
+            AppModule.provideHistorialVentaUseCase(this)
+        )
+
+        val cuentasPorCobrarVm = CuentasPorCobrarViewModel(
+            AppModule.provideCuentaPorCobrarUseCase(this)
+        )
+
         setContent {
             CafecontableTheme {
-                InventarioScreen(inventarioVm)
+                AppNavGraph(
+                    compraVm = compraVm,
+                    ventaVm = ventaVm,
+                    inventarioVm = inventarioVm,
+                    historialComprasVm = historialComprasVm,
+                    historialVentasVm = historialVentasVm,
+                    cuentasPorCobrarVm = cuentasPorCobrarVm
+
+                )
             }
         }
     }
 }
-
-
-//package com.ethandev.cafecontable
-//
-//import android.os.Bundle
-//import androidx.activity.ComponentActivity
-//import androidx.activity.compose.setContent
-//import androidx.activity.enableEdgeToEdge
-//import com.ethandev.cafecontable.core.AppModule
-//import com.ethandev.cafecontable.ui.screen.compras.CompraCafeScreen
-//import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
-//import com.ethandev.cafecontable.ui.theme.CafecontableTheme
-//
-//class MainActivity : ComponentActivity() {
-//
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        enableEdgeToEdge()
-//
-//        val registrarCompraUC = AppModule.provideCompraUseCase(this)
-//        val compraVm = CompraCafeViewModel(registrarCompraUC)
-//
-//        setContent {
-//            CafecontableTheme {
-//                CompraCafeScreen(compraVm)
-//            }
-//        }
-//    }
-//}
