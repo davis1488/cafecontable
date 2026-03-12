@@ -1,132 +1,4 @@
-//package com.ethandev.cafecontable.ui.screen.home
-//
-//import androidx.compose.foundation.layout.Arrangement
-//import androidx.compose.foundation.layout.Column
-//import androidx.compose.foundation.layout.PaddingValues
-//import androidx.compose.foundation.layout.fillMaxSize
-//import androidx.compose.foundation.layout.fillMaxWidth
-//import androidx.compose.foundation.layout.padding
-//import androidx.compose.foundation.lazy.LazyColumn
-////import androidx.compose.foundation.lazy.item
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.History
-//import androidx.compose.material.icons.filled.Inventory2
-//import androidx.compose.material.icons.filled.PointOfSale
-//import androidx.compose.material.icons.filled.ShoppingCart
-//import androidx.compose.material3.Button
-//import androidx.compose.material3.Card
-//import androidx.compose.material3.CardDefaults
-//import androidx.compose.material3.Icon
-//import androidx.compose.material3.MaterialTheme
-//import androidx.compose.material3.Text
-//import androidx.compose.runtime.Composable
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.unit.dp
-//
-//@Composable
-//fun HomeScreen(
-//    innerPadding: PaddingValues,
-//    onGoCompras: () -> Unit,
-//    onGoVentas: () -> Unit,
-//    onGoInventario: () -> Unit,
-//    onGoHistorialCompras: () -> Unit,
-//    onGoHistorialVentas: () -> Unit
-//) {
-//    LazyColumn(
-//        modifier = Modifier
-//            .fillMaxSize()
-//            .padding(innerPadding)
-//            .padding(16.dp),
-//        verticalArrangement = Arrangement.spacedBy(16.dp)
-//    ) {
-//        item {
-//            Text(
-//                text = "Café Contable",
-//                style = MaterialTheme.typography.headlineMedium
-//            )
-//        }
-//
-//        item {
-//            Text(
-//                text = "Administra compras, ventas e inventario de tu negocio.",
-//                style = MaterialTheme.typography.bodyLarge
-//            )
-//        }
-//
-//        item {
-//            HomeMenuCard(
-//                title = "Registrar compra",
-//                subtitle = "Ingresa café comprado y súbelo al inventario",
-//                icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = null) },
-//                onClick = onGoCompras
-//            )
-//        }
-//
-//        item {
-//            HomeMenuCard(
-//                title = "Registrar venta",
-//                subtitle = "Descuenta inventario y registra la salida",
-//                icon = { Icon(Icons.Filled.PointOfSale, contentDescription = null) },
-//                onClick = onGoVentas
-//            )
-//        }
-//
-//        item {
-//            HomeMenuCard(
-//                title = "Ver inventario",
-//                subtitle = "Consulta existencias actuales por producto",
-//                icon = { Icon(Icons.Filled.Inventory2, contentDescription = null) },
-//                onClick = onGoInventario
-//            )
-//        }
-//
-//        item {
-//            HomeMenuCard(
-//                title = "Historial de compras",
-//                subtitle = "Consulta todas las compras registradas",
-//                icon = { Icon(Icons.Filled.History, contentDescription = null) },
-//                onClick = onGoHistorialCompras
-//            )
-//        }
-//
-//        item {
-//            HomeMenuCard(
-//                title = "Historial de ventas",
-//                subtitle = "Consulta todas las ventas registradas",
-//                icon = { Icon(Icons.Filled.History, contentDescription = null) },
-//                onClick = onGoHistorialVentas
-//            )
-//        }
-//    }
-//}
-//
-//@Composable
-//private fun HomeMenuCard(
-//    title: String,
-//    subtitle: String,
-//    icon: @Composable () -> Unit,
-//    onClick: () -> Unit
-//) {
-//    Card(
-//        modifier = Modifier.fillMaxWidth(),
-//        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-//    ) {
-//        Column(
-//            modifier = Modifier.padding(16.dp),
-//            verticalArrangement = Arrangement.spacedBy(10.dp)
-//        ) {
-//            icon()
-//            Text(title, style = MaterialTheme.typography.titleLarge)
-//            Text(subtitle, style = MaterialTheme.typography.bodyMedium)
-//            Button(
-//                onClick = onClick,
-//                modifier = Modifier.fillMaxWidth()
-//            ) {
-//                Text("Abrir")
-//            }
-//        }
-//    }
-//}
+
 
 package com.ethandev.cafecontable.ui.screen.home
 
@@ -165,12 +37,14 @@ fun HomeScreen(
     onGoInventario: () -> Unit,
     onGoHistorialCompras: () -> Unit,
     onGoHistorialVentas: () -> Unit,
-    onGoCuentasPorCobrar: () -> Unit
+    onGoCuentasPorCobrar: () -> Unit,
+    onGoCuentasPorPagar: () -> Unit
+
 ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(innerPadding)
+            //.padding(innerPadding)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -285,6 +159,18 @@ fun HomeScreen(
                 onClick = onGoCuentasPorCobrar
             )
         }
+
+        item {
+            HomeMenuCard(
+                title = "Cuentas por pagar",
+                subtitle = "Consulta ventas a crédito pendientes",
+                icon = { Icon(Icons.Filled.History, contentDescription = null) },
+                buttonText = "Ver",
+                onClick = onGoCuentasPorPagar
+            )
+        }
+
+
 
         item {
             Spacer(modifier = Modifier.height(8.dp))

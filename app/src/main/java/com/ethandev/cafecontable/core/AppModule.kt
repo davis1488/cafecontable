@@ -14,6 +14,7 @@ import com.ethandev.cafecontable.domain.usecase.ListarProductosUseCase
 import com.ethandev.cafecontable.domain.repository.ProductoRepository
 import com.ethandev.cafecontable.data.repository.CompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.CuentaPorCobrarRepositoryImpl
+import com.ethandev.cafecontable.data.repository.CuentaPorPagarRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialCompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialVentaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.InventarioRepositoryImpl
@@ -21,11 +22,16 @@ import com.ethandev.cafecontable.data.repository.VentaRepositoryImpl
 import com.ethandev.cafecontable.domain.repository.CompraRepository
 import com.ethandev.cafecontable.domain.repository.InventarioRepository
 import com.ethandev.cafecontable.domain.repository.VentaRepository
+import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentaPorPagarUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentasPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorCobrarUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerExistenciaUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialComprasUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialVentasUseCase
+import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoCuentaPorCobrarUseCase
+import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoCuentaPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarCompraCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarEntradaInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaCafeUseCase
@@ -106,5 +112,30 @@ object AppModule {
     fun provideCuentaPorCobrarUseCase(context: Context): ListarCuentasPorCobrarUseCase {
         val repo = CuentaPorCobrarRepositoryImpl(provideDatabase(context).cuentaPorCobrarDao())
         return ListarCuentasPorCobrarUseCase(repo)
+    }
+
+    fun provideRegistrarAbonoCuentaPorCobrarUseCase(context: Context): RegistrarAbonoCuentaPorCobrarUseCase {
+        val repo = CuentaPorCobrarRepositoryImpl(provideDatabase(context).cuentaPorCobrarDao())
+        return RegistrarAbonoCuentaPorCobrarUseCase(repo)
+    }
+
+    fun provideListarAbonosCuentasPorCobrarUseCase(context: Context): ListarAbonosCuentasPorCobrarUseCase {
+        val repo = CuentaPorCobrarRepositoryImpl(provideDatabase(context).cuentaPorCobrarDao())
+        return ListarAbonosCuentasPorCobrarUseCase(repo)
+    }
+
+    fun provideCuentaPorPagarUseCase(context: Context): ListarCuentasPorPagarUseCase {
+        val repo = CuentaPorPagarRepositoryImpl(provideDatabase(context).cuentaPorPagarDao())
+        return ListarCuentasPorPagarUseCase(repo)
+    }
+
+    fun provideRegistrarAbonoCuentaPorPagarUseCase(context: Context): RegistrarAbonoCuentaPorPagarUseCase {
+        val repo = CuentaPorPagarRepositoryImpl(provideDatabase(context).cuentaPorPagarDao())
+        return RegistrarAbonoCuentaPorPagarUseCase(repo)
+    }
+
+    fun provideListarAbonosCuentaPorPagarUseCase(context: Context): ListarAbonosCuentaPorPagarUseCase {
+        val repo = CuentaPorPagarRepositoryImpl(provideDatabase(context).cuentaPorPagarDao())
+        return ListarAbonosCuentaPorPagarUseCase(repo)
     }
 }

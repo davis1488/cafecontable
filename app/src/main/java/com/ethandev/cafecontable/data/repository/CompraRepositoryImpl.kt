@@ -3,12 +3,11 @@ package com.ethandev.cafecontable.data.repository
 import androidx.room.withTransaction
 import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.entity.CompraCafeEntity
+import com.ethandev.cafecontable.data.local.entity.CuentaPorPagarEntity
 import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
 import com.ethandev.cafecontable.data.local.entity.ProductoEntity
-//import com.ethandev.cafecontable.domain.model.CompraCafeImput
-import com.ethandev.cafecontable.domain.repository.CompraRepository
 import com.ethandev.cafecontable.domain.repository.CompraCafeImput
-
+import com.ethandev.cafecontable.domain.repository.CompraRepository
 import java.util.UUID
 
 class CompraRepositoryImpl(
@@ -17,12 +16,11 @@ class CompraRepositoryImpl(
 
     override suspend fun registrarCompra(input: CompraCafeImput) {
         db.withTransaction {
-
             val productoDao = db.productoDao()
             val inventarioDao = db.inventarioDao()
             val compraDao = db.compraDao()
+            val cuentaPorPagarDao = db.cuentaPorPagarDao()
 
-            // 1) getOrCreate Producto (interno, tú no lo gestionas)
             val existente = productoDao.getByNombre(input.productoNombre.trim())
             val productoId = if (existente != null) {
                 existente.id
@@ -31,14 +29,14 @@ class CompraRepositoryImpl(
                     id = UUID.randomUUID().toString(),
                     nombre = input.productoNombre.trim(),
                     unidad = input.unidad.trim().uppercase(),
-                    precioVenta = 0L // no lo usaremos por ahora
+                    precioVenta = 0L
                 )
                 productoDao.insert(nuevo)
                 nuevo.id
             }
 
-            // 2) Guardar compra
             val compraId = UUID.randomUUID().toString()
+
             compraDao.insert(
                 CompraCafeEntity(
                     id = compraId,
@@ -52,7 +50,6 @@ class CompraRepositoryImpl(
                 )
             )
 
-            // 3) Kardex ENTRADA (sube inventario)
             inventarioDao.insertMov(
                 KardexMovimientoEntity(
                     id = UUID.randomUUID().toString(),
@@ -66,6 +63,28 @@ class CompraRepositoryImpl(
                     nota = input.nota
                 )
             )
+
+            if (input.esCredito) {
+                val proveedor = input.proveedor?.trim().orEmpty()
+                if (proveedor.isBlank()) {
+                    throw IllegalStateException("Debes ingresar el proveedor para compras a crédito")
+                }
+
+                val totalCompra = (input.cantidad * input.precioUnitCompra).toLong()
+
+                cuentaPorPagarDao.insert(
+                    CuentaPorPagarEntity(
+                        id = UUID.randomUUID().toString(),
+                        fecha = System.currentTimeMillis(),
+                        compraId = compraId,
+                        proveedor = proveedor,
+                        valorInicial = totalCompra,
+                        saldoPendiente = totalCompra,
+                        estado = "PENDIENTE",
+                        nota = input.nota?.trim()?.ifBlank { null }
+                    )
+                )
+            }
         }
     }
 }

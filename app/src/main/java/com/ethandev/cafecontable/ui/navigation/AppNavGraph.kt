@@ -47,10 +47,12 @@
 //}
 package com.ethandev.cafecontable.ui.navigation
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.internal.composableLambda
+import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -60,6 +62,8 @@ import com.ethandev.cafecontable.ui.screen.compras.CompraCafeScreen
 import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
 import com.ethandev.cafecontable.ui.screen.cuentasporcobrar.CuentasPorCobrarScreen
 import com.ethandev.cafecontable.ui.screen.cuentasporcobrar.CuentasPorCobrarViewModel
+import com.ethandev.cafecontable.ui.screen.cuentasporpagar.CuentasPorPagarScreen
+import com.ethandev.cafecontable.ui.screen.cuentasporpagar.CuentasPorPagarViewModel
 import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasScreen
 import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
 import com.ethandev.cafecontable.ui.screen.historialventas.HistorialVentasScreen
@@ -77,7 +81,8 @@ fun AppNavGraph(
     inventarioVm: InventarioViewModel,
     historialComprasVm: HistorialComprasViewModel,
     historialVentasVm: HistorialVentasViewModel,
-    cuentasPorCobrarVm: CuentasPorCobrarViewModel
+    cuentasPorCobrarVm: CuentasPorCobrarViewModel,
+    cuentasPorPagarVm: CuentasPorPagarViewModel
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -90,6 +95,8 @@ fun AppNavGraph(
         Routes.HISTORIAL_COMPRA -> "Historial Compras"
         Routes.HISTORIAL_VENTA -> "Historial Ventas"
         Routes.CUENTAS_POR_COBRAR -> "Cuentas Por Cobrar"
+        Routes.CUENTAS_POR_PAGAR -> "Cuentas Por Pagar"
+
         else -> "Inicio"
     }
 
@@ -97,7 +104,8 @@ fun AppNavGraph(
 
     val showBack = currentRoute == Routes.HISTORIAL_COMPRA ||
             currentRoute == Routes.HISTORIAL_VENTA ||
-            currentRoute == Routes.CUENTAS_POR_COBRAR
+            currentRoute == Routes.CUENTAS_POR_COBRAR ||
+            currentRoute == Routes.CUENTAS_POR_PAGAR
 
     Scaffold(
         topBar = {
@@ -111,7 +119,8 @@ fun AppNavGraph(
 
         NavHost(
             navController = navController,
-            startDestination = Routes.HOME
+            startDestination = Routes.HOME,
+            modifier = Modifier.padding(innerPadding)
         ) {
             composable(Routes.HOME) {
                 HomeScreen(
@@ -121,7 +130,9 @@ fun AppNavGraph(
                     onGoInventario = { navController.navigate(Routes.INVENTARIO) },
                     onGoHistorialCompras = {navController.navigate(Routes.HISTORIAL_COMPRA)},
                     onGoHistorialVentas = { navController.navigate(Routes.HISTORIAL_VENTA)},
-                    onGoCuentasPorCobrar = {navController.navigate(Routes.CUENTAS_POR_COBRAR)}
+                    onGoCuentasPorCobrar = {navController.navigate(Routes.CUENTAS_POR_COBRAR)},
+                    onGoCuentasPorPagar = {navController.navigate(Routes.CUENTAS_POR_PAGAR)}
+
                 )
             }
 
@@ -147,6 +158,10 @@ fun AppNavGraph(
 
             composable(Routes.CUENTAS_POR_COBRAR){
                 CuentasPorCobrarScreen(cuentasPorCobrarVm)
+            }
+
+            composable(Routes.CUENTAS_POR_PAGAR){
+                CuentasPorPagarScreen(cuentasPorPagarVm)
             }
 
         }

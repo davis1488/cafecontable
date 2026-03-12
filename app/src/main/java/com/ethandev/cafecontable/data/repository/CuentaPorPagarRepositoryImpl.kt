@@ -1,24 +1,25 @@
 package com.ethandev.cafecontable.data.repository
 
-import com.ethandev.cafecontable.data.local.dao.CuentaPorCobrarDao
-import com.ethandev.cafecontable.data.local.entity.AbonoCuentaPorCobrarEntity
-import com.ethandev.cafecontable.domain.model.AbonoCuentaPorCobrarModel
-import com.ethandev.cafecontable.domain.model.CuentaPorCobrarModel
-import com.ethandev.cafecontable.domain.repository.CuentaPorCobrarRepository
+import com.ethandev.cafecontable.data.local.dao.CuentaPorPagarDao
+import com.ethandev.cafecontable.data.local.entity.AbonoCuentaPorPagarEntity
+import com.ethandev.cafecontable.domain.model.AbonoCuentaPorPagarModel
+import com.ethandev.cafecontable.domain.model.CuentaPorPagarModel
 import com.ethandev.cafecontable.domain.model.RegistrarAbonoInput
+import com.ethandev.cafecontable.domain.repository.CuentaPorPagarRepository
+import com.ethandev.cafecontable.domain.model.RegistrarAbonoPagarInput
 import java.util.UUID
 
-class CuentaPorCobrarRepositoryImpl(
-    private val dao: CuentaPorCobrarDao
-) : CuentaPorCobrarRepository {
+class CuentaPorPagarRepositoryImpl(
+    private val dao: CuentaPorPagarDao
+) : CuentaPorPagarRepository {
 
-    override suspend fun listarPendientes(): List<CuentaPorCobrarModel> {
+    override suspend fun listarPendientes(): List<CuentaPorPagarModel> {
         return dao.listarPendientes().map {
-            CuentaPorCobrarModel(
+            CuentaPorPagarModel(
                 id = it.id,
                 fecha = it.fecha,
-                ventaId = it.ventaId,
-                cliente = it.cliente,
+                compraId = it.compraId,
+                proveedor = it.proveedor,
                 valorInicial = it.valorInicial,
                 saldoPendiente = it.saldoPendiente,
                 estado = it.estado,
@@ -29,7 +30,7 @@ class CuentaPorCobrarRepositoryImpl(
 
     override suspend fun registrarAbono(input: RegistrarAbonoInput) {
         val cuenta = dao.getById(input.cuentaId)
-            ?: throw IllegalStateException("La cuenta por cobrar no existe")
+            ?: throw IllegalStateException("La cuenta por pagar no existe")
 
         if (input.valor <= 0) {
             throw IllegalStateException("El valor del abono debe ser mayor a 0")
@@ -40,7 +41,7 @@ class CuentaPorCobrarRepositoryImpl(
         }
 
         dao.insertAbono(
-            AbonoCuentaPorCobrarEntity(
+            AbonoCuentaPorPagarEntity(
                 id = UUID.randomUUID().toString(),
                 cuentaId = input.cuentaId,
                 fecha = System.currentTimeMillis(),
@@ -60,9 +61,9 @@ class CuentaPorCobrarRepositoryImpl(
         )
     }
 
-    override suspend fun listarAbonos(cuentaId: String): List<AbonoCuentaPorCobrarModel> {
+    override suspend fun listarAbonos(cuentaId: String): List<AbonoCuentaPorPagarModel> {
         return dao.listarAbonos(cuentaId).map {
-            AbonoCuentaPorCobrarModel(
+            AbonoCuentaPorPagarModel(
                 id = it.id,
                 cuentaId = it.cuentaId,
                 fecha = it.fecha,

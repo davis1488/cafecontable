@@ -23,19 +23,23 @@ fun HistorialComprasScreen(vm: HistorialComprasViewModel) {
     ) {
         state.error?.let {
             Text(it, color = MaterialTheme.colorScheme.error)
-            Spacer(Modifier.height(8.dp))
+//            Spacer(Modifier.height(8.dp))
         }
 
         if (state.loading) {
             LinearProgressIndicator(Modifier.fillMaxWidth())
-            Spacer(Modifier.height(12.dp))
+//            Spacer(Modifier.height(12.dp))
         }
 
         if (!state.loading && state.items.isEmpty()) {
             Text("No hay compras registradas.")
         }
 
-        LazyColumn(Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             items(state.items) { item ->
                 val fecha = remember(item.fecha) {
                     SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(item.fecha))

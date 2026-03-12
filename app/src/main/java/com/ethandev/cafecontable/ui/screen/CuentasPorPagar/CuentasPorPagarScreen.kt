@@ -1,4 +1,4 @@
-package com.ethandev.cafecontable.ui.screen.cuentasporcobrar
+package com.ethandev.cafecontable.ui.screen.cuentasporpagar
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,7 +35,7 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun CuentasPorCobrarScreen(vm: CuentasPorCobrarViewModel) {
+fun CuentasPorPagarScreen(vm: CuentasPorPagarViewModel) {
     val state by vm.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -72,7 +72,7 @@ fun CuentasPorCobrarScreen(vm: CuentasPorCobrarViewModel) {
             }
 
             if (!state.loading && state.items.isEmpty()) {
-                Text("No hay cuentas por cobrar pendientes.")
+                Text("No hay cuentas por pagar pendientes.")
             }
 
             LazyColumn(
@@ -88,7 +88,7 @@ fun CuentasPorCobrarScreen(vm: CuentasPorCobrarViewModel) {
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                text = item.cliente,
+                                text = item.proveedor,
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text("Fecha: $fecha")
@@ -174,9 +174,7 @@ fun CuentasPorCobrarScreen(vm: CuentasPorCobrarViewModel) {
                 }
             },
             dismissButton = {
-                OutlinedButton(
-                    onClick = { cuentaSeleccionadaId = null }
-                ) {
+                OutlinedButton(onClick = { cuentaSeleccionadaId = null }) {
                     Text("Cancelar")
                 }
             }
