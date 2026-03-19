@@ -18,22 +18,28 @@ import com.ethandev.cafecontable.data.repository.CuentaPorPagarRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialCompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialVentaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.InventarioRepositoryImpl
+import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaRepositoryImpl
 import com.ethandev.cafecontable.domain.repository.CompraRepository
 import com.ethandev.cafecontable.domain.repository.InventarioRepository
 import com.ethandev.cafecontable.domain.repository.VentaRepository
+import com.ethandev.cafecontable.domain.usecase.BuscarPrestamosUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentaPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentasPorCobrarUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarAbonosPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarInventarioUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarPrestamosUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerExistenciaUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialComprasUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialVentasUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoCuentaPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoCuentaPorPagarUseCase
+import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarCompraCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarEntradaInventarioUseCase
+import com.ethandev.cafecontable.domain.usecase.RegistrarPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaCafeUseCase
 
 
@@ -138,4 +144,46 @@ object AppModule {
         val repo = CuentaPorPagarRepositoryImpl(provideDatabase(context).cuentaPorPagarDao())
         return ListarAbonosCuentaPorPagarUseCase(repo)
     }
+
+    fun provideRegistrarPrestamoUseCase (context: Context): RegistrarPrestamoUseCase {
+        val repo = PrestamoRepositoryImpl(
+            provideDatabase(context).prestamoDao(),
+            provideDatabase(context).abonoPrestamoDao()
+        )
+        return RegistrarPrestamoUseCase(repo)
+    }
+
+    fun provideListarPrestamosUseCase  (context: Context): ListarPrestamosUseCase {
+        val repo = PrestamoRepositoryImpl(
+            provideDatabase(context).prestamoDao(),
+            provideDatabase(context).abonoPrestamoDao()
+        )
+        return ListarPrestamosUseCase(repo)
+    }
+
+    fun provideBuscarPrestamosUseCase  (context: Context): BuscarPrestamosUseCase {
+        val repo = PrestamoRepositoryImpl(
+            provideDatabase(context).prestamoDao(),
+            provideDatabase(context).abonoPrestamoDao()
+        )
+        return BuscarPrestamosUseCase(repo)
+    }
+
+    fun provideRegistrarAbonoPrestamoUseCase  (context: Context): RegistrarAbonoPrestamoUseCase {
+        val repo = PrestamoRepositoryImpl(
+            provideDatabase(context).prestamoDao(),
+            provideDatabase(context).abonoPrestamoDao()
+        )
+        return RegistrarAbonoPrestamoUseCase(repo)
+    }
+
+    fun provideListarAbonoPrestamoUseCase  (context: Context): ListarAbonosPrestamoUseCase {
+        val repo = PrestamoRepositoryImpl(
+            provideDatabase(context).prestamoDao(),
+            provideDatabase(context).abonoPrestamoDao()
+        )
+        return ListarAbonosPrestamoUseCase(repo)
+    }
+
+
 }

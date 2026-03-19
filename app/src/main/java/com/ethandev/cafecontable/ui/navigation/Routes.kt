@@ -9,6 +9,8 @@ object Routes {
     const val HISTORIAL_VENTA = "historialventa"
     const val  CUENTAS_POR_COBRAR = "cuentas_por_cobrar"
     const val  CUENTAS_POR_PAGAR = "cuentas_por_pagar"
+    const val PRESTAMOS = "prestamos"
+    const val CONSULTA_PRESTAMOS = "consulta_prestamos"
 
 
 }

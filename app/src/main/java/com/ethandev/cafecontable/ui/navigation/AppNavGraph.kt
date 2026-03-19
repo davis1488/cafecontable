@@ -71,8 +71,11 @@ import com.ethandev.cafecontable.ui.screen.historialventas.HistorialVentasViewMo
 import com.ethandev.cafecontable.ui.screen.home.HomeScreen
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioScreen
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
+import com.ethandev.cafecontable.ui.screen.prestamos.ConsultaPrestamosScreen
+import com.ethandev.cafecontable.ui.screen.prestamos.PrestamosScreen
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeScreen
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeViewModel
+import com.ethandev.cafecontable.ui.viewmodel.PrestamosViewModel
 
 @Composable
 fun AppNavGraph(
@@ -82,7 +85,8 @@ fun AppNavGraph(
     historialComprasVm: HistorialComprasViewModel,
     historialVentasVm: HistorialVentasViewModel,
     cuentasPorCobrarVm: CuentasPorCobrarViewModel,
-    cuentasPorPagarVm: CuentasPorPagarViewModel
+    cuentasPorPagarVm: CuentasPorPagarViewModel,
+    prestamosVm:PrestamosViewModel
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -96,6 +100,7 @@ fun AppNavGraph(
         Routes.HISTORIAL_VENTA -> "Historial Ventas"
         Routes.CUENTAS_POR_COBRAR -> "Cuentas Por Cobrar"
         Routes.CUENTAS_POR_PAGAR -> "Cuentas Por Pagar"
+        Routes.PRESTAMOS ->"prestamos"
 
         else -> "Inicio"
     }
@@ -105,7 +110,9 @@ fun AppNavGraph(
     val showBack = currentRoute == Routes.HISTORIAL_COMPRA ||
             currentRoute == Routes.HISTORIAL_VENTA ||
             currentRoute == Routes.CUENTAS_POR_COBRAR ||
-            currentRoute == Routes.CUENTAS_POR_PAGAR
+            currentRoute == Routes.CUENTAS_POR_PAGAR ||
+            currentRoute == Routes.PRESTAMOS
+
 
     Scaffold(
         topBar = {
@@ -131,7 +138,9 @@ fun AppNavGraph(
                     onGoHistorialCompras = {navController.navigate(Routes.HISTORIAL_COMPRA)},
                     onGoHistorialVentas = { navController.navigate(Routes.HISTORIAL_VENTA)},
                     onGoCuentasPorCobrar = {navController.navigate(Routes.CUENTAS_POR_COBRAR)},
-                    onGoCuentasPorPagar = {navController.navigate(Routes.CUENTAS_POR_PAGAR)}
+                    onGoCuentasPorPagar = {navController.navigate(Routes.CUENTAS_POR_PAGAR)},
+                    onGoPrestamos = {navController.navigate(Routes.PRESTAMOS)}
+
 
                 )
             }
@@ -162,6 +171,14 @@ fun AppNavGraph(
 
             composable(Routes.CUENTAS_POR_PAGAR){
                 CuentasPorPagarScreen(cuentasPorPagarVm)
+            }
+
+            composable(Routes.PRESTAMOS){
+                PrestamosScreen(navController,prestamosVm,innerPadding)
+            }
+
+            composable(Routes.CONSULTA_PRESTAMOS){
+                ConsultaPrestamosScreen(prestamosVm,innerPadding)
             }
 
         }

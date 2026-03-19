@@ -2,6 +2,10 @@ package com.ethandev.cafecontable.data.local.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.ethandev.cafecontable.data.dao.AbonoPrestamoDao
+import com.ethandev.cafecontable.data.dao.PrestamoDao
+import com.ethandev.cafecontable.data.entity.AbonoPrestamoEntity
+import com.ethandev.cafecontable.data.entity.PrestamoEntity
 import com.ethandev.cafecontable.data.local.dao.CompraDao
 import com.ethandev.cafecontable.data.local.dao.CuentaPorCobrarDao
 import com.ethandev.cafecontable.data.local.dao.CuentaPorPagarDao
@@ -26,10 +30,11 @@ import com.ethandev.cafecontable.data.local.entity.VentaCafeEntity
         CuentaPorCobrarEntity::class,
         AbonoCuentaPorCobrarEntity::class,
         CuentaPorPagarEntity::class,
-        AbonoCuentaPorPagarEntity::class
-
+        AbonoCuentaPorPagarEntity::class,
+        PrestamoEntity::class,
+        AbonoPrestamoEntity::class
                ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -39,4 +44,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun ventaDao(): VentaDao
     abstract fun cuentaPorCobrarDao(): CuentaPorCobrarDao
     abstract fun cuentaPorPagarDao(): CuentaPorPagarDao
+    abstract fun prestamoDao(): PrestamoDao
+    abstract fun abonoPrestamoDao(): AbonoPrestamoDao
 }

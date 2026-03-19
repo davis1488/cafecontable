@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.ethandev.cafecontable.core.AppModule
+import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
 import com.ethandev.cafecontable.ui.navigation.AppNavGraph
 import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
 import com.ethandev.cafecontable.ui.screen.cuentasporcobrar.CuentasPorCobrarViewModel
@@ -15,6 +16,7 @@ import com.ethandev.cafecontable.ui.screen.historialventas.HistorialVentasViewMo
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeViewModel
 import com.ethandev.cafecontable.ui.theme.CafecontableTheme
+import com.ethandev.cafecontable.ui.viewmodel.PrestamosViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,6 +57,16 @@ class MainActivity : ComponentActivity() {
         )
 
 
+        val prestamosVm = PrestamosViewModel(
+
+            AppModule.provideRegistrarPrestamoUseCase(this),
+            AppModule.provideListarPrestamosUseCase(this),
+            AppModule.provideBuscarPrestamosUseCase(this),
+            AppModule.provideRegistrarAbonoPrestamoUseCase(this),
+            AppModule.provideListarAbonoPrestamoUseCase(this)
+
+        )
+
 
         setContent {
             CafecontableTheme {
@@ -65,7 +77,8 @@ class MainActivity : ComponentActivity() {
                     historialComprasVm = historialComprasVm,
                     historialVentasVm = historialVentasVm,
                     cuentasPorCobrarVm = cuentasPorCobrarVm,
-                    cuentasPorPagarVm = cuentasPorPagarVm
+                    cuentasPorPagarVm = cuentasPorPagarVm,
+                    prestamosVm  = prestamosVm
 
                 )
             }

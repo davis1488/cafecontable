@@ -38,7 +38,8 @@ fun HomeScreen(
     onGoHistorialCompras: () -> Unit,
     onGoHistorialVentas: () -> Unit,
     onGoCuentasPorCobrar: () -> Unit,
-    onGoCuentasPorPagar: () -> Unit
+    onGoCuentasPorPagar: () -> Unit,
+    onGoPrestamos: () -> Unit
 
 ) {
     LazyColumn(
@@ -167,6 +168,16 @@ fun HomeScreen(
                 icon = { Icon(Icons.Filled.History, contentDescription = null) },
                 buttonText = "Ver",
                 onClick = onGoCuentasPorPagar
+            )
+        }
+
+        item {
+            HomeMenuCard(
+                title = "Prestamos",
+                subtitle = "Consulta Prestamos",
+                icon = { Icon(Icons.Filled.History, contentDescription = null) },
+                buttonText = "Ver",
+                onClick = onGoPrestamos
             )
         }
 
