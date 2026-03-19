@@ -8,4 +8,7 @@ class RegistrarCompraCafeUseCase(private val repo: CompraRepository) {
     suspend operator fun invoke(input: CompraCafeImput) {
         repo.registrarCompra(input)
     }
+
+
+
 }

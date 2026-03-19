@@ -39,7 +39,7 @@ class CompraRepositoryImpl(
 
             compraDao.insert(
                 CompraCafeEntity(
-                    id = compraId,
+                    id = 0,
                     fecha = System.currentTimeMillis(),
                     productoId = productoId,
                     cantidad = input.cantidad,

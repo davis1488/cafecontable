@@ -21,8 +21,11 @@ import com.ethandev.cafecontable.data.repository.InventarioRepositoryImpl
 import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaRepositoryImpl
 import com.ethandev.cafecontable.domain.repository.CompraRepository
+import com.ethandev.cafecontable.domain.repository.HistorialCompraRepository
 import com.ethandev.cafecontable.domain.repository.InventarioRepository
 import com.ethandev.cafecontable.domain.repository.VentaRepository
+import com.ethandev.cafecontable.domain.usecase.ActualizarCompraUseCase
+import com.ethandev.cafecontable.domain.usecase.AnularCompraUseCase
 import com.ethandev.cafecontable.domain.usecase.BuscarPrestamosUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentaPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentasPorCobrarUseCase
@@ -31,6 +34,7 @@ import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarPrestamosUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerCompraPorIdUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerExistenciaUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialComprasUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialVentasUseCase
@@ -41,6 +45,7 @@ import com.ethandev.cafecontable.domain.usecase.RegistrarCompraCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarEntradaInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaCafeUseCase
+import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
 
 
 object AppModule {
@@ -185,5 +190,39 @@ object AppModule {
         return ListarAbonosPrestamoUseCase(repo)
     }
 
+
+    fun provideHistorialCompraRepository(context: Context): HistorialCompraRepository {
+        val dao = provideDatabase(context).compraDao()
+        return HistorialCompraRepositoryImpl(dao)
+    }
+
+    fun provideObtenerHistorialComprasUseCase(context: Context): ObtenerHistorialComprasUseCase {
+        val repo = provideHistorialCompraRepository(context)
+        return ObtenerHistorialComprasUseCase(repo)
+    }
+
+    fun provideAnularCompraUseCase(context: Context): AnularCompraUseCase {
+        val repo = provideHistorialCompraRepository(context)
+        return AnularCompraUseCase(repo)
+    }
+
+    fun provideObtenerCompraPorIdUseCase(context: Context): ObtenerCompraPorIdUseCase {
+        val repo = provideHistorialCompraRepository(context)
+        return ObtenerCompraPorIdUseCase(repo)
+    }
+
+    fun provideActualizarCompraUseCase(context: Context): ActualizarCompraUseCase {
+        val repo = provideHistorialCompraRepository(context)
+        return ActualizarCompraUseCase(repo)
+    }
+
+    fun provideHistorialComprasViewModel(context: Context): HistorialComprasViewModel {
+        return HistorialComprasViewModel(
+            obtenerHistorialComprasUseCase = provideObtenerHistorialComprasUseCase(context),
+            anularCompraUseCase = provideAnularCompraUseCase(context),
+            obtenerCompraPorIdUseCase = provideObtenerCompraPorIdUseCase(context),
+            actualizarCompraUseCase = provideActualizarCompraUseCase(context)
+        )
+    }
 
 }

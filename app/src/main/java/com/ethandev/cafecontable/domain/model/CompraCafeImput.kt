@@ -8,4 +8,5 @@ data class CompraCafeImput(
     val proveedor: String?,
     val esCredito: Boolean,
     val nota: String?
+
 )

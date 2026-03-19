@@ -13,14 +13,16 @@ import androidx.room.PrimaryKey
 )
 
 data class CompraCafeEntity(
-    @PrimaryKey val id: String,
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
     val fecha: Long,
     val productoId: String,
     val cantidad: Double,
     val precioUnitCompra: Long,
     val proveedor: String? = null,
     val esCredito: Boolean = false,
-    val nota: String? = null
+    val nota: String? = null,
+    val estado: String = "ACTIVA"
 )
 
 

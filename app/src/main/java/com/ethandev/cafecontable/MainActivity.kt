@@ -7,6 +7,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.ethandev.cafecontable.core.AppModule
 import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
+import com.ethandev.cafecontable.domain.usecase.ActualizarCompraUseCase
+import com.ethandev.cafecontable.domain.usecase.AnularCompraUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerCompraPorIdUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialComprasUseCase
 import com.ethandev.cafecontable.ui.navigation.AppNavGraph
 import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
 import com.ethandev.cafecontable.ui.screen.cuentasporcobrar.CuentasPorCobrarViewModel
@@ -37,8 +41,17 @@ class MainActivity : ComponentActivity() {
         )
 
         val historialComprasVm = HistorialComprasViewModel(
-            AppModule.provideHistorialCompraUseCase(this)
-        )
+            AppModule.provideHistorialCompraUseCase(this),
+            AppModule.provideAnularCompraUseCase(this),
+            AppModule.provideObtenerCompraPorIdUseCase(this),
+            AppModule.provideActualizarCompraUseCase(this)
+
+            )
+
+//        private val obtenerHistorialComprasUseCase: ObtenerHistorialComprasUseCase,
+//        private val anularCompraUseCase: AnularCompraUseCase,
+//        private val obtenerCompraPorIdUseCase: ObtenerCompraPorIdUseCase,
+//        private val actualizarCompraUseCase: ActualizarCompraUseCase
 
         val historialVentasVm = HistorialVentasViewModel(
             AppModule.provideHistorialVentaUseCase(this)

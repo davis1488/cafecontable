@@ -34,7 +34,7 @@ import com.ethandev.cafecontable.data.local.entity.VentaCafeEntity
         PrestamoEntity::class,
         AbonoPrestamoEntity::class
                ],
-    version = 7,
+    version = 9,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

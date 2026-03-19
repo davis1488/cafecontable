@@ -1,15 +1,16 @@
 package com.ethandev.cafecontable.data.repository
 
 import com.ethandev.cafecontable.data.local.dao.CompraDao
+import com.ethandev.cafecontable.data.local.entity.CompraCafeEntity
 import com.ethandev.cafecontable.domain.model.CompraHistorialItem
 import com.ethandev.cafecontable.domain.repository.HistorialCompraRepository
 
 class HistorialCompraRepositoryImpl(
-    private val dao: CompraDao
+    private val compraDao: CompraDao
 ) : HistorialCompraRepository {
 
     override suspend fun obtenerHistorialCompras(): List<CompraHistorialItem> {
-        return dao.historial().map {
+        return compraDao.historial().map {
             CompraHistorialItem(
                 id = it.id,
                 fecha = it.fecha,
@@ -17,10 +18,24 @@ class HistorialCompraRepositoryImpl(
                 unidad = it.unidad,
                 cantidad = it.cantidad,
                 precioUnitCompra = it.precioUnitCompra,
+               // total = it.total,
                 proveedor = it.proveedor,
                 esCredito = it.esCredito,
-                nota = it.nota
+                nota = it.nota,
+                estado = it.estado
             )
         }
+    }
+
+    override suspend fun anularCompra(id: Int) {
+        compraDao.anularCompra(id)
+    }
+
+    override suspend fun obtenerCompraPorId(id: Int): CompraCafeEntity? {
+        return compraDao.obtenerPorId(id)
+    }
+
+    override suspend fun actualizarCompra(compra: CompraCafeEntity) {
+        compraDao.actualizar(compra)
     }
 }

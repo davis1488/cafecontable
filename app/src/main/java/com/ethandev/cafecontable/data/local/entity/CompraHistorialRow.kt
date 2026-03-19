@@ -1,7 +1,7 @@
 package com.ethandev.cafecontable.data.local.entity
 
 data class CompraHistorialRow(
-    val id: String,
+    val id: Int,
     val fecha: Long,
     val productoNombre: String,
     val unidad: String,
@@ -9,5 +9,6 @@ data class CompraHistorialRow(
     val precioUnitCompra: Long,
     val proveedor: String?,
     val esCredito: Boolean,
-    val nota: String?
+    val nota: String?,
+    val estado: String
 )
