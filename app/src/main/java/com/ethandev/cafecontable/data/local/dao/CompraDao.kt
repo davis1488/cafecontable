@@ -12,7 +12,7 @@ import com.ethandev.cafecontable.data.local.entity.CompraHistorialRow
 interface CompraDao {
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insert(compra: CompraCafeEntity)
+    suspend fun insert(compra: CompraCafeEntity): Long
 
     @Query("SELECT * FROM compra_cafe ORDER BY fecha DESC LIMIT :limit")
     suspend fun ultimas(limit: Int = 30): List<CompraCafeEntity>

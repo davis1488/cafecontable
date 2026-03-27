@@ -1,5 +1,6 @@
 package com.ethandev.cafecontable.data.repository
 
+import android.util.Log
 import androidx.room.withTransaction
 import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.entity.CompraCafeEntity
@@ -21,35 +22,39 @@ class CompraRepositoryImpl(
             val compraDao = db.compraDao()
             val cuentaPorPagarDao = db.cuentaPorPagarDao()
 
-            val existente = productoDao.getByNombre(input.productoNombre.trim())
+            val nombreProducto = input.productoNombre.trim()
+            val unidadProducto = input.unidad.trim().uppercase()
+            val proveedor = input.proveedor?.trim()?.ifBlank { null }
+            val nota = input.nota?.trim()?.ifBlank { null }
+
+            val existente = productoDao.getByNombre(nombreProducto)
+
             val productoId = if (existente != null) {
                 existente.id
             } else {
                 val nuevo = ProductoEntity(
                     id = UUID.randomUUID().toString(),
-                    nombre = input.productoNombre.trim(),
-                    unidad = input.unidad.trim().uppercase(),
+                    nombre = nombreProducto,
+                    unidad = unidadProducto,
                     precioVenta = 0L
                 )
                 productoDao.insert(nuevo)
                 nuevo.id
             }
 
-            val compraId = UUID.randomUUID().toString()
-
-            compraDao.insert(
+            val compraId = compraDao.insert(
                 CompraCafeEntity(
                     id = 0,
                     fecha = System.currentTimeMillis(),
                     productoId = productoId,
                     cantidad = input.cantidad,
                     precioUnitCompra = input.precioUnitCompra,
-                    proveedor = input.proveedor?.trim()?.ifBlank { null },
+                    proveedor = proveedor,
                     esCredito = input.esCredito,
-                    nota = input.nota?.trim()?.ifBlank { null }
+                    nota = nota
                 )
-            )
-
+            ).toString()
+            Log.d("DEBUG_COMPRA", "compraId real = $compraId")
             inventarioDao.insertMov(
                 KardexMovimientoEntity(
                     id = UUID.randomUUID().toString(),
@@ -60,13 +65,12 @@ class CompraRepositoryImpl(
                     costoUnit = input.precioUnitCompra,
                     docTipo = "COMPRA",
                     docId = compraId,
-                    nota = input.nota
+                    nota = nota
                 )
             )
 
             if (input.esCredito) {
-                val proveedor = input.proveedor?.trim().orEmpty()
-                if (proveedor.isBlank()) {
+                if (proveedor.isNullOrBlank()) {
                     throw IllegalStateException("Debes ingresar el proveedor para compras a crédito")
                 }
 
@@ -81,7 +85,7 @@ class CompraRepositoryImpl(
                         valorInicial = totalCompra,
                         saldoPendiente = totalCompra,
                         estado = "PENDIENTE",
-                        nota = input.nota?.trim()?.ifBlank { null }
+                        nota = nota
                     )
                 )
             }

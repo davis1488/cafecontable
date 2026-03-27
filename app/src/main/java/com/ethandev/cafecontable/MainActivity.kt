@@ -34,17 +34,20 @@ class MainActivity : ComponentActivity() {
         val ventaVm = VentaCafeViewModel(
             AppModule.provideVentaUseCase(this)
         )
-
-        val (_, _, listarInventarioUseCase) = AppModule.provideInventarioUseCases(this)
-        val inventarioVm = InventarioViewModel(
-            listarInventarioUseCase
-        )
+//        com/ethandev/cafecontable/ui/screen/historialcompras/HistorialComprasViewModel.kt
+//        val (_, _, listarInventarioUseCase) = AppModule.provideInventarioUseCases(this)
+//        val inventarioVm = InventarioViewModel(
+//            listarInventarioUseCase
+//        )
+        val inventarioVm = AppModule.provideInventarioViewModel(this)
 
         val historialComprasVm = HistorialComprasViewModel(
             AppModule.provideHistorialCompraUseCase(this),
             AppModule.provideAnularCompraUseCase(this),
             AppModule.provideObtenerCompraPorIdUseCase(this),
-            AppModule.provideActualizarCompraUseCase(this)
+            AppModule.provideActualizarCompraUseCase(this),
+            AppModule.provideObtenerMovimientoKardexPorCompraIdUseCase(this),
+            AppModule.provideActualizarMovimientoKardexUseCase(this)
 
             )
 

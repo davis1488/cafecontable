@@ -11,4 +11,6 @@ interface InventarioRepository {
     )
     suspend fun existencia(productoId: String) : Double
     suspend fun listarInventario(): List<InventarioItemModel>
+    suspend fun obtenerInventario(): List<InventarioItemModel>
+    suspend fun obtenerExistencia(productoId: String): Double
 }

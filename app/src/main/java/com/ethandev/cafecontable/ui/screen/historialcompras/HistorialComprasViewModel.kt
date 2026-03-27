@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ethandev.cafecontable.domain.model.CompraHistorialItem
 import com.ethandev.cafecontable.domain.usecase.ActualizarCompraUseCase
+import com.ethandev.cafecontable.domain.usecase.ActualizarMovimientoKardexUseCase
 import com.ethandev.cafecontable.domain.usecase.AnularCompraUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerCompraPorIdUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialComprasUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerMovimientoKardexPorCompraIdUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +24,9 @@ class HistorialComprasViewModel(
     private val obtenerHistorialComprasUseCase: ObtenerHistorialComprasUseCase,
     private val anularCompraUseCase: AnularCompraUseCase,
     private val obtenerCompraPorIdUseCase: ObtenerCompraPorIdUseCase,
-    private val actualizarCompraUseCase: ActualizarCompraUseCase
+    private val actualizarCompraUseCase: ActualizarCompraUseCase,
+    private val obtenerMovimientoKardexPorCompraIdUseCase: ObtenerMovimientoKardexPorCompraIdUseCase,
+    private val actualizarMovimientoKardexUseCase: ActualizarMovimientoKardexUseCase
 ) : ViewModel() {
 
     private val _toastMessage = MutableStateFlow<String?>(null)
@@ -81,7 +85,8 @@ class HistorialComprasViewModel(
         proveedor: String,
         cantidad: Double,
         precio: Long,
-        nota: String
+        nota: String,
+
     ) {
         viewModelScope.launch {
             try {
@@ -90,13 +95,12 @@ class HistorialComprasViewModel(
                     return@launch
                 }
 
-                if (precio <= 0.0) {
+                if (precio <= 0L) {
                     _toastMessage.value = "El precio debe ser mayor a 0"
                     return@launch
                 }
 
                 val compra = obtenerCompraPorIdUseCase(id)
-
                 if (compra == null) {
                     _toastMessage.value = "No se encontró la compra"
                     return@launch
@@ -110,6 +114,19 @@ class HistorialComprasViewModel(
                 )
 
                 actualizarCompraUseCase(compraActualizada)
+
+                val movimientoKardex = obtenerMovimientoKardexPorCompraIdUseCase(id)
+                if (movimientoKardex != null) {
+                    val movimientoActualizado = movimientoKardex.copy(
+                        cantidad = cantidad,
+                        costoUnit = precio,
+                        fecha = System.currentTimeMillis(),
+                        nota = nota.ifBlank { null }
+                    )
+
+                    actualizarMovimientoKardexUseCase(movimientoActualizado)
+                }
+
                 _toastMessage.value = "Compra actualizada correctamente"
                 cargar()
             } catch (e: Exception) {

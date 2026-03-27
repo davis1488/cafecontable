@@ -1,6 +1,6 @@
 package com.ethandev.cafecontable.data.local.entity
 
-data class InvenarioItem(
+data class InventarioItem(
     val productoId: String,
     val nombre: String,
     val unidad: String,

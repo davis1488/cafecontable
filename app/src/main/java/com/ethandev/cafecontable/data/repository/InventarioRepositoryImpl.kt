@@ -3,6 +3,7 @@ package com.ethandev.cafecontable.data.repository
 import com.ethandev.cafecontable.data.local.dao.InventarioDao
 import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
 import com.ethandev.cafecontable.domain.model.InventarioItemModel
+import com.ethandev.cafecontable.domain.model.InventarioPorProducto
 import com.ethandev.cafecontable.domain.repository.InventarioRepository
 import java.util.UUID
 
@@ -37,5 +38,20 @@ class InventarioRepositoryImpl(
                 existencia = it.existencia
             )
         }
+    }
+
+    override suspend fun obtenerInventario(): List<InventarioItemModel> {
+        return dao.inventarioDetalle().map { item ->
+            InventarioItemModel(
+                productoId = item.productoId,
+                nombre = item.nombre,
+                unidad = item.unidad,
+                existencia = item.existencia
+            )
+        }
+    }
+
+    override suspend fun obtenerExistencia(productoId: String): Double {
+        return dao.existencia(productoId)
     }
 }
