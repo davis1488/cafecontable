@@ -43,7 +43,13 @@ class VentaRepositoryImpl(
                     cliente = input.cliente?.trim()?.ifBlank { null },
                     esCredito = input.esCredito,
                     nota = input.nota?.trim()?.ifBlank { null },
-                    factor = input.factor
+                    factor = input.factor,
+                    cantidadEntregada = input.cantidadEntregada,
+                    cantidadPactada = input.cantidadPactada,
+                    unidad = input.unidad,
+                    total = input.total,
+                    estado = input.estado
+
                 )
             )
 

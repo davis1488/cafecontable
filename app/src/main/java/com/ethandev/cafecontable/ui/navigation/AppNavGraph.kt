@@ -1,50 +1,4 @@
-//package com.ethandev.cafecontable.ui.navigation
-//
-//import androidx.compose.runtime.Composable
-//import androidx.navigation.compose.NavHost
-//import androidx.navigation.compose.composable
-//import androidx.navigation.compose.rememberNavController
-//import com.ethandev.cafecontable.ui.screen.compras.CompraCafeScreen
-//import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
-//import com.ethandev.cafecontable.ui.screen.home.HomeScreen
-//import com.ethandev.cafecontable.ui.screen.inventario.InventarioScreen
-//import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
-//import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeScreen
-//import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeViewModel
-//
-//@Composable
-//fun AppNavGraph(
-//    compraVm: CompraCafeViewModel,
-//    ventaVm: VentaCafeViewModel,
-//    inventarioVm: InventarioViewModel
-//) {
-//    val navController = rememberNavController()
-//
-//    NavHost(
-//        navController = navController,
-//        startDestination = Routes.HOME
-//    ) {
-//        composable(Routes.HOME) {
-//            HomeScreen(
-//                onGoCompras = { navController.navigate(Routes.COMPRAS) },
-//                onGoVentas = { navController.navigate(Routes.VENTAS) },
-//                onGoInventario = { navController.navigate(Routes.INVENTARIO) }
-//            )
-//        }
-//
-//        composable(Routes.COMPRAS) {
-//            CompraCafeScreen(compraVm)
-//        }
-//
-//        composable(Routes.VENTAS) {
-//            VentaCafeScreen(ventaVm)
-//        }
-//
-//        composable(Routes.INVENTARIO) {
-//            InventarioScreen(inventarioVm)
-//        }
-//    }
-//}
+
 package com.ethandev.cafecontable.ui.navigation
 
 import androidx.compose.foundation.layout.padding
@@ -75,12 +29,15 @@ import com.ethandev.cafecontable.ui.screen.prestamos.ConsultaPrestamosScreen
 import com.ethandev.cafecontable.ui.screen.prestamos.PrestamosScreen
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeScreen
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeViewModel
+import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoScreen
+import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoViewModel
 import com.ethandev.cafecontable.ui.viewmodel.PrestamosViewModel
 
 @Composable
 fun AppNavGraph(
     compraVm: CompraCafeViewModel,
     ventaVm: VentaCafeViewModel,
+    ventasPedidoVm: VentasPedidoViewModel,
     inventarioVm: InventarioViewModel,
     historialComprasVm: HistorialComprasViewModel,
     historialVentasVm: HistorialVentasViewModel,
@@ -134,6 +91,8 @@ fun AppNavGraph(
                     innerPadding = innerPadding,
                     onGoCompras = { navController.navigate(Routes.COMPRAS) },
                     onGoVentas = { navController.navigate(Routes.VENTAS) },
+                    onGoVentasPedido = { navController.navigate(Routes.VENTASPEDIDO) },
+
                     onGoInventario = { navController.navigate(Routes.INVENTARIO) },
                     onGoHistorialCompras = {navController.navigate(Routes.HISTORIAL_COMPRA)},
                     onGoHistorialVentas = { navController.navigate(Routes.HISTORIAL_VENTA)},
@@ -151,6 +110,10 @@ fun AppNavGraph(
 
             composable(Routes.VENTAS) {
                 VentaCafeScreen(ventaVm)
+            }
+
+            composable(Routes.VENTASPEDIDO) {
+                VentasPedidoScreen(ventasPedidoVm)
             }
 
             composable(Routes.INVENTARIO) {

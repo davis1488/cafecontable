@@ -12,6 +12,7 @@ import com.ethandev.cafecontable.data.local.dao.CuentaPorPagarDao
 import com.ethandev.cafecontable.data.local.dao.InventarioDao
 import com.ethandev.cafecontable.data.local.dao.ProductoDao
 import com.ethandev.cafecontable.data.local.dao.VentaDao
+import com.ethandev.cafecontable.data.local.dao.VentaPedidoDao
 import com.ethandev.cafecontable.data.local.entity.AbonoCuentaPorCobrarEntity
 import com.ethandev.cafecontable.data.local.entity.AbonoCuentaPorPagarEntity
 import com.ethandev.cafecontable.data.local.entity.CompraCafeEntity
@@ -20,6 +21,7 @@ import com.ethandev.cafecontable.data.local.entity.CuentaPorPagarEntity
 import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
 import com.ethandev.cafecontable.data.local.entity.ProductoEntity
 import com.ethandev.cafecontable.data.local.entity.VentaCafeEntity
+import com.ethandev.cafecontable.data.local.entity.VentaPedidoEntity
 
 @Database(
     entities = [
@@ -32,9 +34,10 @@ import com.ethandev.cafecontable.data.local.entity.VentaCafeEntity
         CuentaPorPagarEntity::class,
         AbonoCuentaPorPagarEntity::class,
         PrestamoEntity::class,
-        AbonoPrestamoEntity::class
+        AbonoPrestamoEntity::class,
+        VentaPedidoEntity::class
                ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -46,4 +49,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun cuentaPorPagarDao(): CuentaPorPagarDao
     abstract fun prestamoDao(): PrestamoDao
     abstract fun abonoPrestamoDao(): AbonoPrestamoDao
+    abstract fun ventaPedidoDao(): VentaPedidoDao
 }

@@ -17,5 +17,11 @@ data class VentaCafeEntity(
     val cliente: String? = null,
     val esCredito: Boolean = false,
     val nota: String? = null,
-    val factor: Double
-    )
+    val factor: Double,
+    val cantidadPactada: Double,
+    val unidad: String,
+    val total: Long,
+    val cantidadEntregada: Double,
+    val estado: String
+)
+

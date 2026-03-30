@@ -8,7 +8,11 @@ data class VentaCafeInput(
     val cliente: String?,
     val esCredito: Boolean,
     val nota: String?,
-    val factor: Double
+    val factor: Double,
+    val cantidadEntregada: Double,
+    val cantidadPactada: Double,
+    val total: Long,
+    val estado: String
 )
 
 interface VentaRepository {

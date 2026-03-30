@@ -19,10 +19,12 @@ import com.ethandev.cafecontable.data.repository.HistorialCompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialVentaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.InventarioRepositoryImpl
 import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
+import com.ethandev.cafecontable.data.repository.VentaPedidoRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaRepositoryImpl
 import com.ethandev.cafecontable.domain.repository.CompraRepository
 import com.ethandev.cafecontable.domain.repository.HistorialCompraRepository
 import com.ethandev.cafecontable.domain.repository.InventarioRepository
+import com.ethandev.cafecontable.domain.repository.VentaPedidoRepository
 import com.ethandev.cafecontable.domain.repository.VentaRepository
 import com.ethandev.cafecontable.domain.usecase.ActualizarCompraUseCase
 import com.ethandev.cafecontable.domain.usecase.ActualizarMovimientoKardexUseCase
@@ -35,6 +37,7 @@ import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarPrestamosUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarVentasPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerCompraPorIdUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerExistenciaUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialComprasUseCase
@@ -48,8 +51,10 @@ import com.ethandev.cafecontable.domain.usecase.RegistrarCompraCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarEntradaInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaCafeUseCase
+import com.ethandev.cafecontable.domain.usecase.RegistrarVentaPedidoUseCase
 import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
+import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoViewModel
 
 
 object AppModule {
@@ -269,5 +274,29 @@ object AppModule {
         )
     }
 
+    fun provideVentaPedidoRepository(context: Context): VentaPedidoRepository {
+        return VentaPedidoRepositoryImpl(
+            db = provideDatabase(context)
+        )
+    }
+
+    fun provideRegistrarVentaPedidoUseCase(context: Context): RegistrarVentaPedidoUseCase {
+        return RegistrarVentaPedidoUseCase(
+            repository = provideVentaPedidoRepository(context)
+        )
+    }
+
+    fun provideListarVentasPedidoUseCase(context: Context): ListarVentasPedidoUseCase {
+        return ListarVentasPedidoUseCase(
+            repository = provideVentaPedidoRepository(context)
+        )
+    }
+
+    fun provideVentasPedidoViewModel(context: Context): VentasPedidoViewModel {
+        return VentasPedidoViewModel(
+            registrarVentaPedidoUseCase = provideRegistrarVentaPedidoUseCase(context),
+            listarVentasPedidoUseCase = provideListarVentasPedidoUseCase(context)
+        )
+    }
 
 }

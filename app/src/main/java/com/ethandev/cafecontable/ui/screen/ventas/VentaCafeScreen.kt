@@ -25,6 +25,13 @@ fun VentaCafeScreen(vm: VentaCafeViewModel) {
     var notaTxt by remember { mutableStateOf("") }
     var esCredito by remember { mutableStateOf(false) }
     var factorTxt by remember { mutableStateOf("") }
+    var cantidadEntregadaTxt by remember { mutableStateOf("") }
+    var cantidadPactadaTxt by remember { mutableStateOf("") }
+    var estado by remember { mutableStateOf("") }
+   // var total by remember { mutableStateOf("") }
+
+
+
 
 
     var expandedProducto by remember { mutableStateOf(false) }
@@ -144,6 +151,10 @@ fun VentaCafeScreen(vm: VentaCafeViewModel) {
                 Switch(checked = esCredito, onCheckedChange = { esCredito = it })
             }
 
+
+            val cantidadEntregada = cantidadEntregadaTxt.toDoubleOrNull() ?: 0.0
+            val cantidadPactada = cantidadPactadaTxt.toDoubleOrNull() ?: 0.0
+
             val cantidad = cantidadTxt.toDoubleOrNull() ?: 0.0
             val precio = precioTxt.toLongOrNull() ?: 0L
             val factor = factorTxt.toDoubleOrNull() ?: 0.0
@@ -164,7 +175,12 @@ fun VentaCafeScreen(vm: VentaCafeViewModel) {
                                 cliente = clienteTxt.ifBlank { null },
                                 esCredito = esCredito,
                                 nota = notaTxt.ifBlank { null },
-                                factor = factor
+                                factor = factor,
+                                cantidadEntregada = cantidadEntregada,
+                                cantidadPactada = cantidadPactada,
+                                estado = estado,
+                                total = total
+
                             )
                         )
 

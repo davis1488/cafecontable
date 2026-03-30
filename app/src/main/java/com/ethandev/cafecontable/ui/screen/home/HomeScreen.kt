@@ -34,6 +34,7 @@ fun HomeScreen(
     innerPadding: PaddingValues,
     onGoCompras: () -> Unit,
     onGoVentas: () -> Unit,
+    onGoVentasPedido: () -> Unit,
     onGoInventario: () -> Unit,
     onGoHistorialCompras: () -> Unit,
     onGoHistorialVentas: () -> Unit,
@@ -97,6 +98,22 @@ fun HomeScreen(
                 },
                 buttonText = "Abrir",
                 onClick = onGoVentas
+            )
+        }
+
+        item {
+            HomeMenuCard(
+                title = "Registrar Anuncio",
+                subtitle = "Registra Anuncioas por entregar",
+                icon = {
+                    Icon(
+                        imageVector = Icons.Filled.PointOfSale,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                buttonText = "Abrir",
+                onClick = onGoVentasPedido
             )
         }
 

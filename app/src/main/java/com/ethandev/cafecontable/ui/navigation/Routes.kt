@@ -4,6 +4,7 @@ object Routes {
     const val HOME = "home"
     const val COMPRAS = "compras"
     const val VENTAS = "ventas"
+    const val VENTASPEDIDO = "ventaspedido"
     const val INVENTARIO = "inventario"
     const val HISTORIAL_COMPRA = "historialcompra"
     const val HISTORIAL_VENTA = "historialventa"
