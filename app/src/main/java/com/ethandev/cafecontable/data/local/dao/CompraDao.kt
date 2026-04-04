@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.ethandev.cafecontable.data.local.entity.CompraCafeEntity
+import com.ethandev.cafecontable.data.local.entity.CompraDisponibleDb
 import com.ethandev.cafecontable.data.local.entity.CompraHistorialRow
 
 @Dao
@@ -52,4 +53,18 @@ interface CompraDao {
 
     @Update
     suspend fun actualizar(compra: CompraCafeEntity)
+
+    @Query("""
+    SELECT 
+        c.id AS compraId,
+        c.productoId AS productoId,
+        p.nombre AS productoNombre,
+        c.cantidad AS cantidadDisponible,
+        c.precioUnitCompra AS precioUnitCompra
+    FROM compra_cafe c
+    INNER JOIN producto p ON p.id = c.productoId
+    WHERE c.estado = 'ACTIVA'
+    ORDER BY c.fecha DESC
+""")
+    suspend fun obtenerComprasDisponiblesParaMezcla(): List<CompraDisponibleDb>
 }

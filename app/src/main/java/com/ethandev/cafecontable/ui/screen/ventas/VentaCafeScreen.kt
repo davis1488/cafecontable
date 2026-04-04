@@ -1,6 +1,8 @@
 package com.ethandev.cafecontable.ui.screen.ventas
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -13,6 +15,7 @@ fun VentaCafeScreen(vm: VentaCafeViewModel) {
 
     val state by vm.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scrollState = rememberScrollState()
 
     val productos = listOf("Cafe", "Pasilla")
     val unidades = listOf("KG", "LB", "ARROBA")
@@ -28,11 +31,6 @@ fun VentaCafeScreen(vm: VentaCafeViewModel) {
     var cantidadEntregadaTxt by remember { mutableStateOf("") }
     var cantidadPactadaTxt by remember { mutableStateOf("") }
     var estado by remember { mutableStateOf("") }
-   // var total by remember { mutableStateOf("") }
-
-
-
-
 
     var expandedProducto by remember { mutableStateOf(false) }
     var expandedUnidad by remember { mutableStateOf(false) }
@@ -53,10 +51,11 @@ fun VentaCafeScreen(vm: VentaCafeViewModel) {
     ) { padding ->
 
         Column(
-            Modifier
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
 
@@ -72,13 +71,21 @@ fun VentaCafeScreen(vm: VentaCafeViewModel) {
                     readOnly = true,
                     label = { Text("Producto") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandedProducto) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
                 )
-                DropdownMenu(expandedProducto, onDismissRequest = { expandedProducto = false }) {
+                DropdownMenu(
+                    expanded = expandedProducto,
+                    onDismissRequest = { expandedProducto = false }
+                ) {
                     productos.forEach {
                         DropdownMenuItem(
                             text = { Text(it) },
-                            onClick = { producto = it; expandedProducto = false }
+                            onClick = {
+                                producto = it
+                                expandedProducto = false
+                            }
                         )
                     }
                 }
@@ -94,13 +101,21 @@ fun VentaCafeScreen(vm: VentaCafeViewModel) {
                     readOnly = true,
                     label = { Text("Unidad") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandedUnidad) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
                 )
-                DropdownMenu(expandedUnidad, onDismissRequest = { expandedUnidad = false }) {
+                DropdownMenu(
+                    expanded = expandedUnidad,
+                    onDismissRequest = { expandedUnidad = false }
+                ) {
                     unidades.forEach {
                         DropdownMenuItem(
                             text = { Text(it) },
-                            onClick = { unidad = it; expandedUnidad = false }
+                            onClick = {
+                                unidad = it
+                                expandedUnidad = false
+                            }
                         )
                     }
                 }
@@ -144,24 +159,26 @@ fun VentaCafeScreen(vm: VentaCafeViewModel) {
             )
 
             Row(
-                Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("¿Venta a crédito?")
-                Switch(checked = esCredito, onCheckedChange = { esCredito = it })
+                Switch(
+                    checked = esCredito,
+                    onCheckedChange = { esCredito = it }
+                )
             }
-
 
             val cantidadEntregada = cantidadEntregadaTxt.toDoubleOrNull() ?: 0.0
             val cantidadPactada = cantidadPactadaTxt.toDoubleOrNull() ?: 0.0
-
             val cantidad = cantidadTxt.toDoubleOrNull() ?: 0.0
             val precio = precioTxt.toLongOrNull() ?: 0L
             val factor = factorTxt.toDoubleOrNull() ?: 0.0
-
             val total = if (cantidad > 0 && precio > 0) (cantidad * precio).toLong() else 0L
 
             Text("Total: $total COP", style = MaterialTheme.typography.titleMedium)
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             Button(
                 onClick = {
@@ -180,7 +197,6 @@ fun VentaCafeScreen(vm: VentaCafeViewModel) {
                                 cantidadPactada = cantidadPactada,
                                 estado = estado,
                                 total = total
-
                             )
                         )
 
@@ -196,6 +212,8 @@ fun VentaCafeScreen(vm: VentaCafeViewModel) {
             ) {
                 Text(if (state.loading) "Guardando..." else "Guardar venta")
             }
+
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }

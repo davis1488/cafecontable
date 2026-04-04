@@ -36,6 +36,8 @@ fun HomeScreen(
     onGoVentas: () -> Unit,
     onGoVentasPedido: () -> Unit,
     onGoInventario: () -> Unit,
+    onGoMezclas: () -> Unit,
+    onGoAsignacionMezclaPedido: () -> Unit,
     onGoHistorialCompras: () -> Unit,
     onGoHistorialVentas: () -> Unit,
     onGoCuentasPorCobrar: () -> Unit,
@@ -114,6 +116,38 @@ fun HomeScreen(
                 },
                 buttonText = "Abrir",
                 onClick = onGoVentasPedido
+            )
+        }
+
+        item {
+            HomeMenuCard(
+                title = "Mezclas",
+                subtitle = "Registra Mezcla para Entregas",
+                icon = {
+                    Icon(
+                        imageVector = Icons.Filled.PointOfSale,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                buttonText = "Abrir",
+                onClick = onGoMezclas
+            )
+        }
+
+        item {
+            HomeMenuCard(
+                title = "Asignacion de Mezcla",
+                subtitle = "Asigna Mezcla a Venta",
+                icon = {
+                    Icon(
+                        imageVector = Icons.Filled.PointOfSale,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                buttonText = "Abrir",
+                onClick = onGoAsignacionMezclaPedido
             )
         }
 

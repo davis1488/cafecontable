@@ -13,7 +13,7 @@ data class VentaPedidoEntity(
     val unidad: String,
     val precioUnitVenta: Long,
     val totalVenta: Long,
-    val cantidadEntregada: Double,
+    val cantidadAsignada: Double,
     val estado: String,
     val nota: String?
 )

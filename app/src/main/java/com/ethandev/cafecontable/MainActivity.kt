@@ -35,7 +35,16 @@ class MainActivity : ComponentActivity() {
             AppModule.provideVentaUseCase(this)
         )
 
+       val preparacionEntregaVm = AppModule.providePreparacionEntregaViewModel(this)
+
+
         val ventasPedidoVm = AppModule.provideVentasPedidoViewModel(this)
+        val asignacionMezclaPedidoVm = AppModule.provideAsignacionMezclaPedidoViewModel(this)
+        val mezclaVm = AppModule.provideMezclasViewModel(this)
+
+//        provideMezclasViewModel
+
+
 
 //        com/ethandev/cafecontable/ui/screen/historialcompras/HistorialComprasViewModel.kt
 //        val (_, _, listarInventarioUseCase) = AppModule.provideInventarioUseCases(this)
@@ -94,12 +103,15 @@ class MainActivity : ComponentActivity() {
                     compraVm = compraVm,
                     ventaVm = ventaVm,
                     ventasPedidoVm = ventasPedidoVm,
+                    preparacionEntregaVm = preparacionEntregaVm,
                     inventarioVm = inventarioVm,
                     historialComprasVm = historialComprasVm,
                     historialVentasVm = historialVentasVm,
                     cuentasPorCobrarVm = cuentasPorCobrarVm,
                     cuentasPorPagarVm = cuentasPorPagarVm,
-                    prestamosVm  = prestamosVm
+                    prestamosVm  = prestamosVm,
+                    mezclaVm = mezclaVm,
+                    asignacionMezclaPedidoVm = asignacionMezclaPedidoVm,
 
                 )
             }

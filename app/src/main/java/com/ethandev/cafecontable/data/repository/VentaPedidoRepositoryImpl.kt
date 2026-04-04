@@ -15,18 +15,19 @@ class VentaPedidoRepositoryImpl(
         val cliente = input.cliente.trim()
         val nota = input.nota?.trim()?.ifBlank { null }
 
-        if (cliente.isBlank()) {
-            throw IllegalArgumentException("Debes ingresar el cliente")
+        require(cliente.isNotBlank()) {
+            "Debes ingresar el cliente"
         }
 
-        if (input.cantidadPactada <= 0.0) {
-            throw IllegalArgumentException("La cantidad debe ser mayor a 0")
+        require(input.cantidadPactada > 0.0) {
+            "La cantidad debe ser mayor a 0"
         }
 
-        if (input.precioUnitVenta <= 0L) {
-            throw IllegalArgumentException("El precio de venta debe ser mayor a 0")
+        require(input.precioUnitVenta > 0L) {
+            "El precio de venta debe ser mayor a 0"
         }
 
+        val unidad = input.unidad.trim().uppercase()
         val totalVenta = (input.cantidadPactada * input.precioUnitVenta).toLong()
 
         db.ventaPedidoDao().insert(
@@ -35,72 +36,56 @@ class VentaPedidoRepositoryImpl(
                 fecha = System.currentTimeMillis(),
                 cliente = cliente,
                 cantidadPactada = input.cantidadPactada,
-                unidad = input.unidad.trim().uppercase(),
+                unidad = unidad,
                 precioUnitVenta = input.precioUnitVenta,
                 totalVenta = totalVenta,
-                cantidadEntregada = 0.0,
-                estado = "PENDIENTE_PREPARACION",
+                cantidadAsignada = 0.0,
+                estado = "PENDIENTE_ASIGNACION",
                 nota = nota
             )
         )
     }
 
     override suspend fun listarVentas(): List<VentaPedido> {
-        return db.ventaPedidoDao().getAll().map {
-            VentaPedido(
-                id = it.id,
-                fecha = it.fecha,
-                cliente = it.cliente,
-                cantidadPactada = it.cantidadPactada,
-                unidad = it.unidad,
-                precioUnitVenta = it.precioUnitVenta,
-                totalVenta = it.totalVenta,
-                cantidadEntregada = it.cantidadEntregada,
-                estado = it.estado,
-                nota = it.nota
-            )
+        return db.ventaPedidoDao().getAll().map { pedido ->
+            pedido.toDomain()
         }
     }
 
     override suspend fun listarVentasPendientes(): List<VentaPedido> {
-        return db.ventaPedidoDao().getVentasPendientes().map {
-            VentaPedido(
-                id = it.id,
-                fecha = it.fecha,
-                cliente = it.cliente,
-                cantidadPactada = it.cantidadPactada,
-                unidad = it.unidad,
-                precioUnitVenta = it.precioUnitVenta,
-                totalVenta = it.totalVenta,
-                cantidadEntregada = it.cantidadEntregada,
-                estado = it.estado,
-                nota = it.nota
-            )
+        return db.ventaPedidoDao().getPendientes().map { pedido ->
+            pedido.toDomain()
         }
     }
 
     override suspend fun obtenerVentaPorId(id: String): VentaPedido? {
-        return db.ventaPedidoDao().getById(id)?.let {
-            VentaPedido(
-                id = it.id,
-                fecha = it.fecha,
-                cliente = it.cliente,
-                cantidadPactada = it.cantidadPactada,
-                unidad = it.unidad,
-                precioUnitVenta = it.precioUnitVenta,
-                totalVenta = it.totalVenta,
-                cantidadEntregada = it.cantidadEntregada,
-                estado = it.estado,
-                nota = it.nota
-            )
-        }
+        return db.ventaPedidoDao().obtenerPorId(id)?.toDomain()
     }
 
-    override suspend fun actualizarEntrega(
+    override suspend fun actualizarAsignacion(
         id: String,
-        cantidadEntregada: Double,
+        cantidadAsignada: Double,
         estado: String
     ) {
-        db.ventaPedidoDao().actualizarEntrega(id, cantidadEntregada, estado)
+        db.ventaPedidoDao().actualizarEntregaYEstado(
+            pedidoId = id,
+            cantidadAsignada = cantidadAsignada,
+            estado = estado
+        )
+    }
+
+    private fun VentaPedidoEntity.toDomain(): VentaPedido {
+        return VentaPedido(
+            id = id,
+            fecha = fecha,
+            cliente = cliente,
+            cantidadPactada = cantidadPactada,
+            unidad = unidad,
+            precioUnitVenta = precioUnitVenta,
+            totalVenta = totalVenta,
+            cantidadAsignada = cantidadAsignada,
+            estado = estado,
+            nota = nota
+        )
     }
 }

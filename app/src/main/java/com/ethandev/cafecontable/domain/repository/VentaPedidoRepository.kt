@@ -7,5 +7,4 @@ interface VentaPedidoRepository {
     suspend fun listarVentas(): List<VentaPedido>
     suspend fun listarVentasPendientes(): List<VentaPedido>
     suspend fun obtenerVentaPorId(id: String): VentaPedido?
-    suspend fun actualizarEntrega(id: String, cantidadEntregada: Double, estado: String)
-}
+    suspend fun actualizarAsignacion( id: String, cantidadAsignada: Double, estado: String )}

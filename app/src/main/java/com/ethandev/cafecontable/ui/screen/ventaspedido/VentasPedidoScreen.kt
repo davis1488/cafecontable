@@ -3,42 +3,65 @@ package com.ethandev.cafecontable.ui.screen.ventaspedido
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.ethandev.cafecontable.domain.model.VentaPedido
 import com.ethandev.cafecontable.domain.repository.VentaPedidoInput
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private enum class HistorialFiltro(val label: String) {
+    TODOS("Todos"),
+    PENDIENTES("Pendientes"),
+    ENTREGADOS("Entregados"),
+    CANCELADOS("Cancelados")
+}
+
 @Composable
-fun VentasPedidoScreen(vm: VentasPedidoViewModel) {
+fun VentasPedidoScreen(
+    vm: VentasPedidoViewModel,
+    onPrepararEntrega: (String) -> Unit
+) {
     val state by vm.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     var cliente by remember { mutableStateOf("") }
     var cantidadTxt by remember { mutableStateOf("") }
@@ -54,6 +77,7 @@ fun VentasPedidoScreen(vm: VentasPedidoViewModel) {
             snackbarHostState.showSnackbar(it)
             vm.limpiarMensajes()
         }
+
         state.okMsg?.let {
             snackbarHostState.showSnackbar(it)
             vm.limpiarMensajes()
@@ -62,7 +86,11 @@ fun VentasPedidoScreen(vm: VentasPedidoViewModel) {
 
     val cantidad = cantidadTxt.toDoubleOrNull() ?: 0.0
     val precio = precioTxt.toLongOrNull() ?: 0L
-    val total = if (cantidad > 0 && precio > 0) (cantidad * precio).toLong() else 0L
+    val total = if (cantidad > 0 && precio > 0) {
+        (cantidad * precio).toLong()
+    } else {
+        0L
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -72,119 +100,331 @@ fun VentasPedidoScreen(vm: VentasPedidoViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .navigationBarsPadding()
         ) {
             Text(
                 text = "Ventas / pedidos",
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TabRow(
+                selectedTabIndex = selectedTab,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("Nuevo pedido") }
+                )
+
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text("Historial") }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            when (selectedTab) {
+                0 -> NuevoPedidoTab(
+                    loading = state.loading,
+                    cliente = cliente,
+                    cantidadTxt = cantidadTxt,
+                    precioTxt = precioTxt,
+                    notaTxt = notaTxt,
+                    total = total,
+                    onClienteChange = { cliente = it },
+                    onCantidadChange = { cantidadTxt = it.replace(',', '.') },
+                    onPrecioChange = { precioTxt = it.filter(Char::isDigit) },
+                    onNotaChange = { notaTxt = it },
+                    onRegistrar = {
+                        vm.registrar(
+                            VentaPedidoInput(
+                                cliente = cliente.trim(),
+                                cantidadPactada = cantidad,
+                                unidad = "KG",
+                                precioUnitVenta = precio,
+                                nota = notaTxt.trim().ifBlank { null }
+                            )
+                        )
+
+                        cliente = ""
+                        cantidadTxt = ""
+                        precioTxt = ""
+                        notaTxt = ""
+                    }
+                )
+
+                1 -> HistorialPedidosTab(
+                    loading = state.loading,
+                    items = state.items,
+                    onPrepararEntrega = onPrepararEntrega
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NuevoPedidoTab(
+    loading: Boolean,
+    cliente: String,
+    cantidadTxt: String,
+    precioTxt: String,
+    notaTxt: String,
+    total: Long,
+    onClienteChange: (String) -> Unit,
+    onCantidadChange: (String) -> Unit,
+    onPrecioChange: (String) -> Unit,
+    onNotaChange: (String) -> Unit,
+    onRegistrar: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Registrar nuevo pedido",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             OutlinedTextField(
                 value = cliente,
-                onValueChange = { cliente = it },
+                onValueChange = onClienteChange,
                 label = { Text("Cliente") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
             Spacer(modifier = Modifier.height(10.dp))
 
             OutlinedTextField(
                 value = cantidadTxt,
-                onValueChange = { cantidadTxt = it.replace(',', '.') },
+                onValueChange = onCantidadChange,
                 label = { Text("Cantidad pactada (KG)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
             Spacer(modifier = Modifier.height(10.dp))
 
             OutlinedTextField(
                 value = precioTxt,
-                onValueChange = { precioTxt = it.filter(Char::isDigit) },
-                label = { Text("Precio venta unitario") },
+                onValueChange = onPrecioChange,
+                label = { Text("Precio venta unitario (COP)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
             Spacer(modifier = Modifier.height(10.dp))
 
             OutlinedTextField(
                 value = notaTxt,
-                onValueChange = { notaTxt = it },
-                label = { Text("Nota") },
-                modifier = Modifier.fillMaxWidth()
+                onValueChange = onNotaChange,
+                label = { Text("Nota (opcional)") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+                maxLines = 3
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text(
                 text = "Total venta: $total COP",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Button(
-                onClick = {
-                    vm.registrar(
-                        VentaPedidoInput(
-                            cliente = cliente,
-                            cantidadPactada = cantidad,
-                            unidad = "KG",
-                            precioUnitVenta = precio,
-                            nota = notaTxt.ifBlank { null }
-                        )
-                    )
-
-                    cliente = ""
-                    cantidadTxt = ""
-                    precioTxt = ""
-                    notaTxt = ""
-                },
-                enabled = !state.loading,
+                onClick = onRegistrar,
+                enabled = !loading,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (state.loading) "Guardando..." else "Registrar venta")
+                Text(if (loading) "Guardando..." else "Registrar venta")
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (state.loading) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(10.dp))
+            if (loading) {
+                Spacer(modifier = Modifier.height(12.dp))
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
+        }
+    }
+}
 
+@Composable
+private fun HistorialPedidosTab(
+    loading: Boolean,
+    items: List<VentaPedido>,
+    onPrepararEntrega: (String) -> Unit
+) {
+    var filtroSeleccionado by remember { mutableStateOf(HistorialFiltro.TODOS) }
+
+    val itemsFiltrados = remember(items, filtroSeleccionado) {
+        when (filtroSeleccionado) {
+            HistorialFiltro.TODOS -> items
+            HistorialFiltro.PENDIENTES -> items.filter {
+                it.estado.equals("PENDIENTE", ignoreCase = true) ||
+                        it.estado.equals("PARCIAL", ignoreCase = true) ||
+                        it.estado.equals("EN_PROCESO", ignoreCase = true) ||
+                        it.estado.equals("REGISTRADA", ignoreCase = true)
+            }
+            HistorialFiltro.ENTREGADOS -> items.filter {
+                it.estado.equals("ENTREGADA", ignoreCase = true)
+            }
+            HistorialFiltro.CANCELADOS -> items.filter {
+                it.estado.equals("CANCELADA", ignoreCase = true)
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Text(
+            text = "Historial de pedidos",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        ScrollableTabRow(
+            selectedTabIndex = filtroSeleccionado.ordinal,
+            edgePadding = 0.dp
+        ) {
+            HistorialFiltro.entries.forEach { filtro ->
+                Tab(
+                    selected = filtroSeleccionado == filtro,
+                    onClick = { filtroSeleccionado = filtro },
+                    text = { Text(filtro.label) }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Mostrando: ${filtroSeleccionado.label}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Text(
+                text = "${itemsFiltrados.size} registros",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (loading && items.isEmpty()) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        if (itemsFiltrados.isEmpty() && !loading) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "No hay pedidos en este filtro.",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+        } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(state.items, key = { it.id }) { item ->
-                    val fecha = remember(item.fecha) {
-                        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                            .format(Date(item.fecha))
-                    }
+                items(itemsFiltrados, key = { it.id }) { item ->
+                    VentaPedidoItem(
+                        item = item,
+                        onPrepararEntrega = onPrepararEntrega
+                    )
+                }
+            }
+        }
+    }
+}
 
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
+@Composable
+private fun VentaPedidoItem(
+    item: VentaPedido,
+    onPrepararEntrega: (String) -> Unit
+) {
+    val fechaFormateada = remember(item.fecha) {
+        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            .format(Date(item.fecha))
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            Text(
+                text = item.cliente,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text("Fecha: $fechaFormateada")
+            Text("Cantidad pactada: ${item.cantidadPactada} ${item.unidad}")
+            Text("Precio unitario: ${item.precioUnitVenta} COP")
+            Text("Total: ${item.totalVenta} COP")
+            Text("Entregado: ${item.cantidadAsignada} ${item.unidad}")
+            Text("Estado: ${item.estado}")
+
+            if (!item.nota.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("Nota: ${item.nota}")
+            }
+
+            if (item.estado != "ENTREGADA" && item.estado != "CANCELADA") {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Button(
+                        onClick = { onPrepararEntrega(item.id) }
                     ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp)
-                        ) {
-                            Text(item.cliente, style = MaterialTheme.typography.titleMedium)
-                            Text("Fecha: $fecha")
-                            Text("Cantidad pactada: ${item.cantidadPactada} ${item.unidad}")
-                            Text("Precio unitario: ${item.precioUnitVenta} COP")
-                            Text("Total: ${item.totalVenta} COP")
-                            Text("Entregado: ${item.cantidadEntregada} ${item.unidad}")
-                            Text("Estado: ${item.estado}")
-
-                            if (!item.nota.isNullOrBlank()) {
-                                Text("Nota: ${item.nota}")
-                            }
-                        }
+                        Text("Preparar entrega")
                     }
                 }
             }

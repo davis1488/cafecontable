@@ -18,17 +18,22 @@ import com.ethandev.cafecontable.data.repository.CuentaPorPagarRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialCompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialVentaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.InventarioRepositoryImpl
+import com.ethandev.cafecontable.data.repository.MezclaRepositoryImpl
+import com.ethandev.cafecontable.data.repository.PreparacionEntregaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaPedidoRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaRepositoryImpl
 import com.ethandev.cafecontable.domain.repository.CompraRepository
 import com.ethandev.cafecontable.domain.repository.HistorialCompraRepository
 import com.ethandev.cafecontable.domain.repository.InventarioRepository
+import com.ethandev.cafecontable.domain.repository.MezclaRepository
+import com.ethandev.cafecontable.domain.repository.PreparacionEntregaRepository
 import com.ethandev.cafecontable.domain.repository.VentaPedidoRepository
 import com.ethandev.cafecontable.domain.repository.VentaRepository
 import com.ethandev.cafecontable.domain.usecase.ActualizarCompraUseCase
 import com.ethandev.cafecontable.domain.usecase.ActualizarMovimientoKardexUseCase
 import com.ethandev.cafecontable.domain.usecase.AnularCompraUseCase
+import com.ethandev.cafecontable.domain.usecase.AsignarMezclaAPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.BuscarPrestamosUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentaPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentasPorCobrarUseCase
@@ -49,11 +54,16 @@ import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoCuentaPorPagarUseC
 import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarCompraCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarEntradaInventarioUseCase
+import com.ethandev.cafecontable.domain.usecase.RegistrarMezclaUseCase
+import com.ethandev.cafecontable.domain.usecase.RegistrarPreparacionEntregaUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaPedidoUseCase
+import com.ethandev.cafecontable.ui.screen.asignacionmezcla.AsignacionMezclaPedidoViewModel
 import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
+import com.ethandev.cafecontable.ui.screen.mezcla.MezclasViewModel
+import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntregaViewModel
 import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoViewModel
 
 
@@ -274,6 +284,179 @@ object AppModule {
         )
     }
 
+//    fun provideVentaPedidoRepository(context: Context): VentaPedidoRepository {
+//        return VentaPedidoRepositoryImpl(
+//            db = provideDatabase(context)
+//        )
+//    }
+//
+//    fun provideRegistrarVentaPedidoUseCase(context: Context): RegistrarVentaPedidoUseCase {
+//        return RegistrarVentaPedidoUseCase(
+//            repository = provideVentaPedidoRepository(context)
+//        )
+//    }
+//
+//    fun provideListarVentasPedidoUseCase(context: Context): ListarVentasPedidoUseCase {
+//        return ListarVentasPedidoUseCase(
+//            repository = provideVentaPedidoRepository(context)
+//        )
+//    }
+//
+//    fun provideVentasPedidoViewModel(context: Context): VentasPedidoViewModel {
+//        return VentasPedidoViewModel(
+//            registrarVentaPedidoUseCase = provideRegistrarVentaPedidoUseCase(context),
+//            listarVentasPedidoUseCase = provideListarVentasPedidoUseCase(context)
+//        )
+//    }
+//
+//    fun providePreparacionEntregaRepository(context: Context): PreparacionEntregaRepository {
+//        return PreparacionEntregaRepositoryImpl(
+//            db = provideDatabase(context)
+//        )
+//    }
+//
+//    fun provideRegistrarPreparacionEntregaUseCase(context: Context): RegistrarPreparacionEntregaUseCase {
+//        val db = provideDatabase(context)
+//
+//        return RegistrarPreparacionEntregaUseCase(
+//            inventarioDao = db.inventarioDao(),
+//            preparacionEntregaDao = db.preparacionEntregaDao(),
+//            ventaPedidoDao = db.ventaPedidoDao()
+//        )
+//    }
+//
+//
+//    fun providePreparacionEntregaViewModel(context: Context): PreparacionEntregaViewModel {
+//        return PreparacionEntregaViewModel(
+//            registrarPreparacionEntregaUseCase = provideRegistrarPreparacionEntregaUseCase(context)
+//        )
+//    }
+//
+////
+////    fun provideVentaPedidoRepository(context: Context): VentaPedidoRepositoryImpl {
+////        return VentaPedidoRepositoryImpl(
+////            db = provideDatabase(context)
+////        )
+////    }
+//
+//    fun provideRegistrarMezclaUseCase(context: Context): RegistrarMezclaUseCase {
+//        val db = provideDatabase(context)
+//        return RegistrarMezclaUseCase(
+//            mezclaDao = db.mezclaDao(),
+//            inventarioDao = db.inventarioDao()
+//        )
+//    }
+//
+//    fun provideAsignarMezclaAPedidoUseCase(context: Context): AsignarMezclaAPedidoUseCase {
+//        val db = provideDatabase(context)
+//        return AsignarMezclaAPedidoUseCase(
+//            ventaPedidoDao = db.ventaPedidoDao(),
+//            mezclaDao = db.mezclaDao(),
+//            asignacionDao = db.asignacionMezclaPedidoDao()
+//        )
+//    }
+//
+//    fun provideMezclasViewModel(context: Context): MezclasViewModel {
+//        val db = provideDatabase(context)
+//        return MezclasViewModel(
+//            registrarMezclaUseCase = provideRegistrarMezclaUseCase(context),
+//            productoDao = db.productoDao(),
+//            compraCafeDao = db.compraDao()
+//        )
+//    }
+//
+//    fun provideMezclaRepository(context: Context): MezclaRepository {
+//        return MezclaRepositoryImpl(
+//            db = provideDatabase(context)
+//        )
+//    }
+//
+//    fun provideRegistrarMezclaUseCase(context: Context): RegistrarMezclaUseCase {
+//        return RegistrarMezclaUseCase(
+//            repository = provideMezclaRepository(context)
+//        )
+//    }
+//
+//    fun provideAsignacionMezclaPedidoViewModel(context: Context): AsignacionMezclaPedidoViewModel {
+//        val db = provideDatabase(context)
+//        return AsignacionMezclaPedidoViewModel(
+//            asignarMezclaAPedidoUseCase = provideAsignarMezclaAPedidoUseCase(context),
+//            ventaPedidoDao = db.ventaPedidoDao(),
+//            mezclaDao = db.mezclaDao()
+//        )
+//    }
+
+
+
+    //-------------------------------------------------------------------------------------
+
+//fun provideVentaPedidoRepository(context: Context): VentaPedidoRepository {
+//    return VentaPedidoRepositoryImpl(
+//        db = provideDatabase(context)
+//    )
+//}
+//
+//    fun provideRegistrarVentaPedidoUseCase(context: Context): RegistrarVentaPedidoUseCase {
+//        return RegistrarVentaPedidoUseCase(
+//            repository = provideVentaPedidoRepository(context)
+//        )
+//    }
+//
+//    fun provideListarVentasPedidoUseCase(context: Context): ListarVentasPedidoUseCase {
+//        return ListarVentasPedidoUseCase(
+//            repository = provideVentaPedidoRepository(context)
+//        )
+//    }
+//
+//    fun provideVentasPedidoViewModel(context: Context): VentasPedidoViewModel {
+//        return VentasPedidoViewModel(
+//            registrarVentaPedidoUseCase = provideRegistrarVentaPedidoUseCase(context),
+//            listarVentasPedidoUseCase = provideListarVentasPedidoUseCase(context)
+//        )
+//    }
+//
+//    fun provideMezclaRepository(context: Context): MezclaRepository {
+//        val db = provideDatabase(context)
+//        return MezclaRepositoryImpl(
+//            db = db,
+//            mezclaDao = db.mezclaDao(),
+//            inventarioDao = db.inventarioDao()
+//        )
+//    }
+//
+//    fun provideRegistrarMezclaUseCase(context: Context): RegistrarMezclaUseCase {
+//        return RegistrarMezclaUseCase(
+//            repository = provideMezclaRepository(context)
+//        )
+//    }
+//
+//    fun provideAsignarMezclaAPedidoUseCase(context: Context): AsignarMezclaAPedidoUseCase {
+//        val db = provideDatabase(context)
+//        return AsignarMezclaAPedidoUseCase(
+//            ventaPedidoDao = db.ventaPedidoDao(),
+//            mezclaDao = db.mezclaDao(),
+//            asignacionDao = db.asignacionMezclaPedidoDao()
+//        )
+//    }
+//
+//    fun provideMezclasViewModel(context: Context): MezclasViewModel {
+//        val db = provideDatabase(context)
+//        return MezclasViewModel(
+//            registrarMezclaUseCase = provideRegistrarMezclaUseCase(context),
+//            productoDao = db.productoDao(),
+//            compraCafeDao = db.compraDao()
+//        )
+//    }
+//
+//    fun provideAsignacionMezclaPedidoViewModel(context: Context): AsignacionMezclaPedidoViewModel {
+//        val db = provideDatabase(context)
+//        return AsignacionMezclaPedidoViewModel(
+//            asignarMezclaAPedidoUseCase = provideAsignarMezclaAPedidoUseCase(context),
+//            ventaPedidoDao = db.ventaPedidoDao(),
+//            mezclaDao = db.mezclaDao()
+//        )
+//    }
+
     fun provideVentaPedidoRepository(context: Context): VentaPedidoRepository {
         return VentaPedidoRepositoryImpl(
             db = provideDatabase(context)
@@ -299,4 +482,66 @@ object AppModule {
         )
     }
 
+    fun providePreparacionEntregaRepository(context: Context): PreparacionEntregaRepository {
+        return PreparacionEntregaRepositoryImpl(
+            db = provideDatabase(context)
+        )
+    }
+
+    fun provideRegistrarPreparacionEntregaUseCase(context: Context): RegistrarPreparacionEntregaUseCase {
+        val db = provideDatabase(context)
+        return RegistrarPreparacionEntregaUseCase(
+            inventarioDao = db.inventarioDao(),
+            preparacionEntregaDao = db.preparacionEntregaDao(),
+            ventaPedidoDao = db.ventaPedidoDao()
+        )
+    }
+
+    fun providePreparacionEntregaViewModel(context: Context): PreparacionEntregaViewModel {
+        return PreparacionEntregaViewModel(
+            registrarPreparacionEntregaUseCase = provideRegistrarPreparacionEntregaUseCase(context)
+        )
+    }
+
+    fun provideMezclaRepository(context: Context): MezclaRepository {
+        val db = provideDatabase(context)
+        return MezclaRepositoryImpl(
+            db = db,
+            mezclaDao = db.mezclaDao(),
+            inventarioDao = db.inventarioDao()
+        )
+    }
+
+    fun provideRegistrarMezclaUseCase(context: Context): RegistrarMezclaUseCase {
+        return RegistrarMezclaUseCase(
+            repository = provideMezclaRepository(context)
+        )
+    }
+
+    fun provideAsignarMezclaAPedidoUseCase(context: Context): AsignarMezclaAPedidoUseCase {
+        val db = provideDatabase(context)
+        return AsignarMezclaAPedidoUseCase(
+            ventaPedidoDao = db.ventaPedidoDao(),
+            mezclaDao = db.mezclaDao(),
+            asignacionDao = db.asignacionMezclaPedidoDao()
+        )
+    }
+
+    fun provideMezclasViewModel(context: Context): MezclasViewModel {
+        val db = provideDatabase(context)
+        return MezclasViewModel(
+            registrarMezclaUseCase = provideRegistrarMezclaUseCase(context),
+            productoDao = db.productoDao(),
+            compraCafeDao = db.compraDao()
+        )
+    }
+
+    fun provideAsignacionMezclaPedidoViewModel(context: Context): AsignacionMezclaPedidoViewModel {
+        val db = provideDatabase(context)
+        return AsignacionMezclaPedidoViewModel(
+            asignarMezclaAPedidoUseCase = provideAsignarMezclaAPedidoUseCase(context),
+            ventaPedidoDao = db.ventaPedidoDao(),
+            mezclaDao = db.mezclaDao()
+        )
+    }
 }

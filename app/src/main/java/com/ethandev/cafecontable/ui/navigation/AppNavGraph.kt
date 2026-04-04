@@ -1,17 +1,18 @@
-
 package com.ethandev.cafecontable.ui.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.internal.composableLambda
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.ethandev.cafecontable.domain.model.CuentaPorCobrarModel
+import androidx.navigation.navArgument
+import com.ethandev.cafecontable.ui.screen.asignacionmezcla.AsignacionMezclaPedidoScreen
+import com.ethandev.cafecontable.ui.screen.asignacionmezcla.AsignacionMezclaPedidoViewModel
 import com.ethandev.cafecontable.ui.screen.compras.CompraCafeScreen
 import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
 import com.ethandev.cafecontable.ui.screen.cuentasporcobrar.CuentasPorCobrarScreen
@@ -25,6 +26,10 @@ import com.ethandev.cafecontable.ui.screen.historialventas.HistorialVentasViewMo
 import com.ethandev.cafecontable.ui.screen.home.HomeScreen
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioScreen
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
+import com.ethandev.cafecontable.ui.screen.mezcla.MezclasScreen
+import com.ethandev.cafecontable.ui.screen.mezcla.MezclasViewModel
+import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntregaScreen
+import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntregaViewModel
 import com.ethandev.cafecontable.ui.screen.prestamos.ConsultaPrestamosScreen
 import com.ethandev.cafecontable.ui.screen.prestamos.PrestamosScreen
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeScreen
@@ -37,13 +42,16 @@ import com.ethandev.cafecontable.ui.viewmodel.PrestamosViewModel
 fun AppNavGraph(
     compraVm: CompraCafeViewModel,
     ventaVm: VentaCafeViewModel,
-    ventasPedidoVm: VentasPedidoViewModel,
     inventarioVm: InventarioViewModel,
     historialComprasVm: HistorialComprasViewModel,
     historialVentasVm: HistorialVentasViewModel,
     cuentasPorCobrarVm: CuentasPorCobrarViewModel,
     cuentasPorPagarVm: CuentasPorPagarViewModel,
-    prestamosVm:PrestamosViewModel
+    prestamosVm: PrestamosViewModel,
+    ventasPedidoVm: VentasPedidoViewModel,
+    preparacionEntregaVm: PreparacionEntregaViewModel,
+    mezclaVm : MezclasViewModel,
+    asignacionMezclaPedidoVm : AsignacionMezclaPedidoViewModel
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -52,24 +60,30 @@ fun AppNavGraph(
     val title = when (currentRoute) {
         Routes.COMPRAS -> "Compras"
         Routes.VENTAS -> "Ventas"
+        Routes.VENTAS_PEDIDO -> "Ventas / Pedidos"
+        Routes.PREPARACION_ENTREGA_ARG,
+        Routes.PREPARACION_ENTREGA -> "Preparación de Mezcla"
         Routes.INVENTARIO -> "Inventario"
         Routes.HISTORIAL_COMPRA -> "Historial Compras"
         Routes.HISTORIAL_VENTA -> "Historial Ventas"
         Routes.CUENTAS_POR_COBRAR -> "Cuentas Por Cobrar"
         Routes.CUENTAS_POR_PAGAR -> "Cuentas Por Pagar"
-        Routes.PRESTAMOS ->"prestamos"
-
+        Routes.PRESTAMOS -> "Prestamos"
+        Routes.CONSULTA_PRESTAMOS -> "Consulta Prestamos"
         else -> "Inicio"
     }
-
-   // val showBack = currentRoute != Routes.HOME
 
     val showBack = currentRoute == Routes.HISTORIAL_COMPRA ||
             currentRoute == Routes.HISTORIAL_VENTA ||
             currentRoute == Routes.CUENTAS_POR_COBRAR ||
             currentRoute == Routes.CUENTAS_POR_PAGAR ||
-            currentRoute == Routes.PRESTAMOS
-
+            currentRoute == Routes.PRESTAMOS ||
+            currentRoute == Routes.CONSULTA_PRESTAMOS ||
+            currentRoute == Routes.VENTAS_PEDIDO ||
+            currentRoute == Routes.PREPARACION_ENTREGA_ARG ||
+            currentRoute == Routes.MEZCLAS ||
+            currentRoute == Routes.ASIGNACION_MEZCLA_PEDIDO ||
+            currentRoute?.startsWith("${Routes.PREPARACION_ENTREGA}/") == true
 
     Scaffold(
         topBar = {
@@ -91,17 +105,18 @@ fun AppNavGraph(
                     innerPadding = innerPadding,
                     onGoCompras = { navController.navigate(Routes.COMPRAS) },
                     onGoVentas = { navController.navigate(Routes.VENTAS) },
-                    onGoVentasPedido = { navController.navigate(Routes.VENTASPEDIDO) },
-
+                    onGoVentasPedido = { navController.navigate(Routes.VENTAS_PEDIDO) },
                     onGoInventario = { navController.navigate(Routes.INVENTARIO) },
-                    onGoHistorialCompras = {navController.navigate(Routes.HISTORIAL_COMPRA)},
-                    onGoHistorialVentas = { navController.navigate(Routes.HISTORIAL_VENTA)},
-                    onGoCuentasPorCobrar = {navController.navigate(Routes.CUENTAS_POR_COBRAR)},
-                    onGoCuentasPorPagar = {navController.navigate(Routes.CUENTAS_POR_PAGAR)},
-                    onGoPrestamos = {navController.navigate(Routes.PRESTAMOS)}
+                    onGoHistorialCompras = { navController.navigate(Routes.HISTORIAL_COMPRA) },
+                    onGoHistorialVentas = { navController.navigate(Routes.HISTORIAL_VENTA) },
+                    onGoCuentasPorCobrar = { navController.navigate(Routes.CUENTAS_POR_COBRAR) },
+                    onGoCuentasPorPagar = { navController.navigate(Routes.CUENTAS_POR_PAGAR) },
+                    onGoPrestamos = { navController.navigate(Routes.PRESTAMOS) },
+                    onGoMezclas  = { navController.navigate(Routes.MEZCLAS) },
+                    onGoAsignacionMezclaPedido  = { navController.navigate(Routes.ASIGNACION_MEZCLA_PEDIDO) }
 
 
-                )
+                    )
             }
 
             composable(Routes.COMPRAS) {
@@ -112,38 +127,66 @@ fun AppNavGraph(
                 VentaCafeScreen(ventaVm)
             }
 
-            composable(Routes.VENTASPEDIDO) {
-                VentasPedidoScreen(ventasPedidoVm)
+            composable(Routes.VENTAS_PEDIDO) {
+                VentasPedidoScreen(
+                    vm = ventasPedidoVm,
+                    onPrepararEntrega = { ventaId ->
+                        navController.navigate(Routes.preparacionEntregaRoute(ventaId))
+                    }
+                )
+            }
+
+            composable(Routes.MEZCLAS) {
+                MezclasScreen(mezclaVm)
+            }
+
+            composable(Routes.ASIGNACION_MEZCLA_PEDIDO) {
+                AsignacionMezclaPedidoScreen(asignacionMezclaPedidoVm)
+            }
+
+            composable(
+                route = Routes.PREPARACION_ENTREGA_ARG,
+                arguments = listOf(
+                    navArgument("ventaId") {
+                        type = NavType.StringType
+                    }
+                )
+            ) { backStack ->
+                val ventaId = backStack.arguments?.getString("ventaId").orEmpty()
+
+                PreparacionEntregaScreen(
+                    ventaId = ventaId,
+                    vm = preparacionEntregaVm
+                )
             }
 
             composable(Routes.INVENTARIO) {
                 InventarioScreen(inventarioVm)
             }
 
-            composable(Routes.HISTORIAL_COMPRA){
+            composable(Routes.HISTORIAL_COMPRA) {
                 HistorialComprasScreen(historialComprasVm)
             }
 
-            composable(Routes.HISTORIAL_VENTA){
+            composable(Routes.HISTORIAL_VENTA) {
                 HistorialVentasScreen(historialVentasVm)
             }
 
-            composable(Routes.CUENTAS_POR_COBRAR){
+            composable(Routes.CUENTAS_POR_COBRAR) {
                 CuentasPorCobrarScreen(cuentasPorCobrarVm)
             }
 
-            composable(Routes.CUENTAS_POR_PAGAR){
+            composable(Routes.CUENTAS_POR_PAGAR) {
                 CuentasPorPagarScreen(cuentasPorPagarVm)
             }
 
-            composable(Routes.PRESTAMOS){
-                PrestamosScreen(navController,prestamosVm,innerPadding)
+            composable(Routes.PRESTAMOS) {
+                PrestamosScreen(navController, prestamosVm, innerPadding)
             }
 
-            composable(Routes.CONSULTA_PRESTAMOS){
-                ConsultaPrestamosScreen(prestamosVm,innerPadding)
+            composable(Routes.CONSULTA_PRESTAMOS) {
+                ConsultaPrestamosScreen(prestamosVm, innerPadding)
             }
-
         }
     }
 }

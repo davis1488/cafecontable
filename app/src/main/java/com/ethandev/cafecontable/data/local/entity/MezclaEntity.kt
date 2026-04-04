@@ -1,0 +1,17 @@
+package com.ethandev.cafecontable.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "mezcla")
+data class MezclaEntity(
+    @PrimaryKey
+    val id: String,
+    val fecha: Long,
+    val cantidadTotal: Double,
+    val cantidadDisponible: Double,
+    val costoTotal: Long,
+    val costoPromedioKg: Long,
+    val estado: String,
+    val nota: String?
+)

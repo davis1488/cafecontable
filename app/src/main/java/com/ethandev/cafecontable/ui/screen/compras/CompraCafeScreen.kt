@@ -31,8 +31,8 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
     val state by vm.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val productos = listOf("Cafe", "Pasilla, Regular")
-    val unidades = listOf("KG", "LB", "ARROBA")
+    val productos = listOf("Cafe", "Pasilla", "Regular")
+    val unidades = listOf("KG")
 
     var producto by remember { mutableStateOf(productos[0]) }
     var unidad by remember { mutableStateOf(unidades[0]) }
