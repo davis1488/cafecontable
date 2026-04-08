@@ -31,10 +31,12 @@ import com.ethandev.cafecontable.domain.repository.PreparacionEntregaRepository
 import com.ethandev.cafecontable.domain.repository.VentaPedidoRepository
 import com.ethandev.cafecontable.domain.repository.VentaRepository
 import com.ethandev.cafecontable.domain.usecase.ActualizarCompraUseCase
+import com.ethandev.cafecontable.domain.usecase.ActualizarEstadoMezclaUseCase
 import com.ethandev.cafecontable.domain.usecase.ActualizarMovimientoKardexUseCase
 import com.ethandev.cafecontable.domain.usecase.AnularCompraUseCase
 import com.ethandev.cafecontable.domain.usecase.AsignarMezclaAPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.BuscarPrestamosUseCase
+import com.ethandev.cafecontable.domain.usecase.FinalizarVentaPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentaPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentasPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosPrestamoUseCase
@@ -43,9 +45,15 @@ import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarPrestamosUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarVentasPedidoUseCase
+import com.ethandev.cafecontable.domain.usecase.MarcarMezclaAnalizadoUseCase
+import com.ethandev.cafecontable.domain.usecase.MarcarMezclaEntregadoUseCase
+import com.ethandev.cafecontable.domain.usecase.MarcarMezclaPendienteEntregaUseCase
+import com.ethandev.cafecontable.domain.usecase.MarcarVentaPedidoComoAnalizadoUseCase
+import com.ethandev.cafecontable.domain.usecase.MarcarVentaPedidoComoEntregadoUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerCompraPorIdUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerExistenciaUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialComprasUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialMezclasUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialVentasUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerMovimientoKardexPorCompraIdUseCase
@@ -463,6 +471,12 @@ object AppModule {
         )
     }
 
+
+
+
+    ///////////////////////-----------------------------
+
+
     fun provideRegistrarVentaPedidoUseCase(context: Context): RegistrarVentaPedidoUseCase {
         return RegistrarVentaPedidoUseCase(
             repository = provideVentaPedidoRepository(context)
@@ -475,10 +489,39 @@ object AppModule {
         )
     }
 
+    fun provideMarcarVentaPedidoComoEntregadoUseCase(context: Context): MarcarVentaPedidoComoEntregadoUseCase {
+        return MarcarVentaPedidoComoEntregadoUseCase(
+            repository = provideVentaPedidoRepository(context)
+        )
+    }
+
+    fun provideMarcarVentaPedidoComoAnalizadoUseCase(context: Context): MarcarVentaPedidoComoAnalizadoUseCase {
+        return MarcarVentaPedidoComoAnalizadoUseCase(
+            repository = provideVentaPedidoRepository(context)
+        )
+    }
+
+    fun provideFinalizarVentaPedidoUseCase(context: Context): FinalizarVentaPedidoUseCase {
+        return FinalizarVentaPedidoUseCase(
+            repository = provideVentaPedidoRepository(context)
+        )
+    }
+
+//    fun provideVentasPedidoViewModel(context: Context): VentasPedidoViewModel {
+//        return VentasPedidoViewModel(
+//            registrarVentaPedidoUseCase = provideRegistrarVentaPedidoUseCase(context),
+//            listarVentasPedidoUseCase = provideListarVentasPedidoUseCase(context),
+//            marcarVentaPedidoComoEntregadoUseCase = provideMarcarVentaPedidoComoEntregadoUseCase
+//        )
+//    }
+
     fun provideVentasPedidoViewModel(context: Context): VentasPedidoViewModel {
         return VentasPedidoViewModel(
             registrarVentaPedidoUseCase = provideRegistrarVentaPedidoUseCase(context),
-            listarVentasPedidoUseCase = provideListarVentasPedidoUseCase(context)
+            listarVentasPedidoUseCase = provideListarVentasPedidoUseCase(context),
+            marcarVentaPedidoComoEntregadoUseCase = provideMarcarVentaPedidoComoEntregadoUseCase(context),
+            marcarVentaPedidoComoAnalizadoUseCase = provideMarcarVentaPedidoComoAnalizadoUseCase(context),
+            finalizarVentaPedidoUseCase = provideFinalizarVentaPedidoUseCase(context)
         )
     }
 
@@ -526,12 +569,21 @@ object AppModule {
             asignacionDao = db.asignacionMezclaPedidoDao()
         )
     }
+    fun provideObtenerHistorialMezclasUseCase(context: Context): ObtenerHistorialMezclasUseCase {
+        return ObtenerHistorialMezclasUseCase(
+            repository = provideMezclaRepository(context)
+        )
+    }
 
     fun provideMezclasViewModel(context: Context): MezclasViewModel {
         val db = provideDatabase(context)
         return MezclasViewModel(
             registrarMezclaUseCase = provideRegistrarMezclaUseCase(context),
-            productoDao = db.productoDao(),
+            obtenerHistorialMezclasUseCase = provideObtenerHistorialMezclasUseCase(context),
+          //  actualizarEstadoMezclaUseCase = provideActualizarEstadoMezclaUseCase(context),
+            marcarMezclaAnalizadoUseCase = provideMarcarAnalizadoUseCase(context),
+            marcarMezclaEntregadoUseCase = provideMarcarEntregadoUseCase(context),
+            marcarMezclaPendienteEntregaUseCase = provideMarcarPendienteEntregaUseCase(context),
             compraCafeDao = db.compraDao()
         )
     }
@@ -544,4 +596,19 @@ object AppModule {
             mezclaDao = db.mezclaDao()
         )
     }
+
+    fun provideActualizarEstadoMezclaUseCase(context: Context): ActualizarEstadoMezclaUseCase {
+        return ActualizarEstadoMezclaUseCase(
+            repository = provideMezclaRepository(context)
+        )
+    }
+
+    fun provideMarcarPendienteEntregaUseCase(context: Context) =
+        MarcarMezclaPendienteEntregaUseCase(provideMezclaRepository(context))
+
+    fun provideMarcarEntregadoUseCase(context: Context) =
+        MarcarMezclaEntregadoUseCase(provideMezclaRepository(context))
+
+    fun provideMarcarAnalizadoUseCase(context: Context) =
+        MarcarMezclaAnalizadoUseCase(provideMezclaRepository(context))
 }

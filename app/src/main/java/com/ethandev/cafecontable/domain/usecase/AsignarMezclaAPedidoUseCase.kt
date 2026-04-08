@@ -60,7 +60,15 @@ class AsignarMezclaAPedidoUseCase(
         asignacionDao.insert(asignacion)
 
         val nuevaCantidadDisponible = mezcla.cantidadDisponible - input.cantidadAsignada
-        val nuevoEstadoMezcla = if (nuevaCantidadDisponible <= 0.0) "AGOTADA" else "DISPONIBLE"
+       // val nuevoEstadoMezcla = if (nuevaCantidadDisponible <= 0.0) "AGOTADA" else "DISPONIBLE"
+        val nuevoEstadoMezcla = when {
+            mezcla.estado.equals("ANALIZADA", ignoreCase = true) &&
+                    nuevaCantidadDisponible <= 0.0 -> "FINALIZADA"
+
+            mezcla.estado.equals("ANALIZADA", ignoreCase = true) -> "FINALIZADA"
+
+            else -> mezcla.estado
+        }
 
         mezclaDao.actualizarDisponibleYEstado(
             mezclaId = mezcla.id,

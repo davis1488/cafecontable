@@ -54,16 +54,43 @@ interface CompraDao {
     @Update
     suspend fun actualizar(compra: CompraCafeEntity)
 
+//    @Query("""
+//    SELECT
+//        c.id AS compraId,
+//        c.productoId AS productoId,
+//        p.nombre AS productoNombre,
+//        c.cantidad AS cantidadDisponible,
+//        c.precioUnitCompra AS precioUnitCompra
+//    FROM compra_cafe c
+//    INNER JOIN producto p ON p.id = c.productoId
+//    WHERE c.estado = 'ACTIVA'
+//    ORDER BY c.fecha DESC
+//""")
+//    suspend fun obtenerComprasDisponiblesParaMezcla(): List<CompraDisponibleDb>
+
     @Query("""
     SELECT 
         c.id AS compraId,
         c.productoId AS productoId,
         p.nombre AS productoNombre,
-        c.cantidad AS cantidadDisponible,
+        (
+            c.cantidad - COALESCE(SUM(md.cantidadUsada), 0)
+        ) AS cantidadDisponible,
         c.precioUnitCompra AS precioUnitCompra
     FROM compra_cafe c
-    INNER JOIN producto p ON p.id = c.productoId
+    INNER JOIN producto p 
+        ON p.id = c.productoId
+    LEFT JOIN mezcla_detalle md 
+        ON md.compraId = c.id
     WHERE c.estado = 'ACTIVA'
+    GROUP BY 
+        c.id,
+        c.productoId,
+        p.nombre,
+        c.cantidad,
+        c.precioUnitCompra,
+        c.fecha
+    HAVING (c.cantidad - COALESCE(SUM(md.cantidadUsada), 0)) > 0
     ORDER BY c.fecha DESC
 """)
     suspend fun obtenerComprasDisponiblesParaMezcla(): List<CompraDisponibleDb>

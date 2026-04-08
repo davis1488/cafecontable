@@ -7,9 +7,57 @@ import com.ethandev.cafecontable.domain.repository.VentaPedidoInput
 import com.ethandev.cafecontable.domain.repository.VentaPedidoRepository
 import java.util.UUID
 
+
+
 class VentaPedidoRepositoryImpl(
     private val db: AppDatabase
 ) : VentaPedidoRepository {
+
+
+    override suspend fun actualizarEstado(
+        pedidoId: String,
+        estado: String
+    ): Int {
+        return db.ventaPedidoDao().actualizarEstado(
+            pedidoId = pedidoId,
+            estado = estado
+        )
+    }
+
+    override suspend fun obtenerPorId(id: String): VentaPedido? {
+        return db.ventaPedidoDao().obtenerPorId(id)?.toDomain()
+    }
+
+    override suspend fun actualizarEntrega(
+        pedidoId: String,
+        estado: String,
+        numeroSacos: Int,
+        pesoNeto: Double,
+        pesoBruto: Double
+    ): Int {
+        return db.ventaPedidoDao().actualizarEntrega(
+            pedidoId = pedidoId,
+            estado = estado,
+            numeroSacos = numeroSacos,
+            pesoNeto = pesoNeto,
+            pesoBruto = pesoBruto
+        )
+    }
+
+
+    override suspend fun actualizarAnalisis(
+        pedidoId: String,
+        estado: String,
+        factorAnalisis: Double,
+        ajusteAnalisis: Double
+    ): Int {
+        return db.ventaPedidoDao().actualizarAnalisis(
+            pedidoId = pedidoId,
+            estado = estado,
+            factorAnalisis = factorAnalisis,
+            ajusteAnalisis = ajusteAnalisis.toLong()
+        )
+    }
 
     override suspend fun registrarVenta(input: VentaPedidoInput) {
         val cliente = input.cliente.trim()
@@ -74,6 +122,39 @@ class VentaPedidoRepositoryImpl(
         )
     }
 
+    override suspend fun marcarComoEntregado(id: String) {
+        val pedido = db.ventaPedidoDao().obtenerPorId(id)
+            ?: throw IllegalStateException("No existe el pedido")
+
+        if (pedido.cantidadAsignada <= 0.0) {
+            throw IllegalStateException("No puedes marcar como entregado un pedido sin cantidad asignada")
+        }
+
+        db.ventaPedidoDao().marcarComoEntregado(id)
+    }
+
+    override suspend fun marcarComoAnalizado(id: String) {
+        val pedido = db.ventaPedidoDao().obtenerPorId(id)
+            ?: throw IllegalStateException("No existe el pedido")
+
+        if (pedido.estado == "FINALIZADO") {
+            throw IllegalStateException("No puedes analizar un pedido finalizado")
+        }
+
+        db.ventaPedidoDao().marcarComoAnalizado(id)
+    }
+
+    override suspend fun finalizarVenta(id: String) {
+        val pedido = db.ventaPedidoDao().obtenerPorId(id)
+            ?: throw IllegalStateException("No existe el pedido")
+
+        if (pedido.estado != "ENTREGADO" && pedido.estado != "ANALIZADO") {
+            throw IllegalStateException("Solo puedes finalizar pedidos entregados o analizados")
+        }
+
+        db.ventaPedidoDao().finalizarVenta(id)
+    }
+
     private fun VentaPedidoEntity.toDomain(): VentaPedido {
         return VentaPedido(
             id = id,
@@ -88,4 +169,6 @@ class VentaPedidoRepositoryImpl(
             nota = nota
         )
     }
+
+
 }

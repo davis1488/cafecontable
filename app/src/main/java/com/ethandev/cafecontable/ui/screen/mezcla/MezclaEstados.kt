@@ -1,0 +1,6 @@
+package com.ethandev.cafecontable.ui.screen.mezcla
+
+const val ESTADO_MEZCLA_CREADO = "CREADO"
+const val ESTADO_MEZCLA_PENDIENTE_ENTREGA = "PENDIENTE_ENTREGA"
+const val ESTADO_MEZCLA_ENTREGADO = "ENTREGADO"
+const val ESTADO_MEZCLA_ANALIZADO = "ANALIZADO"

@@ -42,12 +42,18 @@ fun AsignacionMezclaPedidoScreen(
     var pedidoId by remember { mutableStateOf("") }
     var mezclaId by remember { mutableStateOf("") }
     var cantidadAsignada by remember { mutableStateOf("") }
-    var precioUnitVenta by remember { mutableStateOf("") }
+//    var precioUnitVenta by remember { mutableStateOf("") }
     var factor by remember { mutableStateOf("90") }
     var nota by remember { mutableStateOf("") }
 
+
+
+
     val pedidoSeleccionado = state.pedidosDisponibles.firstOrNull { it.pedidoId == pedidoId }
     val mezclaSeleccionada = state.mezclasDisponibles.firstOrNull { it.mezclaId == mezclaId }
+    val precioUnitVenta = pedidoSeleccionado?.precioUnitVenta?.toString() ?: ""
+
+
 
     val subtotal = viewModel.calcularSubtotal(
         cantidadAsignada = cantidadAsignada.toDoubleOrNull() ?: 0.0,
@@ -67,7 +73,7 @@ fun AsignacionMezclaPedidoScreen(
             pedidoId = ""
             mezclaId = ""
             cantidadAsignada = ""
-            precioUnitVenta = "${pedidoSeleccionado?.precioUnitVenta}"
+           // precioUnitVenta = "${pedidoSeleccionado?.precioUnitVenta}"
             factor = "90"
             nota = ""
         }
@@ -226,13 +232,23 @@ fun AsignacionMezclaPedidoScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
+//        OutlinedTextField(
+//
+//            value = precioUnitVenta,
+//            onValueChange = { precioUnitVenta = it },
+//            modifier = Modifier.fillMaxWidth(),
+//            label = { Text("Precio unitario venta") },
+//            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+//            singleLine = true
+//        )
         OutlinedTextField(
             value = precioUnitVenta,
-            onValueChange = { precioUnitVenta = it },
+            onValueChange = {},
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Precio unitario venta") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true
+            singleLine = true,
+            readOnly = true
         )
 
         Spacer(modifier = Modifier.height(12.dp))

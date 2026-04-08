@@ -53,7 +53,7 @@ import com.ethandev.cafecontable.data.local.entity.VentaPedidoEntity
         AsignacionMezclaPedidoEntity::class
 
                ],
-    version = 14,
+    version = 17,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

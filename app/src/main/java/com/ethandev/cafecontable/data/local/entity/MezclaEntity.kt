@@ -13,5 +13,14 @@ data class MezclaEntity(
     val costoTotal: Long,
     val costoPromedioKg: Long,
     val estado: String,
-    val nota: String?
+    val nota: String?,
+
+    val numeroSacosEnviados: Int? = null,
+    val kilajeEnviado: Double? = null,
+
+    val numeroSacosEntregados: Int? = null,
+    val kilajeEntregado: Double? = null,
+    val lugarEntrega: String? = null,
+
+    val factorRendimiento: Double? = null
 )

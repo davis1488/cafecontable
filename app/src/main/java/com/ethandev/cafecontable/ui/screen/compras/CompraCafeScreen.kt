@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ethandev.cafecontable.domain.repository.CompraCafeImput
+import com.ethandev.cafecontable.ui.utils.formatNumber
 
 fun parseCantidad(input: String): Double {
     val texto = input.replace(" ", "").replace(",", ".")
@@ -49,6 +50,7 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
     val cantidad = parseCantidad(cantidadTxt)
     val abono = abonoTxt.toLongOrNull() ?: 0L
     val precio = precioTxt.toLongOrNull() ?: 0L
+
     val total = if (cantidad > 0 && precio > 0) (cantidad * precio).toLong() else 0L
     val saldo = total - abono
 
@@ -151,21 +153,28 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
 
             item {
                 OutlinedTextField(
-                    value = cantidadTxt,
-                    onValueChange = { cantidadTxt = it.replace(',', '.') },
+                    value = formatNumber(cantidadTxt),
+                    onValueChange = { input ->
+                        cantidadTxt = input.filter(Char::isDigit)
+                    },
                     label = { Text("Cantidad ($unidad)") },
-                    placeholder = { Text("Ej: 50 o 12.5 o 16+40+55") },
+                    placeholder = { Text("Ej: 100") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
             item {
                 OutlinedTextField(
-                    value = precioTxt,
-                    onValueChange = { precioTxt = it.filter(Char::isDigit) },
+                    value = formatNumber(precioTxt),
+                    onValueChange = { input ->
+                        precioTxt = input.filter(Char::isDigit)
+                    },
                     label = { Text("Precio compra unitario (COP)") },
                     placeholder = { Text("Ej: 18000") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
+
                 )
             }
 
@@ -203,8 +212,10 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
             if (esCredito) {
                 item {
                     OutlinedTextField(
-                        value = abonoTxt,
-                        onValueChange = { abonoTxt = it.filter(Char::isDigit) },
+                        value = formatNumber(abonoTxt),
+                        onValueChange = { input ->
+                            abonoTxt = input.filter(Char::isDigit)
+                        },
                         label = { Text("Abono al crédito (COP)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
@@ -238,7 +249,8 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
                                     precioUnitCompra = precio,
                                     proveedor = proveedorTxt.ifBlank { null },
                                     esCredito = esCredito,
-                                    nota = notaTxt.ifBlank { null }
+                                    nota = notaTxt.ifBlank { null },
+                                    abono = abono
                                 )
                             )
 

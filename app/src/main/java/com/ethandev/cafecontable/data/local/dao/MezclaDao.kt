@@ -7,6 +7,7 @@ import androidx.room.Query
 import com.ethandev.cafecontable.data.local.entity.MezclaDetalleEntity
 import com.ethandev.cafecontable.data.local.entity.MezclaDisponibleDb
 import com.ethandev.cafecontable.data.local.entity.MezclaEntity
+import com.ethandev.cafecontable.data.local.entity.MezclaHistorialDb
 
 @Dao
 interface MezclaDao {
@@ -56,6 +57,19 @@ interface MezclaDao {
         estado: String
     )
 
+//    @Query("""
+//    SELECT
+//        m.id AS mezclaId,
+//        COALESCE(m.nota, 'Mezcla sin nota') AS descripcion,
+//        m.cantidadTotal AS cantidadTotal,
+//        m.cantidadDisponible AS cantidadDisponible,
+//        m.costoPromedioKg AS costoPromedioKg
+//    FROM mezcla m
+//    WHERE m.estado = 'DISPONIBLE'
+//    ORDER BY m.fecha DESC
+//""")
+//    suspend fun obtenerMezclasDisponiblesParaAsignacion(): List<MezclaDisponibleDb>
+
     @Query("""
     SELECT
         m.id AS mezclaId,
@@ -64,9 +78,94 @@ interface MezclaDao {
         m.cantidadDisponible AS cantidadDisponible,
         m.costoPromedioKg AS costoPromedioKg
     FROM mezcla m
-    WHERE m.estado = 'DISPONIBLE'
+    WHERE m.cantidadDisponible > 0
+      AND m.estado IN ('CREADA', 'ENTREGADA', 'ANALIZADA', 'DISPONIBLE')
     ORDER BY m.fecha DESC
-""")
+    """)
     suspend fun obtenerMezclasDisponiblesParaAsignacion(): List<MezclaDisponibleDb>
 
+//    @Query("""
+//    SELECT
+//        m.id AS id,
+//        m.fecha AS fecha,
+//        m.cantidadTotal AS cantidadTotal,
+//        m.costoTotal AS costoTotal,
+//        m.estado AS estado,
+//        m.nota AS nota
+//    FROM mezcla m
+//    ORDER BY m.fecha DESC
+//""")
+//    suspend fun obtenerHistorialMezclas(): List<MezclaHistorialDb>
+
+
+    @Query("""
+    SELECT 
+        id,
+        fecha,
+        cantidadTotal,
+        costoTotal,
+        estado,
+        nota
+    FROM mezcla
+    ORDER BY fecha DESC
+    """)
+    suspend fun obtenerHistorialMezclas(): List<MezclaHistorialDb>
+
+
+    @Query("""
+    UPDATE mezcla
+    SET estado = :estado
+    WHERE id = :mezclaId
+    """)
+    suspend fun actualizarEstadoMezcla(
+        mezclaId: String,
+        estado: String
+    ): Int
+
+    @Query("""
+    UPDATE mezcla
+    SET 
+        estado = :estado,
+        numeroSacosEnviados = :numeroSacosEnviados,
+        kilajeEnviado = :kilajeEnviado
+    WHERE id = :mezclaId
+""")
+    suspend fun marcarPendienteEntrega(
+        mezclaId: String,
+        estado: String,
+        numeroSacosEnviados: Int,
+        kilajeEnviado: Double
+    ): Int
+
+    @Query("""
+    UPDATE mezcla
+    SET 
+        estado = :estado,
+        numeroSacosEntregados = :numeroSacosEntregados,
+        kilajeEntregado = :kilajeEntregado,
+        lugarEntrega = :lugarEntrega
+    WHERE id = :mezclaId
+""")
+    suspend fun marcarEntregado(
+        mezclaId: String,
+        estado: String,
+        numeroSacosEntregados: Int,
+        kilajeEntregado: Double,
+        lugarEntrega: String
+    ): Int
+
+    @Query("""
+    UPDATE mezcla
+    SET 
+        estado = :estado,
+        factorRendimiento = :factorRendimiento
+    WHERE id = :mezclaId
+""")
+    suspend fun marcarAnalizado(
+        mezclaId: String,
+        estado: String,
+        factorRendimiento: Double
+    ): Int
 }
+
+

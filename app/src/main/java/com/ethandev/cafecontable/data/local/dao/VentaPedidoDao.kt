@@ -30,12 +30,12 @@ interface VentaPedidoDao {
     """)
     suspend fun getPendientes(): List<VentaPedidoEntity>
 
-    @Query("""
-        SELECT * FROM venta_pedido
-        WHERE id = :pedidoId
-        LIMIT 1
-    """)
-    suspend fun obtenerPorId(pedidoId: String): VentaPedidoEntity?
+//    @Query("""
+//        SELECT * FROM venta_pedido
+//        WHERE id = :pedidoId
+//        LIMIT 1
+//    """)
+//    suspend fun obtenerPorId(pedidoId: String): VentaPedidoEntity?
 
 //    @Query("""
 //        UPDATE venta_pedido
@@ -74,5 +74,86 @@ interface VentaPedidoDao {
     ORDER BY vp.fecha DESC
 """)
     suspend fun obtenerPedidosDisponiblesParaAsignacion(): List<PedidoDisponibleDb>
+
+
+
+    @Query("""
+    SELECT * 
+    FROM venta_pedido
+    WHERE id = :pedidoId
+    LIMIT 1
+""")
+    suspend fun obtenerPorId(pedidoId: String): VentaPedidoEntity?
+
+
+
+    @Query("""
+    UPDATE venta_pedido
+    SET
+        estado = :estado,
+        factorAnalisis = :factorAnalisis,
+        ajusteAnalisis = :ajusteAnalisis
+    WHERE id = :pedidoId
+""")
+    suspend fun actualizarAnalisis(
+        pedidoId: String,
+        estado: String,
+        factorAnalisis: Double,
+        ajusteAnalisis: Long
+    ): Int
+
+    @Query("""
+    UPDATE venta_pedido
+    SET
+        estado = :estado
+    WHERE id = :pedidoId
+""")
+    suspend fun actualizarEstado(
+        pedidoId: String,
+        estado: String
+    ): Int
+
+
+
+
+
+    @Query("""
+        UPDATE venta_pedido
+        SET estado = 'ENTREGADO'
+        WHERE id = :pedidoId
+    """)
+    suspend fun marcarComoEntregado(pedidoId: String)
+
+    @Query("""
+        UPDATE venta_pedido
+        SET estado = 'ANALIZADO'
+        WHERE id = :pedidoId
+    """)
+    suspend fun marcarComoAnalizado(pedidoId: String)
+
+    @Query("""
+        UPDATE venta_pedido
+        SET estado = 'FINALIZADO'
+        WHERE id = :pedidoId
+    """)
+    suspend fun finalizarVenta(pedidoId: String)
+
+
+    @Query("""
+    UPDATE venta_pedido
+    SET 
+        estado = :estado,
+        numeroSacos = :numeroSacos,
+        pesoNeto = :pesoNeto,
+        pesoBruto = :pesoBruto
+    WHERE id = :pedidoId
+""")
+    suspend fun actualizarEntrega(
+        pedidoId: String,
+        estado: String,
+        numeroSacos: Int,
+        pesoNeto: Double,
+        pesoBruto: Double
+    ): Int
 
 }

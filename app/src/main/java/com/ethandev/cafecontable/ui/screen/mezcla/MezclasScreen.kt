@@ -1,9 +1,7 @@
 package com.ethandev.cafecontable.ui.screen.mezcla
 
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -22,27 +21,32 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -54,9 +58,11 @@ fun MezclasScreen(
 
     val items = remember { mutableStateListOf<MezclaFormItem>() }
     var nota by remember { mutableStateOf("") }
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
         viewModel.cargarComprasDisponibles()
+        viewModel.cargarHistorialMezclas()
     }
 
     LaunchedEffect(state.okMsg, state.error) {
@@ -65,6 +71,7 @@ fun MezclasScreen(
             viewModel.limpiarMensajes()
             items.clear()
             nota = ""
+            viewModel.cargarHistorialMezclas()
         }
 
         state.error?.let {
@@ -73,9 +80,111 @@ fun MezclasScreen(
         }
     }
 
-    val cantidadTotal = viewModel.calcularCantidadTotal(items)
-    val costoTotal = viewModel.calcularCostoTotal(items)
-    val costoPromedio = viewModel.calcularCostoPromedioKg(items)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        Text(
+            text = "Mezclas",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(16.dp)
+        )
+
+        TabRow(selectedTabIndex = selectedTab) {
+            Tab(
+                selected = selectedTab == 0,
+                onClick = { selectedTab = 0 },
+                text = { Text("Registrar mezcla") }
+            )
+            Tab(
+                selected = selectedTab == 1,
+                onClick = { selectedTab = 1 },
+                text = { Text("Historial / estado") }
+            )
+        }
+
+        when (selectedTab) {
+            0 -> RegistrarMezclaTab(
+                state = state,
+                items = items,
+                nota = nota,
+                onNotaChange = { nota = it },
+                onAgregarCompra = { compra ->
+                    val yaAgregada = items.any { it.compraId == compra.compraId }
+                    if (yaAgregada) {
+                        Toast.makeText(
+                            context,
+                            "Esa compra ya fue agregada",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        items.add(viewModel.crearItemDesdeCompra(compra))
+                    }
+                },
+                onEliminarItem = { index ->
+                    items.removeAt(index)
+                },
+                onCantidadChange = { index, nuevaCantidad ->
+                    val item = items[index]
+                    items[index] = item.copy(cantidadUsada = nuevaCantidad)
+                },
+                calcularCantidadTotal = { viewModel.calcularCantidadTotal(items) },
+                calcularCostoTotal = { viewModel.calcularCostoTotal(items) },
+                calcularCostoPromedioKg = { viewModel.calcularCostoPromedioKg(items) },
+                onGuardar = {
+                    viewModel.registrarMezcla(
+                        items = items.toList(),
+                        nota = nota
+                    )
+                }
+            )
+
+            1 -> HistorialMezclasTab(
+                state = state,
+                onMarcarPendienteEntrega = { mezclaId, numeroSacos, kilajeEnviado ->
+                    viewModel.marcarPendienteEntrega(
+                        mezclaId = mezclaId,
+                        numeroSacosEnviados = numeroSacos,
+                        kilajeEnviado = kilajeEnviado
+                    )
+                },
+                onMarcarEntregado = { mezclaId, numeroSacos, kilajeEntregado, lugarEntrega ->
+                    viewModel.marcarEntregado(
+                        mezclaId = mezclaId,
+                        numeroSacosEntregados = numeroSacos,
+                        kilajeEntregado = kilajeEntregado,
+                        lugarEntrega = lugarEntrega
+                    )
+                },
+                onMarcarAnalizado = { mezclaId, factor ->
+                    viewModel.marcarAnalizado(
+                        mezclaId = mezclaId,
+                        factorRendimiento = factor
+                    )
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun RegistrarMezclaTab(
+    state: MezclasState,
+    items: List<MezclaFormItem>,
+    nota: String,
+    onNotaChange: (String) -> Unit,
+    onAgregarCompra: (CompraDisponibleUi) -> Unit,
+    onEliminarItem: (Int) -> Unit,
+    onCantidadChange: (Int, Double) -> Unit,
+    calcularCantidadTotal: () -> Double,
+    calcularCostoTotal: () -> Long,
+    calcularCostoPromedioKg: () -> Long,
+    onGuardar: () -> Unit
+) {
+    val cantidadTotal = calcularCantidadTotal()
+    val costoTotal = calcularCostoTotal()
+    val costoPromedio = calcularCostoPromedioKg()
 
     Column(
         modifier = Modifier
@@ -83,14 +192,6 @@ fun MezclasScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        Text(
-            text = "Registrar mezcla",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
         SectionHeader(
             titulo = "Compras disponibles",
             subtitulo = "Selecciona una compra activa para agregarla a la mezcla"
@@ -109,7 +210,10 @@ fun MezclasScreen(
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    CircularProgressIndicator(modifier = Modifier.width(22.dp), strokeWidth = 2.dp)
+                    CircularProgressIndicator(
+                        modifier = Modifier.width(22.dp),
+                        strokeWidth = 2.dp
+                    )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text("Cargando compras disponibles...")
                 }
@@ -152,17 +256,7 @@ fun MezclasScreen(
                             Spacer(modifier = Modifier.height(10.dp))
 
                             Button(
-                                onClick = {
-                                    if (yaAgregada) {
-                                        Toast.makeText(
-                                            context,
-                                            "Esa compra ya fue agregada",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    } else {
-                                        items.add(viewModel.crearItemDesdeCompra(compra))
-                                    }
-                                },
+                                onClick = { onAgregarCompra(compra) },
                                 enabled = !yaAgregada,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -217,7 +311,7 @@ fun MezclasScreen(
                                     fontWeight = FontWeight.Bold
                                 )
 
-                                IconButton(onClick = { items.removeAt(index) }) {
+                                IconButton(onClick = { onEliminarItem(index) }) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
                                         contentDescription = "Eliminar item"
@@ -246,7 +340,7 @@ fun MezclasScreen(
                                 value = if (item.cantidadUsada == 0.0) "" else item.cantidadUsada.toString(),
                                 onValueChange = { value ->
                                     val nuevaCantidad = value.toDoubleOrNull() ?: 0.0
-                                    items[index] = item.copy(cantidadUsada = nuevaCantidad)
+                                    onCantidadChange(index, nuevaCantidad)
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 label = { Text("Cantidad usada (kg)") },
@@ -300,7 +394,7 @@ fun MezclasScreen(
 
         OutlinedTextField(
             value = nota,
-            onValueChange = { nota = it },
+            onValueChange = onNotaChange,
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Nota") },
             minLines = 3
@@ -309,12 +403,7 @@ fun MezclasScreen(
         Spacer(modifier = Modifier.height(18.dp))
 
         Button(
-            onClick = {
-                viewModel.registrarMezcla(
-                    items = items.toList(),
-                    nota = nota
-                )
-            },
+            onClick = onGuardar,
             modifier = Modifier.fillMaxWidth(),
             enabled = !state.loading && items.isNotEmpty()
         ) {
@@ -374,3 +463,510 @@ private fun InfoRow(
         )
     }
 }
+
+//@Composable
+//private fun HistorialMezclasTab(
+//    state: MezclasState
+//) {
+//    if (state.loadingHistorial) {
+//        Column(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .padding(16.dp),
+//            verticalArrangement = Arrangement.Center,
+//            horizontalAlignment = Alignment.CenterHorizontally
+//        ) {
+//            CircularProgressIndicator()
+//            Spacer(modifier = Modifier.height(12.dp))
+//            Text("Cargando historial de mezclas...")
+//        }
+//        return
+//    }
+//
+//    if (state.historialMezclas.isEmpty()) {
+//        Column(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .padding(16.dp),
+//            verticalArrangement = Arrangement.Center,
+//            horizontalAlignment = Alignment.CenterHorizontally
+//        ) {
+//            Text(
+//                text = "Todavía no hay mezclas registradas",
+//                style = MaterialTheme.typography.bodyLarge
+//            )
+//        }
+//        return
+//    }
+//
+//    LazyColumn(
+//        modifier = Modifier
+//            .fillMaxSize()
+//            .padding(16.dp),
+//        verticalArrangement = Arrangement.spacedBy(12.dp)
+//    ) {
+//        itemsIndexed(state.historialMezclas) { index, mezcla ->
+//            Card(
+//                modifier = Modifier.fillMaxWidth(),
+//                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+//            ) {
+//                Column(modifier = Modifier.padding(14.dp)) {
+//                    Text(
+//                        text = "Mezcla ${index + 1}",
+//                        style = MaterialTheme.typography.titleLarge,
+//                        fontWeight = FontWeight.Bold
+//                    )
+//
+//                    Spacer(modifier = Modifier.height(8.dp))
+//
+//                    InfoRow("ID", mezcla.id)
+//                    InfoRow("Fecha", mezcla.fechaTexto)
+//                    InfoRow("Cantidad total", "${mezcla.cantidadTotal} kg")
+//                    InfoRow("Costo total", "$${mezcla.costoTotal}")
+//                    InfoRow("Estado", mezcla.estado)
+//
+//                    if (!mezcla.nota.isNullOrBlank()) {
+//                        Spacer(modifier = Modifier.height(8.dp))
+//                        Text(
+//                            text = "Nota: ${mezcla.nota}",
+//                            style = MaterialTheme.typography.bodyMedium
+//                        )
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
+
+
+@Composable
+private fun HistorialMezclasTab(
+    state: MezclasState,
+    onMarcarPendienteEntrega: (String, Int, Double) -> Unit,
+    onMarcarEntregado: (String, Int, Double, String) -> Unit,
+    onMarcarAnalizado: (String, Double) -> Unit
+) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    var mezclaSeleccionadaId by remember { mutableStateOf<String?>(null) }
+    var mostrarDialogPendiente by remember { mutableStateOf(false) }
+    var mostrarDialogEntregado by remember { mutableStateOf(false) }
+    var mostrarDialogAnalizado by remember { mutableStateOf(false) }
+
+    val tabs = listOf(
+        ESTADO_MEZCLA_CREADO,
+        ESTADO_MEZCLA_PENDIENTE_ENTREGA,
+        ESTADO_MEZCLA_ENTREGADO,
+        ESTADO_MEZCLA_ANALIZADO
+    )
+
+    val estadoSeleccionado = tabs[selectedTab]
+
+    val mezclasFiltradas = state.historialMezclas.filter {
+        it.estado.equals(estadoSeleccionado, ignoreCase = true)
+    }
+
+    if (mostrarDialogPendiente && mezclaSeleccionadaId != null) {
+        PendienteEntregaDialog(
+            onDismiss = {
+                mostrarDialogPendiente = false
+                mezclaSeleccionadaId = null
+            },
+            onConfirm = { numeroSacos, kilajeEnviado ->
+                onMarcarPendienteEntrega(
+                    mezclaSeleccionadaId!!,
+                    numeroSacos,
+                    kilajeEnviado
+                )
+                mostrarDialogPendiente = false
+                mezclaSeleccionadaId = null
+            }
+        )
+    }
+
+    if (mostrarDialogEntregado && mezclaSeleccionadaId != null) {
+        EntregadoDialog(
+            onDismiss = {
+                mostrarDialogEntregado = false
+                mezclaSeleccionadaId = null
+            },
+            onConfirm = { numeroSacos, kilaje, lugar ->
+                onMarcarEntregado(
+                    mezclaSeleccionadaId!!,
+                    numeroSacos,
+                    kilaje,
+                    lugar
+                )
+                mostrarDialogEntregado = false
+                mezclaSeleccionadaId = null
+            }
+        )
+    }
+
+    if (mostrarDialogAnalizado && mezclaSeleccionadaId != null) {
+        AnalizadoDialog(
+            onDismiss = {
+                mostrarDialogAnalizado = false
+                mezclaSeleccionadaId = null
+            },
+            onConfirm = { factor ->
+                onMarcarAnalizado(
+                    mezclaSeleccionadaId!!,
+                    factor
+                )
+                mostrarDialogAnalizado = false
+                mezclaSeleccionadaId = null
+            }
+        )
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        TabRow(selectedTabIndex = selectedTab) {
+            tabs.forEachIndexed { index, estado ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = { Text(estado) }
+                )
+            }
+        }
+
+        if (state.loadingHistorial) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator()
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Cargando mezclas...")
+            }
+            return@Column
+        }
+
+        if (mezclasFiltradas.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "No hay mezclas en estado $estadoSeleccionado",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+            return@Column
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            itemsIndexed(mezclasFiltradas) { index, mezcla ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "Mezcla ${index + 1}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        InfoRow("ID", mezcla.id)
+                        InfoRow("Fecha", mezcla.fechaTexto)
+                        InfoRow("Cantidad total", "${mezcla.cantidadTotal} kg")
+                        InfoRow("Costo total", "$${mezcla.costoTotal}")
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        EstadoMezclaChip(estado = mezcla.estado)
+
+                        if (!mezcla.nota.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Nota: ${mezcla.nota}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        AccionesEstadoMezcla(
+                            estadoActual = mezcla.estado,
+                            onIrPendienteEntrega = {
+                                mezclaSeleccionadaId = mezcla.id
+                                mostrarDialogPendiente = true
+                            },
+                            onIrEntregado = {
+                                mezclaSeleccionadaId = mezcla.id
+                                mostrarDialogEntregado = true
+                            },
+                            onIrAnalizado = {
+                                mezclaSeleccionadaId = mezcla.id
+                                mostrarDialogAnalizado = true
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EstadoMezclaChip(estado: String) {
+
+    val (colorFondo, colorTexto) = when (estado.uppercase()) {
+        ESTADO_MEZCLA_CREADO -> Pair(
+            Color(0xFFE3F2FD), // azul claro
+            Color(0xFF1565C0)
+        )
+
+        ESTADO_MEZCLA_ANALIZADO -> Pair(
+            Color(0xFFFFF3E0), // naranja claro
+            Color(0xFFE65100)
+        )
+
+        ESTADO_MEZCLA_ENTREGADO -> Pair(
+            Color(0xFFE8F5E9), // verde claro
+            Color(0xFF2E7D32)
+        )
+
+        else -> Pair(Color.LightGray, Color.Black)
+    }
+
+    Surface(
+        color = colorFondo,
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Text(
+            text = estado,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            color = colorTexto,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+@Composable
+private fun AccionesEstadoMezcla(
+    estadoActual: String,
+    onIrPendienteEntrega: () -> Unit,
+    onIrEntregado: () -> Unit,
+    onIrAnalizado: () -> Unit
+) {
+    when (estadoActual.uppercase()) {
+        ESTADO_MEZCLA_CREADO -> {
+            Button(
+                onClick = onIrPendienteEntrega,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Enviar")
+            }
+        }
+
+        ESTADO_MEZCLA_PENDIENTE_ENTREGA -> {
+            Button(
+                onClick = onIrEntregado,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Registrar entrega")
+            }
+        }
+
+        ESTADO_MEZCLA_ENTREGADO -> {
+            Button(
+                onClick = onIrAnalizado,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Registrar análisis")
+            }
+        }
+
+        ESTADO_MEZCLA_ANALIZADO -> {
+            Text(
+                text = "Proceso finalizado",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@Composable
+fun PendienteEntregaDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (numeroSacos: Int, kilajeEnviado: Double) -> Unit
+) {
+    var numeroSacosTxt by remember { mutableStateOf("") }
+    var kilajeEnviadoTxt by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Pasar a pendiente de entrega") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedTextField(
+                    value = numeroSacosTxt,
+                    onValueChange = { numeroSacosTxt = it },
+                    label = { Text("Número de sacos enviados") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = kilajeEnviadoTxt,
+                    onValueChange = { kilajeEnviadoTxt = it.replace(',', '.') },
+                    label = { Text("Kilaje enviado") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val numeroSacos = numeroSacosTxt.toIntOrNull() ?: 0
+                    val kilajeEnviado = kilajeEnviadoTxt.toDoubleOrNull() ?: 0.0
+
+                    if (numeroSacos > 0 && kilajeEnviado > 0.0) {
+                        onConfirm(numeroSacos, kilajeEnviado)
+                    }
+                }
+            ) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            OutlinedButton (onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+@Composable
+fun EntregadoDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (
+        numeroSacosEntregados: Int,
+        kilajeEntregado: Double,
+        lugarEntrega: String
+    ) -> Unit
+) {
+    var numeroSacosTxt by remember { mutableStateOf("") }
+    var kilajeEntregadoTxt by remember { mutableStateOf("") }
+    var lugarEntrega by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Registrar entrega") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedTextField(
+                    value = numeroSacosTxt,
+                    onValueChange = { numeroSacosTxt = it },
+                    label = { Text("Número de sacos entregados") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = kilajeEntregadoTxt,
+                    onValueChange = { kilajeEntregadoTxt = it.replace(',', '.') },
+                    label = { Text("Kilaje entregado") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = lugarEntrega,
+                    onValueChange = { lugarEntrega = it },
+                    label = { Text("Lugar de entrega") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val numeroSacos = numeroSacosTxt.toIntOrNull() ?: 0
+                    val kilajeEntregado = kilajeEntregadoTxt.toDoubleOrNull() ?: 0.0
+                    val lugar = lugarEntrega.trim()
+
+                    if (numeroSacos > 0 && kilajeEntregado > 0.0 && lugar.isNotBlank()) {
+                        onConfirm(numeroSacos, kilajeEntregado, lugar)
+                    }
+                }
+            ) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+@Composable
+fun AnalizadoDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (factorRendimiento: Double) -> Unit
+) {
+    var factorTxt by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Registrar análisis") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = factorTxt,
+                    onValueChange = { factorTxt = it.replace(',', '.') },
+                    label = { Text("Factor de rendimiento") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val factor = factorTxt.toDoubleOrNull() ?: 0.0
+                    if (factor > 0.0) {
+                        onConfirm(factor)
+                    }
+                }
+            ) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+

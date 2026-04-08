@@ -105,8 +105,8 @@ fun HomeScreen(
 
         item {
             HomeMenuCard(
-                title = "Registrar Anuncio",
-                subtitle = "Registra Anuncioas por entregar",
+                title = " Anuncio y Entregas",
+                subtitle = "Registra Anuncios y entregar",
                 icon = {
                     Icon(
                         imageVector = Icons.Filled.PointOfSale,

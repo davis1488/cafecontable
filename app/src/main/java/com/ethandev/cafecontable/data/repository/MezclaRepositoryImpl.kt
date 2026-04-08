@@ -7,8 +7,13 @@ import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
 import com.ethandev.cafecontable.data.local.entity.MezclaDetalleEntity
 import com.ethandev.cafecontable.data.local.entity.MezclaEntity
+import com.ethandev.cafecontable.domain.model.MezclaHistorialItem
 import com.ethandev.cafecontable.domain.model.RegistrarMezclaInput
 import com.ethandev.cafecontable.domain.repository.MezclaRepository
+import com.ethandev.cafecontable.ui.screen.mezcla.ESTADO_MEZCLA_ANALIZADO
+import com.ethandev.cafecontable.ui.screen.mezcla.ESTADO_MEZCLA_CREADO
+import com.ethandev.cafecontable.ui.screen.mezcla.ESTADO_MEZCLA_ENTREGADO
+import com.ethandev.cafecontable.ui.screen.mezcla.ESTADO_MEZCLA_PENDIENTE_ENTREGA
 import java.util.UUID
 
 class MezclaRepositoryImpl(
@@ -19,6 +24,24 @@ class MezclaRepositoryImpl(
     private val  inventarioDao :InventarioDao
 
 ) : MezclaRepository {
+
+    override suspend fun obtenerHistorialMezclas(): List<MezclaHistorialItem> {
+        return mezclaDao.obtenerHistorialMezclas().map { item ->
+            MezclaHistorialItem(
+                id = item.id,
+                fechaTexto = formatearFecha(item.fecha),
+                cantidadTotal = item.cantidadTotal,
+                costoTotal = item.costoTotal,
+                estado = item.estado,
+                nota = item.nota
+            )
+        }
+    }
+
+    private fun formatearFecha(fecha: Long): String {
+        val sdf = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+        return sdf.format(java.util.Date(fecha))
+    }
 
     override suspend fun registrarMezcla(input: RegistrarMezclaInput) {
         db.withTransaction {
@@ -78,7 +101,7 @@ class MezclaRepositoryImpl(
                     cantidadDisponible = cantidadTotal,
                     costoTotal = costoTotal,
                     costoPromedioKg = costoPromedioKg,
-                    estado = "DISPONIBLE",
+                    estado = ESTADO_MEZCLA_CREADO,
                     nota = nota
                 )
             )
@@ -115,4 +138,56 @@ class MezclaRepositoryImpl(
             }
         }
     }
+
+    override suspend fun actualizarEstadoMezcla(
+        mezclaId: String,
+        estado: String
+    ): Int {
+        return mezclaDao.actualizarEstadoMezcla(
+            mezclaId = mezclaId,
+            estado = estado
+        )
+    }
+
+    override suspend fun marcarPendienteEntrega(
+        mezclaId: String,
+        numeroSacosEnviados: Int,
+        kilajeEnviado: Double
+    ): Int {
+        return mezclaDao.marcarPendienteEntrega(
+            mezclaId = mezclaId,
+            estado = ESTADO_MEZCLA_PENDIENTE_ENTREGA,
+            numeroSacosEnviados = numeroSacosEnviados,
+            kilajeEnviado = kilajeEnviado
+        )
+    }
+
+    override suspend fun marcarEntregado(
+        mezclaId: String,
+        numeroSacosEntregados: Int,
+        kilajeEntregado: Double,
+        lugarEntrega: String
+    ): Int {
+        return mezclaDao.marcarEntregado(
+            mezclaId = mezclaId,
+            estado = ESTADO_MEZCLA_ENTREGADO,
+            numeroSacosEntregados = numeroSacosEntregados,
+            kilajeEntregado = kilajeEntregado,
+            lugarEntrega = lugarEntrega
+        )
+    }
+
+    override suspend fun marcarAnalizado(
+        mezclaId: String,
+        factorRendimiento: Double
+    ): Int {
+        return mezclaDao.marcarAnalizado(
+            mezclaId = mezclaId,
+            estado = ESTADO_MEZCLA_ANALIZADO,
+            factorRendimiento = factorRendimiento
+        )
+    }
+
+
+
 }

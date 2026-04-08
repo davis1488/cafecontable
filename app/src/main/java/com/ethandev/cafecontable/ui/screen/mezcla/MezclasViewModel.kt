@@ -3,10 +3,15 @@ package com.ethandev.cafecontable.ui.screen.mezcla
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ethandev.cafecontable.data.local.dao.CompraDao
-import com.ethandev.cafecontable.data.local.dao.ProductoDao
 import com.ethandev.cafecontable.data.local.entity.CompraDisponibleDb
 import com.ethandev.cafecontable.domain.model.MezclaDetalleInput
+import com.ethandev.cafecontable.domain.model.MezclaHistorialItem
 import com.ethandev.cafecontable.domain.model.RegistrarMezclaInput
+import com.ethandev.cafecontable.domain.usecase.ActualizarEstadoMezclaUseCase
+import com.ethandev.cafecontable.domain.usecase.MarcarMezclaAnalizadoUseCase
+import com.ethandev.cafecontable.domain.usecase.MarcarMezclaEntregadoUseCase
+import com.ethandev.cafecontable.domain.usecase.MarcarMezclaPendienteEntregaUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialMezclasUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarMezclaUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,12 +39,18 @@ data class MezclasState(
     val loadingCompras: Boolean = false,
     val comprasDisponibles: List<CompraDisponibleUi> = emptyList(),
     val okMsg: String? = null,
-    val error: String? = null
+    val error: String? = null,
+    val loadingHistorial: Boolean = false,
+    val historialMezclas: List<MezclaHistorialItem> = emptyList()
 )
 
 class MezclasViewModel(
     private val registrarMezclaUseCase: RegistrarMezclaUseCase,
-    private val productoDao: ProductoDao,
+    private val obtenerHistorialMezclasUseCase: ObtenerHistorialMezclasUseCase,
+    //private val actualizarEstadoMezclaUseCase: ActualizarEstadoMezclaUseCase,
+    private val marcarMezclaPendienteEntregaUseCase:MarcarMezclaPendienteEntregaUseCase,
+    private  val marcarMezclaEntregadoUseCase: MarcarMezclaEntregadoUseCase,
+    private  val marcarMezclaAnalizadoUseCase: MarcarMezclaAnalizadoUseCase,
     private val compraCafeDao: CompraDao
 ) : ViewModel() {
 
@@ -48,6 +59,7 @@ class MezclasViewModel(
 
     init {
         cargarComprasDisponibles()
+        cargarHistorialMezclas()
     }
 
     fun limpiarMensajes() {
@@ -55,6 +67,31 @@ class MezclasViewModel(
             okMsg = null,
             error = null
         )
+    }
+
+    fun cargarHistorialMezclas() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(
+                loadingHistorial = true,
+                error = null
+            )
+
+            runCatching {
+                obtenerHistorialMezclasUseCase()
+            }.onSuccess { historial ->
+                _state.value = _state.value.copy(
+                    loadingHistorial = false,
+                    historialMezclas = historial,
+                    error = null
+                )
+            }.onFailure { e ->
+                _state.value = _state.value.copy(
+                    loadingHistorial = false,
+                    historialMezclas = emptyList(),
+                    error = e.message ?: "Error al cargar historial de mezclas"
+                )
+            }
+        }
     }
 
     fun cargarComprasDisponibles() {
@@ -65,17 +102,8 @@ class MezclasViewModel(
             )
 
             runCatching {
-                /*
-                 * Este método debe venir del DAO y traer solo compras con saldo disponible.
-                 * Debe devolver algo con:
-                 * - compraId
-                 * - productoId
-                 * - productoNombre
-                 * - cantidadDisponible
-                 * - precioUnitCompra
-                 */
                 compraCafeDao.obtenerComprasDisponiblesParaMezcla()
-            }.onSuccess { compras :List<CompraDisponibleDb> ->
+            }.onSuccess { compras: List<CompraDisponibleDb> ->
                 _state.value = _state.value.copy(
                     loadingCompras = false,
                     comprasDisponibles = compras.map {
@@ -173,6 +201,7 @@ class MezclasViewModel(
                     error = null
                 )
                 cargarComprasDisponibles()
+                cargarHistorialMezclas()
             }.onFailure { e ->
                 _state.value = _state.value.copy(
                     loading = false,
@@ -195,5 +224,92 @@ class MezclasViewModel(
         val cantidadTotal = calcularCantidadTotal(items)
         if (cantidadTotal <= 0.0) return 0L
         return (calcularCostoTotal(items) / cantidadTotal).toLong()
+    }
+
+    fun marcarPendienteEntrega(
+        mezclaId: String,
+        numeroSacosEnviados: Int,
+        kilajeEnviado: Double
+    ) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(loading = true, error = null, okMsg = null)
+
+            runCatching {
+                marcarMezclaPendienteEntregaUseCase(
+                    mezclaId = mezclaId,
+                    numeroSacosEnviados = numeroSacosEnviados,
+                    kilajeEnviado = kilajeEnviado
+                )
+            }.onSuccess {
+                _state.value = _state.value.copy(
+                    loading = false,
+                    okMsg = "Mezcla enviada correctamente"
+                )
+                cargarHistorialMezclas()
+            }.onFailure { e ->
+                _state.value = _state.value.copy(
+                    loading = false,
+                    error = e.message ?: "Error al pasar a pendiente de entrega"
+                )
+            }
+        }
+    }
+
+    fun marcarEntregado(
+        mezclaId: String,
+        numeroSacosEntregados: Int,
+        kilajeEntregado: Double,
+        lugarEntrega: String
+    ) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(loading = true, error = null, okMsg = null)
+
+            runCatching {
+                marcarMezclaEntregadoUseCase(
+                    mezclaId = mezclaId,
+                    numeroSacosEntregados = numeroSacosEntregados,
+                    kilajeEntregado = kilajeEntregado,
+                    lugarEntrega = lugarEntrega
+                )
+            }.onSuccess {
+                _state.value = _state.value.copy(
+                    loading = false,
+                    okMsg = "Entrega registrada correctamente"
+                )
+                cargarHistorialMezclas()
+            }.onFailure { e ->
+                _state.value = _state.value.copy(
+                    loading = false,
+                    error = e.message ?: "Error al pasar a entregado"
+                )
+            }
+        }
+    }
+
+    fun marcarAnalizado(
+        mezclaId: String,
+        factorRendimiento: Double
+    ) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(loading = true, error = null, okMsg = null)
+
+            runCatching {
+                marcarMezclaAnalizadoUseCase(
+                    mezclaId = mezclaId,
+                    factorRendimiento = factorRendimiento
+                )
+            }.onSuccess {
+                _state.value = _state.value.copy(
+                    loading = false,
+                    okMsg = "Análisis registrado correctamente"
+                )
+                cargarHistorialMezclas()
+            }.onFailure { e ->
+                _state.value = _state.value.copy(
+                    loading = false,
+                    error = e.message ?: "Error al pasar a analizado"
+                )
+            }
+        }
     }
 }

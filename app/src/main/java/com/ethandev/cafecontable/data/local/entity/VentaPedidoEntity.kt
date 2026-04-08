@@ -15,5 +15,11 @@ data class VentaPedidoEntity(
     val totalVenta: Long,
     val cantidadAsignada: Double,
     val estado: String,
-    val nota: String?
+    val nota: String?,
+
+    val numeroSacos: Int = 0,
+    val pesoNeto: Double = 0.0,
+    val pesoBruto: Double = 0.0,
+    val factorAnalisis: Double? = null,
+    val ajusteAnalisis: Long? = null
 )

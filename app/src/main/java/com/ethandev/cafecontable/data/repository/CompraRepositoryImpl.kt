@@ -3,6 +3,7 @@ package com.ethandev.cafecontable.data.repository
 import android.util.Log
 import androidx.room.withTransaction
 import com.ethandev.cafecontable.data.local.db.AppDatabase
+import com.ethandev.cafecontable.data.local.entity.AbonoCuentaPorPagarEntity
 import com.ethandev.cafecontable.data.local.entity.CompraCafeEntity
 import com.ethandev.cafecontable.data.local.entity.CuentaPorPagarEntity
 import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
@@ -25,6 +26,10 @@ class CompraRepositoryImpl(
             val nombreProducto = input.productoNombre.trim()
             val unidadProducto = input.unidad.trim().uppercase()
             val proveedor = input.proveedor?.trim()?.ifBlank { null }
+
+            val abono = input.abono ?: 0L
+
+
             val nota = input.nota?.trim()?.ifBlank { null }
 
             val existente = productoDao.getByNombre(nombreProducto)
@@ -70,24 +75,38 @@ class CompraRepositoryImpl(
             )
 
             if (input.esCredito) {
+
                 if (proveedor.isNullOrBlank()) {
                     throw IllegalStateException("Debes ingresar el proveedor para compras a crédito")
                 }
 
                 val totalCompra = (input.cantidad * input.precioUnitCompra).toLong()
-
+                val idCompra = UUID.randomUUID().toString()
                 cuentaPorPagarDao.insert(
                     CuentaPorPagarEntity(
-                        id = UUID.randomUUID().toString(),
+                        id = idCompra,
                         fecha = System.currentTimeMillis(),
                         compraId = compraId,
                         proveedor = proveedor,
                         valorInicial = totalCompra,
-                        saldoPendiente = totalCompra,
+                        saldoPendiente = totalCompra-abono,
                         estado = "PENDIENTE",
                         nota = nota
                     )
                 )
+
+                if (input.abono > 0) {
+                    cuentaPorPagarDao.insertAbono(
+                        AbonoCuentaPorPagarEntity(
+                            id = UUID.randomUUID().toString(),
+                            cuentaId = idCompra,
+                            fecha = System.currentTimeMillis(),
+                            valor = totalCompra-abono,
+                            nota = input.nota?.trim()?.ifBlank { null }
+                        )
+                    )
+                }
+
             }
         }
     }

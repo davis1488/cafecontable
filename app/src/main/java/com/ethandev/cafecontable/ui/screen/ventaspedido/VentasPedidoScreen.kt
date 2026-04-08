@@ -14,10 +14,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -45,18 +45,22 @@ import com.ethandev.cafecontable.domain.repository.VentaPedidoInput
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
 
 private enum class HistorialFiltro(val label: String) {
     TODOS("Todos"),
-    PENDIENTES("Pendientes"),
-    ENTREGADOS("Entregados"),
-    CANCELADOS("Cancelados")
+    PENDIENTE_ASIGNACION("Pendiente"),
+    ASIGNACION_PARCIAL("Asignado Parcial"),
+    ASIGNADO("Asignado"),
+    ENTREGADO("Entregado"),
+    ANALIZADO("Analizado"),
+    FINALIZADO("Finalizado")
 }
 
 @Composable
 fun VentasPedidoScreen(
     vm: VentasPedidoViewModel,
-    onPrepararEntrega: (String) -> Unit
+    onPrepararEntrega: (String) -> Unit = {}
 ) {
     val state by vm.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -67,6 +71,18 @@ fun VentasPedidoScreen(
     var cantidadTxt by remember { mutableStateOf("") }
     var precioTxt by remember { mutableStateOf("") }
     var notaTxt by remember { mutableStateOf("") }
+
+    // Dialogo entrega
+    var showDialogEntregar by remember { mutableStateOf(false) }
+    var pedidoIdEntregar by remember { mutableStateOf("") }
+    var sacosTxt by remember { mutableStateOf("") }
+    var pesoNetoTxt by remember { mutableStateOf("") }
+    var pesoBrutoTxt by remember { mutableStateOf("") }
+
+    // Dialogo analisis
+    var showDialogAnalizar by remember { mutableStateOf(false) }
+    var pedidoIdAnalizar by remember { mutableStateOf("") }
+    var factorTxt by remember { mutableStateOf("90") }
 
     LaunchedEffect(Unit) {
         vm.cargarVentas()
@@ -92,10 +108,14 @@ fun VentasPedidoScreen(
         0L
     }
 
+    val previewAnalisis = calcularAjusteAnalisis(
+        precioBase = 100L,
+        factor = factorTxt.toDoubleOrNull() ?: 90.0
+    )
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -104,7 +124,7 @@ fun VentasPedidoScreen(
                 .navigationBarsPadding()
         ) {
             Text(
-                text = "Ventas / pedidos",
+                text = "Anuncios / Entregas",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold
             )
@@ -118,13 +138,13 @@ fun VentasPedidoScreen(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = { Text("Nuevo pedido") }
+                    text = { Text("Nuevo Anuncio") }
                 )
 
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    text = { Text("Historial") }
+                    text = { Text("Estados de entrega") }
                 )
             }
 
@@ -163,11 +183,72 @@ fun VentasPedidoScreen(
                 1 -> HistorialPedidosTab(
                     loading = state.loading,
                     items = state.items,
-                    onPrepararEntrega = onPrepararEntrega
+                    onEntregar = { pedidoId ->
+                        pedidoIdEntregar = pedidoId
+                        sacosTxt = ""
+                        pesoNetoTxt = ""
+                        pesoBrutoTxt = ""
+                        showDialogEntregar = true
+                    },
+                    onAnalizar = { pedidoId ->
+                        pedidoIdAnalizar = pedidoId
+                        factorTxt = "90"
+                        showDialogAnalizar = true
+                    },
+                    onFinalizar = { pedidoId ->
+                        vm.finalizarPedido(pedidoId)
+                    }
                 )
             }
         }
     }
+
+    DialogEntregar(
+        visible = showDialogEntregar,
+        sacos = sacosTxt,
+        pesoNeto = pesoNetoTxt,
+        pesoBruto = pesoBrutoTxt,
+        onSacosChange = { sacosTxt = it },
+        onPesoNetoChange = { pesoNetoTxt = it.replace(',', '.') },
+        onPesoBrutoChange = { pesoBrutoTxt = it.replace(',', '.') },
+        onConfirm = {
+            val sacos = sacosTxt.toIntOrNull() ?: 0
+            val pesoNeto = pesoNetoTxt.toDoubleOrNull() ?: 0.0
+            val pesoBruto = pesoBrutoTxt.toDoubleOrNull() ?: 0.0
+
+            vm.marcarEntregado(
+                pedidoId = pedidoIdEntregar,
+                numeroSacos = sacos,
+                pesoNeto = pesoNeto,
+                pesoBruto = pesoBruto
+            )
+
+            showDialogEntregar = false
+        },
+        onDismiss = {
+            showDialogEntregar = false
+        }
+    )
+
+    DialogAnalizar(
+        visible = showDialogAnalizar,
+        factor = factorTxt,
+        resumen = previewAnalisis,
+        onFactorChange = { factorTxt = it },
+        onConfirm = {
+            val factor = factorTxt.toDoubleOrNull() ?: 90.0
+
+            vm.marcarAnalizado(
+                pedidoId = pedidoIdAnalizar,
+                factor = factor
+            )
+
+            showDialogAnalizar = false
+        },
+        onDismiss = {
+            showDialogAnalizar = false
+        }
+    )
 }
 
 @Composable
@@ -256,7 +337,7 @@ private fun NuevoPedidoTab(
                 enabled = !loading,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (loading) "Guardando..." else "Registrar venta")
+                Text(if (loading) "Guardando..." else "Registrar Anuncio")
             }
 
             if (loading) {
@@ -273,24 +354,32 @@ private fun NuevoPedidoTab(
 private fun HistorialPedidosTab(
     loading: Boolean,
     items: List<VentaPedido>,
-    onPrepararEntrega: (String) -> Unit
+    onEntregar: (String) -> Unit,
+    onAnalizar: (String) -> Unit,
+    onFinalizar: (String) -> Unit
 ) {
     var filtroSeleccionado by remember { mutableStateOf(HistorialFiltro.TODOS) }
 
     val itemsFiltrados = remember(items, filtroSeleccionado) {
         when (filtroSeleccionado) {
             HistorialFiltro.TODOS -> items
-            HistorialFiltro.PENDIENTES -> items.filter {
-                it.estado.equals("PENDIENTE", ignoreCase = true) ||
-                        it.estado.equals("PARCIAL", ignoreCase = true) ||
-                        it.estado.equals("EN_PROCESO", ignoreCase = true) ||
-                        it.estado.equals("REGISTRADA", ignoreCase = true)
+            HistorialFiltro.ANALIZADO -> items.filter {
+                it.estado.equals("ANALIZADO", ignoreCase = true)
             }
-            HistorialFiltro.ENTREGADOS -> items.filter {
-                it.estado.equals("ENTREGADA", ignoreCase = true)
+            HistorialFiltro.ENTREGADO -> items.filter {
+                it.estado.equals("ENTREGADO", ignoreCase = true)
             }
-            HistorialFiltro.CANCELADOS -> items.filter {
-                it.estado.equals("CANCELADA", ignoreCase = true)
+            HistorialFiltro.PENDIENTE_ASIGNACION -> items.filter {
+                it.estado.equals("PENDIENTE_ASIGNACION", ignoreCase = true)
+            }
+            HistorialFiltro.ASIGNACION_PARCIAL -> items.filter {
+                it.estado.equals("ASIGNACION_PARCIAL", ignoreCase = true)
+            }
+            HistorialFiltro.ASIGNADO -> items.filter {
+                it.estado.equals("ASIGNADO", ignoreCase = true)
+            }
+            HistorialFiltro.FINALIZADO -> items.filter {
+                it.estado.equals("FINALIZADO", ignoreCase = true)
             }
         }
     }
@@ -368,7 +457,9 @@ private fun HistorialPedidosTab(
                 items(itemsFiltrados, key = { it.id }) { item ->
                     VentaPedidoItem(
                         item = item,
-                        onPrepararEntrega = onPrepararEntrega
+                        onEntregar = onEntregar,
+                        onAnalizar = onAnalizar,
+                        onFinalizar = onFinalizar
                     )
                 }
             }
@@ -379,7 +470,9 @@ private fun HistorialPedidosTab(
 @Composable
 private fun VentaPedidoItem(
     item: VentaPedido,
-    onPrepararEntrega: (String) -> Unit
+    onEntregar: (String) -> Unit,
+    onAnalizar: (String) -> Unit,
+    onFinalizar: (String) -> Unit
 ) {
     val fechaFormateada = remember(item.fecha) {
         SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
@@ -414,20 +507,160 @@ private fun VentaPedidoItem(
                 Text("Nota: ${item.nota}")
             }
 
-            if (item.estado != "ENTREGADA" && item.estado != "CANCELADA") {
-                Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Button(
-                        onClick = { onPrepararEntrega(item.id) }
-                    ) {
-                        Text("Preparar entrega")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                when {
+                    item.estado.equals("PENDIENTE_ASIGNACION", ignoreCase = true) ||
+                            item.estado.equals("ASIGNACION_PARCIAL", ignoreCase = true) -> {
+                        Button(onClick = { onEntregar(item.id) }) {
+                            Text("Pasar a entregado")
+                        }
+                    }
+
+                    item.estado.equals("ENTREGADO", ignoreCase = true) -> {
+                        Button(onClick = { onAnalizar(item.id) }) {
+                            Text("Pasar a analizado")
+                        }
+                    }
+
+                    item.estado.equals("ANALIZADO", ignoreCase = true) ||
+                            item.estado.equals("ASIGNADO", ignoreCase = true) -> {
+                        Button(onClick = { onFinalizar(item.id) }) {
+                            Text("Finalizar")
+                        }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DialogEntregar(
+    visible: Boolean,
+    sacos: String,
+    pesoNeto: String,
+    pesoBruto: String,
+    onSacosChange: (String) -> Unit,
+    onPesoNetoChange: (String) -> Unit,
+    onPesoBrutoChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (!visible) return
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Registrar entrega") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = sacos,
+                    onValueChange = { onSacosChange(it.filter(Char::isDigit)) },
+                    label = { Text("Número de sacos") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = pesoNeto,
+                    onValueChange = onPesoNetoChange,
+                    label = { Text("Peso neto") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = pesoBruto,
+                    onValueChange = onPesoBrutoChange,
+                    label = { Text("Peso bruto") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+@Composable
+private fun DialogAnalizar(
+    visible: Boolean,
+    factor: String,
+    resumen: String,
+    onFactorChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (!visible) return
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Registrar análisis") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = factor,
+                    onValueChange = onFactorChange,
+                    label = { Text("Factor análisis") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = resumen,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+private fun calcularAjusteAnalisis(
+    precioBase: Long,
+    factor: Double
+): String {
+    val diferencia = abs(factor - 90.0)
+    return when {
+        factor > 90.0 -> {
+            val descuento = (precioBase * (diferencia / 100.0)).toLong()
+            "Descuento estimado: $descuento COP (${diferencia.toInt()}%)"
+        }
+        factor < 90.0 -> {
+            val bonificacion = (precioBase * (diferencia / 100.0)).toLong()
+            "Bonificación estimada: $bonificacion COP (${diferencia.toInt()}%)"
+        }
+        else -> {
+            "Sin ajuste por análisis"
         }
     }
 }
