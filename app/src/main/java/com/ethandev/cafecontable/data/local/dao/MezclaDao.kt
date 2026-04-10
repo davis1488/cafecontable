@@ -76,10 +76,11 @@ interface MezclaDao {
         COALESCE(m.nota, 'Mezcla sin nota') AS descripcion,
         m.cantidadTotal AS cantidadTotal,
         m.cantidadDisponible AS cantidadDisponible,
-        m.costoPromedioKg AS costoPromedioKg
+        m.costoPromedioKg AS costoPromedioKg,
+        m.estado AS estado
     FROM mezcla m
     WHERE m.cantidadDisponible > 0
-      AND m.estado IN ('CREADA', 'ENTREGADA', 'ANALIZADA', 'DISPONIBLE')
+      AND m.estado IN ('CREADO', 'ENTREGADA', 'ANALIZADA', 'DISPONIBLE')
     ORDER BY m.fecha DESC
     """)
     suspend fun obtenerMezclasDisponiblesParaAsignacion(): List<MezclaDisponibleDb>

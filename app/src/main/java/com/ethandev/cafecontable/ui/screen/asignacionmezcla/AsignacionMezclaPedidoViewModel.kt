@@ -27,7 +27,7 @@ data class MezclaDisponibleUi(
     val descripcion: String,
     val cantidadDisponible: Double,
     val cantidadTotal: Double,
-
+    val estado: String,
     val costoPromedioKg: Long
 )
 
@@ -91,7 +91,8 @@ class AsignacionMezclaPedidoViewModel(
                             descripcion = it.descripcion,
                             cantidadDisponible = it.cantidadDisponible,
                             cantidadTotal = it.cantidadTotal,
-                            costoPromedioKg = it.costoPromedioKg
+                            costoPromedioKg = it.costoPromedioKg,
+                            estado = it.estado
                         )
                     },
                     error = null

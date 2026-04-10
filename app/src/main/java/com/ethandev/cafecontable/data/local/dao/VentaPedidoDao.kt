@@ -70,7 +70,7 @@ interface VentaPedidoDao {
         vp.cantidadAsignada AS cantidadAsignada,
         vp.precioUnitVenta AS precioUnitVenta
     FROM venta_pedido vp
-    WHERE vp.estado = 'PENDIENTE_ASIGNACION' OR vp.estado  = 'ASIGNACION_PARCIAL'
+    WHERE vp.estado = 'CREADO' OR vp.estado  = 'ASIGNACION_PARCIAL'
     ORDER BY vp.fecha DESC
 """)
     suspend fun obtenerPedidosDisponiblesParaAsignacion(): List<PedidoDisponibleDb>

@@ -130,8 +130,8 @@ fun AppNavGraph(
             composable(Routes.VENTAS_PEDIDO) {
                 VentasPedidoScreen(
                     vm = ventasPedidoVm,
-                    onPrepararEntrega = { ventaId ->
-                        navController.navigate(Routes.preparacionEntregaRoute(ventaId))
+                    onIrAsignacionMezcla = { ventaId ->
+                        navController.navigate(Routes.asignacionMezclaRoute(ventaId))
                     }
                 )
             }
@@ -187,6 +187,18 @@ fun AppNavGraph(
             composable(Routes.CONSULTA_PRESTAMOS) {
                 ConsultaPrestamosScreen(prestamosVm, innerPadding)
             }
+
+            composable(
+                route = "asignacion_mezcla/{ventaId}"
+            ) { backStackEntry ->
+                val ventaId = backStackEntry.arguments?.getString("ventaId") ?: ""
+
+                AsignacionMezclaPedidoScreen(
+                   // ventaId = ventaId
+                   asignacionMezclaPedidoVm
+                )
+            }
+
         }
     }
 }

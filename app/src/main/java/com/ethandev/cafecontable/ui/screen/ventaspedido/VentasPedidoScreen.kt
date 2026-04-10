@@ -14,8 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -28,6 +26,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,22 +44,18 @@ import com.ethandev.cafecontable.domain.repository.VentaPedidoInput
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.math.abs
 
 private enum class HistorialFiltro(val label: String) {
     TODOS("Todos"),
-    PENDIENTE_ASIGNACION("Pendiente"),
-    ASIGNACION_PARCIAL("Asignado Parcial"),
-    ASIGNADO("Asignado"),
-    ENTREGADO("Entregado"),
-    ANALIZADO("Analizado"),
-    FINALIZADO("Finalizado")
+    CREADO("Creado"),
+    ENTREGA_PARCIAL("Entrega parcial"),
+    ENTREGA_TOTAL("Entrega total")
 }
 
 @Composable
 fun VentasPedidoScreen(
     vm: VentasPedidoViewModel,
-    onPrepararEntrega: (String) -> Unit = {}
+    onIrAsignacionMezcla: (String) -> Unit = {}
 ) {
     val state by vm.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -71,18 +66,6 @@ fun VentasPedidoScreen(
     var cantidadTxt by remember { mutableStateOf("") }
     var precioTxt by remember { mutableStateOf("") }
     var notaTxt by remember { mutableStateOf("") }
-
-    // Dialogo entrega
-    var showDialogEntregar by remember { mutableStateOf(false) }
-    var pedidoIdEntregar by remember { mutableStateOf("") }
-    var sacosTxt by remember { mutableStateOf("") }
-    var pesoNetoTxt by remember { mutableStateOf("") }
-    var pesoBrutoTxt by remember { mutableStateOf("") }
-
-    // Dialogo analisis
-    var showDialogAnalizar by remember { mutableStateOf(false) }
-    var pedidoIdAnalizar by remember { mutableStateOf("") }
-    var factorTxt by remember { mutableStateOf("90") }
 
     LaunchedEffect(Unit) {
         vm.cargarVentas()
@@ -108,11 +91,6 @@ fun VentasPedidoScreen(
         0L
     }
 
-    val previewAnalisis = calcularAjusteAnalisis(
-        precioBase = 100L,
-        factor = factorTxt.toDoubleOrNull() ?: 90.0
-    )
-
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
@@ -124,7 +102,7 @@ fun VentasPedidoScreen(
                 .navigationBarsPadding()
         ) {
             Text(
-                text = "Anuncios / Entregas",
+                text = "Anuncios",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold
             )
@@ -138,13 +116,13 @@ fun VentasPedidoScreen(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = { Text("Nuevo Anuncio") }
+                    text = { Text("Nuevo anuncio") }
                 )
 
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    text = { Text("Estados de entrega") }
+                    text = { Text("Historial") }
                 )
             }
 
@@ -183,72 +161,11 @@ fun VentasPedidoScreen(
                 1 -> HistorialPedidosTab(
                     loading = state.loading,
                     items = state.items,
-                    onEntregar = { pedidoId ->
-                        pedidoIdEntregar = pedidoId
-                        sacosTxt = ""
-                        pesoNetoTxt = ""
-                        pesoBrutoTxt = ""
-                        showDialogEntregar = true
-                    },
-                    onAnalizar = { pedidoId ->
-                        pedidoIdAnalizar = pedidoId
-                        factorTxt = "90"
-                        showDialogAnalizar = true
-                    },
-                    onFinalizar = { pedidoId ->
-                        vm.finalizarPedido(pedidoId)
-                    }
+                    onIrAsignacionMezcla = onIrAsignacionMezcla
                 )
             }
         }
     }
-
-    DialogEntregar(
-        visible = showDialogEntregar,
-        sacos = sacosTxt,
-        pesoNeto = pesoNetoTxt,
-        pesoBruto = pesoBrutoTxt,
-        onSacosChange = { sacosTxt = it },
-        onPesoNetoChange = { pesoNetoTxt = it.replace(',', '.') },
-        onPesoBrutoChange = { pesoBrutoTxt = it.replace(',', '.') },
-        onConfirm = {
-            val sacos = sacosTxt.toIntOrNull() ?: 0
-            val pesoNeto = pesoNetoTxt.toDoubleOrNull() ?: 0.0
-            val pesoBruto = pesoBrutoTxt.toDoubleOrNull() ?: 0.0
-
-            vm.marcarEntregado(
-                pedidoId = pedidoIdEntregar,
-                numeroSacos = sacos,
-                pesoNeto = pesoNeto,
-                pesoBruto = pesoBruto
-            )
-
-            showDialogEntregar = false
-        },
-        onDismiss = {
-            showDialogEntregar = false
-        }
-    )
-
-    DialogAnalizar(
-        visible = showDialogAnalizar,
-        factor = factorTxt,
-        resumen = previewAnalisis,
-        onFactorChange = { factorTxt = it },
-        onConfirm = {
-            val factor = factorTxt.toDoubleOrNull() ?: 90.0
-
-            vm.marcarAnalizado(
-                pedidoId = pedidoIdAnalizar,
-                factor = factor
-            )
-
-            showDialogAnalizar = false
-        },
-        onDismiss = {
-            showDialogAnalizar = false
-        }
-    )
 }
 
 @Composable
@@ -274,7 +191,7 @@ private fun NuevoPedidoTab(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Registrar nuevo pedido",
+                text = "Registrar nuevo anuncio",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -337,7 +254,7 @@ private fun NuevoPedidoTab(
                 enabled = !loading,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (loading) "Guardando..." else "Registrar Anuncio")
+                Text(if (loading) "Guardando..." else "Registrar anuncio")
             }
 
             if (loading) {
@@ -354,32 +271,21 @@ private fun NuevoPedidoTab(
 private fun HistorialPedidosTab(
     loading: Boolean,
     items: List<VentaPedido>,
-    onEntregar: (String) -> Unit,
-    onAnalizar: (String) -> Unit,
-    onFinalizar: (String) -> Unit
+    onIrAsignacionMezcla: (String) -> Unit
 ) {
     var filtroSeleccionado by remember { mutableStateOf(HistorialFiltro.TODOS) }
 
     val itemsFiltrados = remember(items, filtroSeleccionado) {
         when (filtroSeleccionado) {
             HistorialFiltro.TODOS -> items
-            HistorialFiltro.ANALIZADO -> items.filter {
-                it.estado.equals("ANALIZADO", ignoreCase = true)
+            HistorialFiltro.CREADO -> items.filter {
+                it.estado.equals("CREADO", ignoreCase = true)
             }
-            HistorialFiltro.ENTREGADO -> items.filter {
-                it.estado.equals("ENTREGADO", ignoreCase = true)
+            HistorialFiltro.ENTREGA_PARCIAL -> items.filter {
+                it.estado.equals("ENTREGA_PARCIAL", ignoreCase = true)
             }
-            HistorialFiltro.PENDIENTE_ASIGNACION -> items.filter {
-                it.estado.equals("PENDIENTE_ASIGNACION", ignoreCase = true)
-            }
-            HistorialFiltro.ASIGNACION_PARCIAL -> items.filter {
-                it.estado.equals("ASIGNACION_PARCIAL", ignoreCase = true)
-            }
-            HistorialFiltro.ASIGNADO -> items.filter {
-                it.estado.equals("ASIGNADO", ignoreCase = true)
-            }
-            HistorialFiltro.FINALIZADO -> items.filter {
-                it.estado.equals("FINALIZADO", ignoreCase = true)
+            HistorialFiltro.ENTREGA_TOTAL -> items.filter {
+                it.estado.equals("ENTREGA_TOTAL", ignoreCase = true)
             }
         }
     }
@@ -388,7 +294,7 @@ private fun HistorialPedidosTab(
         modifier = Modifier.fillMaxSize()
     ) {
         Text(
-            text = "Historial de pedidos",
+            text = "Historial de anuncios",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -443,7 +349,7 @@ private fun HistorialPedidosTab(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "No hay pedidos en este filtro.",
+                        text = "No hay anuncios en este filtro.",
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
@@ -457,9 +363,7 @@ private fun HistorialPedidosTab(
                 items(itemsFiltrados, key = { it.id }) { item ->
                     VentaPedidoItem(
                         item = item,
-                        onEntregar = onEntregar,
-                        onAnalizar = onAnalizar,
-                        onFinalizar = onFinalizar
+                        onIrAsignacionMezcla = onIrAsignacionMezcla
                     )
                 }
             }
@@ -470,14 +374,15 @@ private fun HistorialPedidosTab(
 @Composable
 private fun VentaPedidoItem(
     item: VentaPedido,
-    onEntregar: (String) -> Unit,
-    onAnalizar: (String) -> Unit,
-    onFinalizar: (String) -> Unit
+    onIrAsignacionMezcla: (String) -> Unit
 ) {
     val fechaFormateada = remember(item.fecha) {
         SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
             .format(Date(item.fecha))
     }
+
+    val cantidadEntregada = item.cantidadAsignada
+    val cantidadPendiente = (item.cantidadPactada - cantidadEntregada).coerceAtLeast(0.0)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -499,7 +404,8 @@ private fun VentaPedidoItem(
             Text("Cantidad pactada: ${item.cantidadPactada} ${item.unidad}")
             Text("Precio unitario: ${item.precioUnitVenta} COP")
             Text("Total: ${item.totalVenta} COP")
-            Text("Entregado: ${item.cantidadAsignada} ${item.unidad}")
+            Text("Entregado: $cantidadEntregada ${item.unidad}")
+            Text("Pendiente: $cantidadPendiente ${item.unidad}")
             Text("Estado: ${item.estado}")
 
             if (!item.nota.isNullOrBlank()) {
@@ -509,158 +415,13 @@ private fun VentaPedidoItem(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+            Button(
+                onClick = { onIrAsignacionMezcla(item.id) },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                when {
-                    item.estado.equals("PENDIENTE_ASIGNACION", ignoreCase = true) ||
-                            item.estado.equals("ASIGNACION_PARCIAL", ignoreCase = true) -> {
-                        Button(onClick = { onEntregar(item.id) }) {
-                            Text("Pasar a entregado")
-                        }
-                    }
-
-                    item.estado.equals("ENTREGADO", ignoreCase = true) -> {
-                        Button(onClick = { onAnalizar(item.id) }) {
-                            Text("Pasar a analizado")
-                        }
-                    }
-
-                    item.estado.equals("ANALIZADO", ignoreCase = true) ||
-                            item.estado.equals("ASIGNADO", ignoreCase = true) -> {
-                        Button(onClick = { onFinalizar(item.id) }) {
-                            Text("Finalizar")
-                        }
-                    }
-                }
+                Text("Asignar mezcla")
             }
         }
     }
 }
 
-@Composable
-private fun DialogEntregar(
-    visible: Boolean,
-    sacos: String,
-    pesoNeto: String,
-    pesoBruto: String,
-    onSacosChange: (String) -> Unit,
-    onPesoNetoChange: (String) -> Unit,
-    onPesoBrutoChange: (String) -> Unit,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    if (!visible) return
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Registrar entrega") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = sacos,
-                    onValueChange = { onSacosChange(it.filter(Char::isDigit)) },
-                    label = { Text("Número de sacos") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = pesoNeto,
-                    onValueChange = onPesoNetoChange,
-                    label = { Text("Peso neto") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = pesoBruto,
-                    onValueChange = onPesoBrutoChange,
-                    label = { Text("Peso bruto") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = onConfirm) {
-                Text("Guardar")
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Cancelar")
-            }
-        }
-    )
-}
-
-@Composable
-private fun DialogAnalizar(
-    visible: Boolean,
-    factor: String,
-    resumen: String,
-    onFactorChange: (String) -> Unit,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    if (!visible) return
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Registrar análisis") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = factor,
-                    onValueChange = onFactorChange,
-                    label = { Text("Factor análisis") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = resumen,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = onConfirm) {
-                Text("Guardar")
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Cancelar")
-            }
-        }
-    )
-}
-
-private fun calcularAjusteAnalisis(
-    precioBase: Long,
-    factor: Double
-): String {
-    val diferencia = abs(factor - 90.0)
-    return when {
-        factor > 90.0 -> {
-            val descuento = (precioBase * (diferencia / 100.0)).toLong()
-            "Descuento estimado: $descuento COP (${diferencia.toInt()}%)"
-        }
-        factor < 90.0 -> {
-            val bonificacion = (precioBase * (diferencia / 100.0)).toLong()
-            "Bonificación estimada: $bonificacion COP (${diferencia.toInt()}%)"
-        }
-        else -> {
-            "Sin ajuste por análisis"
-        }
-    }
-}

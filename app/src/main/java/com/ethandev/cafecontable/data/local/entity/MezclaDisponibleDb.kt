@@ -5,5 +5,6 @@ data class MezclaDisponibleDb(
     val descripcion: String,
     val cantidadDisponible: Double,
     val cantidadTotal: Double,
-    val costoPromedioKg: Long
+    val costoPromedioKg: Long,
+    val estado: String
 )

@@ -2,6 +2,7 @@ package com.ethandev.cafecontable.data.repository
 
 import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.entity.VentaPedidoEntity
+import com.ethandev.cafecontable.domain.constants.EstadoAnuncio
 import com.ethandev.cafecontable.domain.model.VentaPedido
 import com.ethandev.cafecontable.domain.repository.VentaPedidoInput
 import com.ethandev.cafecontable.domain.repository.VentaPedidoRepository
@@ -88,7 +89,7 @@ class VentaPedidoRepositoryImpl(
                 precioUnitVenta = input.precioUnitVenta,
                 totalVenta = totalVenta,
                 cantidadAsignada = 0.0,
-                estado = "PENDIENTE_ASIGNACION",
+                estado = EstadoAnuncio.CREADO.toString(),
                 nota = nota
             )
         )

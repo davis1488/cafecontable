@@ -10,8 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
@@ -42,28 +42,42 @@ fun AsignacionMezclaPedidoScreen(
     var pedidoId by remember { mutableStateOf("") }
     var mezclaId by remember { mutableStateOf("") }
     var cantidadAsignada by remember { mutableStateOf("") }
-//    var precioUnitVenta by remember { mutableStateOf("") }
     var factor by remember { mutableStateOf("90") }
     var nota by remember { mutableStateOf("") }
 
-
-
-
     val pedidoSeleccionado = state.pedidosDisponibles.firstOrNull { it.pedidoId == pedidoId }
     val mezclaSeleccionada = state.mezclasDisponibles.firstOrNull { it.mezclaId == mezclaId }
+
     val precioUnitVenta = pedidoSeleccionado?.precioUnitVenta?.toString() ?: ""
-
-
 
     val subtotal = viewModel.calcularSubtotal(
         cantidadAsignada = cantidadAsignada.toDoubleOrNull() ?: 0.0,
         precioUnitVenta = precioUnitVenta.toLongOrNull() ?: 0L
     )
 
+    val faltantePedido = if (pedidoSeleccionado != null) {
+        ((pedidoSeleccionado.cantidadPedido ?: 0.0) - (pedidoSeleccionado.cantidadAsignada ?: 0.0))
+            .coerceAtLeast(0.0)
+    } else {
+        0.0
+    }
+
+    val disponibleMezcla = mezclaSeleccionada?.cantidadDisponible ?: 0.0
+    val cantidadAsignadaNum = cantidadAsignada.toDoubleOrNull() ?: 0.0
+
+    val puedeGuardar =
+        !state.loading &&
+                pedidoSeleccionado != null &&
+                mezclaSeleccionada != null &&
+                cantidadAsignadaNum > 0.0 &&
+                disponibleMezcla > 0.0 &&
+                faltantePedido > 0.0 &&
+                cantidadAsignadaNum <= disponibleMezcla &&
+                cantidadAsignadaNum <= faltantePedido
+
     LaunchedEffect(Unit) {
         viewModel.cargarDatos()
     }
-
 
     LaunchedEffect(state.okMsg, state.error) {
         state.okMsg?.let {
@@ -73,7 +87,6 @@ fun AsignacionMezclaPedidoScreen(
             pedidoId = ""
             mezclaId = ""
             cantidadAsignada = ""
-           // precioUnitVenta = "${pedidoSeleccionado?.precioUnitVenta}"
             factor = "90"
             nota = ""
         }
@@ -100,10 +113,14 @@ fun AsignacionMezclaPedidoScreen(
 
         if (state.loadingDatos) {
             Row(modifier = Modifier.fillMaxWidth()) {
-                CircularProgressIndicator(modifier = Modifier.width(20.dp), strokeWidth = 2.dp)
+                CircularProgressIndicator(
+                    modifier = Modifier.width(20.dp),
+                    strokeWidth = 2.dp
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Cargando anuncios y mezclas...")
             }
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
         Text(
@@ -117,6 +134,11 @@ fun AsignacionMezclaPedidoScreen(
             Text("No hay anuncios disponibles")
         } else {
             state.pedidosDisponibles.forEach { pedido ->
+                val faltante = ((pedido.cantidadPedido ?: 0.0) - (pedido.cantidadAsignada ?: 0.0))
+                    .coerceAtLeast(0.0)
+
+                val anuncioCompleto = faltante <= 0.0
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -124,10 +146,10 @@ fun AsignacionMezclaPedidoScreen(
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text("Cliente: ${pedido.clienteNombre}")
                         Text("Producto: ${pedido.productoNombre}")
-                        Text("Cantidad: ${pedido.cantidadPedido} kg")
-                        Text("CantidadAsignada: ${pedido.cantidadAsignada} kg")
-                        Text("PrecioUnitVenta: ${pedido.precioUnitVenta} kg")
-
+                        Text("Cantidad pactada: ${pedido.cantidadPedido} kg")
+                        Text("Cantidad asignada: ${pedido.cantidadAsignada} kg")
+                        Text("Faltante: $faltante kg")
+                        Text("Precio unitario venta: ${pedido.precioUnitVenta}")
                         Text("Pedido ID: ${pedido.pedidoId}")
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -135,9 +157,15 @@ fun AsignacionMezclaPedidoScreen(
                         Button(
                             onClick = { pedidoId = pedido.pedidoId },
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = pedidoId != pedido.pedidoId
+                            enabled = !anuncioCompleto && pedidoId != pedido.pedidoId
                         ) {
-                            Text(if (pedidoId == pedido.pedidoId) "Anuncio seleccionado" else "Seleccionar anuncio")
+                            Text(
+                                when {
+                                    pedidoId == pedido.pedidoId -> "Anuncio seleccionado"
+                                    anuncioCompleto -> "Anuncio completado"
+                                    else -> "Seleccionar anuncio"
+                                }
+                            )
                         }
                     }
                 }
@@ -149,7 +177,7 @@ fun AsignacionMezclaPedidoScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Mezclas disponibles",
+            text = "Mezclas disponibles para ligar",
             style = MaterialTheme.typography.titleLarge
         )
 
@@ -159,12 +187,15 @@ fun AsignacionMezclaPedidoScreen(
             Text("No hay mezclas disponibles")
         } else {
             state.mezclasDisponibles.forEach { mezcla ->
+                val agotada = mezcla.cantidadDisponible <= 0.0
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text("Descripción: ${mezcla.descripcion}")
+                        Text("Estado: ${mezcla.estado}")
                         Text("Disponible: ${mezcla.cantidadDisponible} kg")
                         Text("Costo promedio/kg: ${mezcla.costoPromedioKg}")
                         Text("Mezcla ID: ${mezcla.mezclaId}")
@@ -174,9 +205,15 @@ fun AsignacionMezclaPedidoScreen(
                         Button(
                             onClick = { mezclaId = mezcla.mezclaId },
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = mezclaId != mezcla.mezclaId
+                            enabled = !agotada && mezclaId != mezcla.mezclaId
                         ) {
-                            Text(if (mezclaId == mezcla.mezclaId) "Mezcla seleccionada" else "Seleccionar mezcla")
+                            Text(
+                                when {
+                                    mezclaId == mezcla.mezclaId -> "Mezcla seleccionada"
+                                    agotada -> "Mezcla agotada"
+                                    else -> "Seleccionar mezcla"
+                                }
+                            )
                         }
                     }
                 }
@@ -208,7 +245,7 @@ fun AsignacionMezclaPedidoScreen(
 
         OutlinedTextField(
             value = cantidadAsignada,
-            onValueChange = { cantidadAsignada = it },
+            onValueChange = { cantidadAsignada = it.replace(',', '.') },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Cantidad asignada (kg)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -218,29 +255,31 @@ fun AsignacionMezclaPedidoScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         if (mezclaSeleccionada != null && pedidoSeleccionado != null) {
-
-            val faltante = ((pedidoSeleccionado.cantidadPedido ?: 0.0) -
-                    (pedidoSeleccionado.cantidadAsignada ?: 0.0))
-                .coerceAtLeast(0.0)
-
             Text(
-                text = "Disponible en mezcla: ${mezclaSeleccionada.cantidadDisponible} Kg\n" +
-                        "Faltante de anuncio: $faltante Kg",
+                text = "Disponible en mezcla: $disponibleMezcla kg\nFaltante de anuncio: $faltantePedido kg",
                 style = MaterialTheme.typography.bodyLarge
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            when {
+                cantidadAsignadaNum > disponibleMezcla -> {
+                    Text(
+                        text = "La cantidad supera lo disponible en la mezcla.",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                cantidadAsignadaNum > faltantePedido -> {
+                    Text(
+                        text = "La cantidad supera el faltante del anuncio.",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
         }
 
-//        OutlinedTextField(
-//
-//            value = precioUnitVenta,
-//            onValueChange = { precioUnitVenta = it },
-//            modifier = Modifier.fillMaxWidth(),
-//            label = { Text("Precio unitario venta") },
-//            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-//            singleLine = true
-//        )
         OutlinedTextField(
             value = precioUnitVenta,
             onValueChange = {},
@@ -255,7 +294,7 @@ fun AsignacionMezclaPedidoScreen(
 
         OutlinedTextField(
             value = factor,
-            onValueChange = { factor = it },
+            onValueChange = { factor = it.replace(',', '.') },
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Factor") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -286,17 +325,20 @@ fun AsignacionMezclaPedidoScreen(
                 viewModel.asignar(
                     pedidoId = pedidoId,
                     mezclaId = mezclaId,
-                    cantidadAsignada = cantidadAsignada.toDoubleOrNull() ?: 0.0,
+                    cantidadAsignada = cantidadAsignadaNum,
                     precioUnitVenta = pedidoSeleccionado?.precioUnitVenta ?: 0L,
                     factor = factor.toDoubleOrNull() ?: 90.0,
                     nota = nota
                 )
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !state.loading
+            enabled = puedeGuardar
         ) {
             if (state.loading) {
-                CircularProgressIndicator(modifier = Modifier.width(20.dp), strokeWidth = 2.dp)
+                CircularProgressIndicator(
+                    modifier = Modifier.width(20.dp),
+                    strokeWidth = 2.dp
+                )
                 Spacer(modifier = Modifier.width(8.dp))
             }
             Text("Guardar asignación")

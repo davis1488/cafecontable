@@ -17,7 +17,7 @@ object Routes {
     const val MEZCLAS = "mezclas"
     const val ASIGNACION_MEZCLA_PEDIDO = "asignacion_mezcla_pedido"
 
-    fun preparacionEntregaRoute(ventaId: String): String {
-        return "$PREPARACION_ENTREGA/$ventaId"
-    }
+
+    fun asignacionMezclaRoute(ventaId: String) =
+        "asignacion_mezcla/$ventaId"
 }
