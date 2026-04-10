@@ -156,4 +156,11 @@ interface VentaPedidoDao {
         pesoBruto: Double
     ): Int
 
+//    @Query("""
+//    UPDATE venta_pedido
+//    SET estado = :estado
+//    WHERE id = :pedidoId
+//""")
+//    suspend fun actualizarEstado(pedidoId: String, estado: String)
+
 }

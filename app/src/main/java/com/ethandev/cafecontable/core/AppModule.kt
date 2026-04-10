@@ -18,6 +18,7 @@ import com.ethandev.cafecontable.data.repository.CuentaPorPagarRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialCompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialVentaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.InventarioRepositoryImpl
+import com.ethandev.cafecontable.data.repository.LiquidacionRepositoryImpl
 import com.ethandev.cafecontable.data.repository.MezclaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.PreparacionEntregaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
@@ -26,6 +27,7 @@ import com.ethandev.cafecontable.data.repository.VentaRepositoryImpl
 import com.ethandev.cafecontable.domain.repository.CompraRepository
 import com.ethandev.cafecontable.domain.repository.HistorialCompraRepository
 import com.ethandev.cafecontable.domain.repository.InventarioRepository
+import com.ethandev.cafecontable.domain.repository.LiquidacionRepository
 import com.ethandev.cafecontable.domain.repository.MezclaRepository
 import com.ethandev.cafecontable.domain.repository.PreparacionEntregaRepository
 import com.ethandev.cafecontable.domain.repository.VentaPedidoRepository
@@ -53,15 +55,18 @@ import com.ethandev.cafecontable.domain.usecase.MarcarVentaPedidoComoEntregadoUs
 import com.ethandev.cafecontable.domain.usecase.ObtenerCompraPorIdUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerExistenciaUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialComprasUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialLiquidacionesUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialMezclasUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialVentasUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerInventarioUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerLiquidacionesPendientesUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerMovimientoKardexPorCompraIdUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoCuentaPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoCuentaPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarCompraCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarEntradaInventarioUseCase
+import com.ethandev.cafecontable.domain.usecase.RegistrarLiquidacionUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarMezclaUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarPreparacionEntregaUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarPrestamoUseCase
@@ -70,6 +75,7 @@ import com.ethandev.cafecontable.domain.usecase.RegistrarVentaPedidoUseCase
 import com.ethandev.cafecontable.ui.screen.asignacionmezcla.AsignacionMezclaPedidoViewModel
 import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
+import com.ethandev.cafecontable.ui.screen.liquidacion.LiquidacionViewModel
 import com.ethandev.cafecontable.ui.screen.mezcla.MezclasViewModel
 import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntregaViewModel
 import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoViewModel
@@ -611,4 +617,45 @@ object AppModule {
 
     fun provideMarcarAnalizadoUseCase(context: Context) =
         MarcarMezclaAnalizadoUseCase(provideMezclaRepository(context))
+
+
+
+    ////////// LIQUIDACIONES
+
+    fun provideLiquidacionRepository(db: AppDatabase): LiquidacionRepository {
+        return LiquidacionRepositoryImpl(db = db, liquidacionDao= db.liquidacionDao() )
+    }
+
+    fun provideObtenerLiquidacionesPendientesUseCase(
+        db: AppDatabase
+    ): ObtenerLiquidacionesPendientesUseCase {
+        return ObtenerLiquidacionesPendientesUseCase(
+            repository = provideLiquidacionRepository(db)
+        )
+    }
+
+    fun provideObtenerHistorialLiquidacionesUseCase(
+        db: AppDatabase
+    ): ObtenerHistorialLiquidacionesUseCase {
+        return ObtenerHistorialLiquidacionesUseCase(
+            repository = provideLiquidacionRepository(db)
+        )
+    }
+
+    fun provideRegistrarLiquidacionUseCase(
+        db: AppDatabase
+    ): RegistrarLiquidacionUseCase {
+        return RegistrarLiquidacionUseCase(
+            repository = provideLiquidacionRepository(db)
+        )
+    }
+
+    fun provideLiquidacionViewModel(context: Context): LiquidacionViewModel {
+        val db = provideDatabase(context)
+        return LiquidacionViewModel(
+            obtenerLiquidacionesPendientesUseCase = provideObtenerLiquidacionesPendientesUseCase(db),
+            obtenerHistorialLiquidacionesUseCase = provideObtenerHistorialLiquidacionesUseCase(db),
+            registrarLiquidacionUseCase = provideRegistrarLiquidacionUseCase(db)
+        )
+    }
 }

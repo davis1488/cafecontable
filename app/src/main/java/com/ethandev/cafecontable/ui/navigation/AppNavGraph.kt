@@ -26,6 +26,8 @@ import com.ethandev.cafecontable.ui.screen.historialventas.HistorialVentasViewMo
 import com.ethandev.cafecontable.ui.screen.home.HomeScreen
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioScreen
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
+import com.ethandev.cafecontable.ui.screen.liquidacion.LiquidacionScreen
+import com.ethandev.cafecontable.ui.screen.liquidacion.LiquidacionViewModel
 import com.ethandev.cafecontable.ui.screen.mezcla.MezclasScreen
 import com.ethandev.cafecontable.ui.screen.mezcla.MezclasViewModel
 import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntregaScreen
@@ -51,7 +53,8 @@ fun AppNavGraph(
     ventasPedidoVm: VentasPedidoViewModel,
     preparacionEntregaVm: PreparacionEntregaViewModel,
     mezclaVm : MezclasViewModel,
-    asignacionMezclaPedidoVm : AsignacionMezclaPedidoViewModel
+    asignacionMezclaPedidoVm : AsignacionMezclaPedidoViewModel,
+    liquidacionVm : LiquidacionViewModel
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -70,6 +73,7 @@ fun AppNavGraph(
         Routes.CUENTAS_POR_PAGAR -> "Cuentas Por Pagar"
         Routes.PRESTAMOS -> "Prestamos"
         Routes.CONSULTA_PRESTAMOS -> "Consulta Prestamos"
+        Routes.ROUTE_LIQUIDACION -> "Liquidacion"
         else -> "Inicio"
     }
 
@@ -83,6 +87,8 @@ fun AppNavGraph(
             currentRoute == Routes.PREPARACION_ENTREGA_ARG ||
             currentRoute == Routes.MEZCLAS ||
             currentRoute == Routes.ASIGNACION_MEZCLA_PEDIDO ||
+            currentRoute == Routes.ROUTE_LIQUIDACION ||
+
             currentRoute?.startsWith("${Routes.PREPARACION_ENTREGA}/") == true
 
     Scaffold(
@@ -113,7 +119,8 @@ fun AppNavGraph(
                     onGoCuentasPorPagar = { navController.navigate(Routes.CUENTAS_POR_PAGAR) },
                     onGoPrestamos = { navController.navigate(Routes.PRESTAMOS) },
                     onGoMezclas  = { navController.navigate(Routes.MEZCLAS) },
-                    onGoAsignacionMezclaPedido  = { navController.navigate(Routes.ASIGNACION_MEZCLA_PEDIDO) }
+                    onGoAsignacionMezclaPedido  = { navController.navigate(Routes.ASIGNACION_MEZCLA_PEDIDO) },
+                    onGoLiquidacion  = { navController.navigate(Routes.ROUTE_LIQUIDACION) }
 
 
                     )
@@ -197,6 +204,11 @@ fun AppNavGraph(
                    // ventaId = ventaId
                    asignacionMezclaPedidoVm
                 )
+            }
+
+            composable(Routes.ROUTE_LIQUIDACION) {
+                LiquidacionScreen(liquidacionVm)
+
             }
 
         }

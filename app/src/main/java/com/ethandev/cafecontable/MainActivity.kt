@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
         val ventasPedidoVm = AppModule.provideVentasPedidoViewModel(this)
         val asignacionMezclaPedidoVm = AppModule.provideAsignacionMezclaPedidoViewModel(this)
         val mezclaVm = AppModule.provideMezclasViewModel(this)
+        val liquidacionVm = AppModule.provideLiquidacionViewModel(this)
 
 //        provideMezclasViewModel
 
@@ -112,6 +113,7 @@ class MainActivity : ComponentActivity() {
                     prestamosVm  = prestamosVm,
                     mezclaVm = mezclaVm,
                     asignacionMezclaPedidoVm = asignacionMezclaPedidoVm,
+                    liquidacionVm =  liquidacionVm
 
                 )
             }
