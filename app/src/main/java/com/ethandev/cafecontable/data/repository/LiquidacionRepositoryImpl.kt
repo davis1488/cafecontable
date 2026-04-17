@@ -4,11 +4,11 @@ import androidx.room.withTransaction
 import com.ethandev.cafecontable.data.local.dao.LiquidacionDao
 import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.entity.LiquidacionEntregaEntity
+import com.ethandev.cafecontable.domain.constants.EstadoAnuncio
 import com.ethandev.cafecontable.domain.model.LiquidacionHistorial
 import com.ethandev.cafecontable.domain.model.LiquidacionPendiente
 import com.ethandev.cafecontable.domain.repository.LiquidacionRepository
 import com.ethandev.cafecontable.domain.repository.RegistrarLiquidacionInput
-import com.ethandev.cafecontable.ui.screen.ventaspedido.EstadoPedido
 import java.util.UUID
 import kotlin.math.roundToLong
 
@@ -108,7 +108,7 @@ class LiquidacionRepositoryImpl(
 
             db.ventaPedidoDao().actualizarEstado(
                 pedidoId = input.pedidoId,
-                estado = EstadoPedido.LIQUIDADO
+                estado = EstadoAnuncio.LIQUIDADO.toString()
             )
         }
     }

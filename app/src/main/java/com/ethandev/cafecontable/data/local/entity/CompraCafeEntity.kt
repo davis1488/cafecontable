@@ -22,7 +22,8 @@ data class CompraCafeEntity(
     val proveedor: String? = null,
     val esCredito: Boolean = false,
     val nota: String? = null,
-    val estado: String = "ACTIVA"
+    val estado: String = "ACTIVA",
+    val operacionCompraId: String?
 )
 
 

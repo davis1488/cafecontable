@@ -39,18 +39,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.ethandev.cafecontable.domain.constants.EstadoAnuncio
 import com.ethandev.cafecontable.domain.model.VentaPedido
 import com.ethandev.cafecontable.domain.repository.VentaPedidoInput
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private enum class HistorialFiltro(val label: String) {
-    TODOS("Todos"),
-    CREADO("Creado"),
-    ENTREGA_PARCIAL("Entrega parcial"),
-    ENTREGA_TOTAL("Entrega total")
+
+private enum class HistorialFiltro(val label: String, val estadoDb: String?) {
+    TODOS("Todos", null),
+    CREADO("Creado", "CREADO"),
+    ENTREGA_PARCIAL("Entrega parcial", "ENTREGA_PARCIAL"),
+    ENTREGA_TOTAL("Entrega total", "ENTREGA_TOTAL")
 }
+
+
 
 @Composable
 fun VentasPedidoScreen(
@@ -274,18 +278,20 @@ private fun HistorialPedidosTab(
     onIrAsignacionMezcla: (String) -> Unit
 ) {
     var filtroSeleccionado by remember { mutableStateOf(HistorialFiltro.TODOS) }
-
     val itemsFiltrados = remember(items, filtroSeleccionado) {
         when (filtroSeleccionado) {
             HistorialFiltro.TODOS -> items
+
             HistorialFiltro.CREADO -> items.filter {
-                it.estado.equals("CREADO", ignoreCase = true)
+                EstadoAnuncio.from(it.estado) == EstadoAnuncio.CREADO
             }
+
             HistorialFiltro.ENTREGA_PARCIAL -> items.filter {
-                it.estado.equals("ENTREGA_PARCIAL", ignoreCase = true)
+                EstadoAnuncio.from(it.estado) == EstadoAnuncio.ENTREGA_PARCIAL
             }
+
             HistorialFiltro.ENTREGA_TOTAL -> items.filter {
-                it.estado.equals("ENTREGA_TOTAL", ignoreCase = true)
+                EstadoAnuncio.from(it.estado) == EstadoAnuncio.ENTREGA_TOTAL
             }
         }
     }

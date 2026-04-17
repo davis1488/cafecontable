@@ -15,24 +15,24 @@ interface LiquidacionDao {
     suspend fun insert(liquidacion: LiquidacionEntregaEntity)
 
     @Query("""
-        SELECT
-            amp.id AS asignacionId,
-            amp.pedidoId AS pedidoId,
-            amp.mezclaId AS mezclaId,
-            vp.cliente AS cliente,
-            amp.cantidadAsignada AS cantidadKg,
-            vp.precioUnitVenta AS precioBaseKg,
-            m.factorRendimiento AS factorReal
-        FROM asignacion_mezcla_pedido amp
-        INNER JOIN venta_pedido vp ON vp.id = amp.pedidoId
-        INNER JOIN mezcla m ON m.id = amp.mezclaId
-        WHERE NOT EXISTS (
-            SELECT 1
-            FROM liquidacion_entrega le
-            WHERE le.asignacionId = amp.id
-        )
-        ORDER BY amp.fecha DESC
-    """)
+    SELECT
+        amp.id AS asignacionId,
+        amp.pedidoId AS pedidoId,
+        amp.mezclaId AS mezclaId,
+        vp.cliente AS cliente,
+        amp.cantidadAsignada AS cantidadKg,
+        COALESCE(vp.precioUnitVenta, 0) AS precioBaseKg,
+        COALESCE(m.factorRendimiento, 0) AS factorReal
+    FROM asignacion_mezcla_pedido amp
+    INNER JOIN venta_pedido vp ON vp.id = amp.pedidoId
+    INNER JOIN mezcla m ON m.id = amp.mezclaId
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM liquidacion_entrega le
+        WHERE le.asignacionId = amp.id
+    )
+    ORDER BY amp.fecha DESC
+""")
     suspend fun obtenerPendientesLiquidacion(): List<LiquidacionPendienteDb>
 
     @Query("""

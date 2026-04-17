@@ -5,5 +5,6 @@ data class CompraDisponibleDb(
     val productoId: String,
     val productoNombre: String,
     val cantidadDisponible: Double,
-    val precioUnitCompra: Long
+    val precioUnitCompra: Long,
+//    val operacionMezclaId: String
 )

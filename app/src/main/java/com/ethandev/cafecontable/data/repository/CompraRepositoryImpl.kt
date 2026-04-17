@@ -56,7 +56,8 @@ class CompraRepositoryImpl(
                     precioUnitCompra = input.precioUnitCompra,
                     proveedor = proveedor,
                     esCredito = input.esCredito,
-                    nota = nota
+                    nota = nota,
+                    operacionCompraId = input.operacionCompraId
                 )
             ).toString()
             Log.d("DEBUG_COMPRA", "compraId real = $compraId")

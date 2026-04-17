@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.ethandev.cafecontable.domain.constants.EstadoMezcla
 
 @Composable
 fun MezclasScreen(
@@ -464,81 +465,6 @@ private fun InfoRow(
     }
 }
 
-//@Composable
-//private fun HistorialMezclasTab(
-//    state: MezclasState
-//) {
-//    if (state.loadingHistorial) {
-//        Column(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .padding(16.dp),
-//            verticalArrangement = Arrangement.Center,
-//            horizontalAlignment = Alignment.CenterHorizontally
-//        ) {
-//            CircularProgressIndicator()
-//            Spacer(modifier = Modifier.height(12.dp))
-//            Text("Cargando historial de mezclas...")
-//        }
-//        return
-//    }
-//
-//    if (state.historialMezclas.isEmpty()) {
-//        Column(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .padding(16.dp),
-//            verticalArrangement = Arrangement.Center,
-//            horizontalAlignment = Alignment.CenterHorizontally
-//        ) {
-//            Text(
-//                text = "Todavía no hay mezclas registradas",
-//                style = MaterialTheme.typography.bodyLarge
-//            )
-//        }
-//        return
-//    }
-//
-//    LazyColumn(
-//        modifier = Modifier
-//            .fillMaxSize()
-//            .padding(16.dp),
-//        verticalArrangement = Arrangement.spacedBy(12.dp)
-//    ) {
-//        itemsIndexed(state.historialMezclas) { index, mezcla ->
-//            Card(
-//                modifier = Modifier.fillMaxWidth(),
-//                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-//            ) {
-//                Column(modifier = Modifier.padding(14.dp)) {
-//                    Text(
-//                        text = "Mezcla ${index + 1}",
-//                        style = MaterialTheme.typography.titleLarge,
-//                        fontWeight = FontWeight.Bold
-//                    )
-//
-//                    Spacer(modifier = Modifier.height(8.dp))
-//
-//                    InfoRow("ID", mezcla.id)
-//                    InfoRow("Fecha", mezcla.fechaTexto)
-//                    InfoRow("Cantidad total", "${mezcla.cantidadTotal} kg")
-//                    InfoRow("Costo total", "$${mezcla.costoTotal}")
-//                    InfoRow("Estado", mezcla.estado)
-//
-//                    if (!mezcla.nota.isNullOrBlank()) {
-//                        Spacer(modifier = Modifier.height(8.dp))
-//                        Text(
-//                            text = "Nota: ${mezcla.nota}",
-//                            style = MaterialTheme.typography.bodyMedium
-//                        )
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}
-
-
 @Composable
 private fun HistorialMezclasTab(
     state: MezclasState,
@@ -553,16 +479,16 @@ private fun HistorialMezclasTab(
     var mostrarDialogAnalizado by remember { mutableStateOf(false) }
 
     val tabs = listOf(
-        ESTADO_MEZCLA_CREADO,
-        ESTADO_MEZCLA_PENDIENTE_ENTREGA,
-        ESTADO_MEZCLA_ENTREGADO,
-        ESTADO_MEZCLA_ANALIZADO
+        EstadoMezcla.CREADO,
+        EstadoMezcla.PENDIENTE_ENTREGA,
+        EstadoMezcla.ENTREGADO,
+        EstadoMezcla.ANALIZADO
     )
 
     val estadoSeleccionado = tabs[selectedTab]
 
     val mezclasFiltradas = state.historialMezclas.filter {
-        it.estado.equals(estadoSeleccionado, ignoreCase = true)
+        it.estado.equals(estadoSeleccionado.name, ignoreCase = true)
     }
 
     if (mostrarDialogPendiente && mezclaSeleccionadaId != null) {
@@ -627,7 +553,7 @@ private fun HistorialMezclasTab(
                 Tab(
                     selected = selectedTab == index,
                     onClick = { selectedTab = index },
-                    text = { Text(estado) }
+                    text = { Text(estado.name) }
                 )
             }
         }
@@ -727,17 +653,17 @@ private fun HistorialMezclasTab(
 private fun EstadoMezclaChip(estado: String) {
 
     val (colorFondo, colorTexto) = when (estado.uppercase()) {
-        ESTADO_MEZCLA_CREADO -> Pair(
+        EstadoMezcla.CREADO.toString() -> Pair(
             Color(0xFFE3F2FD), // azul claro
             Color(0xFF1565C0)
         )
 
-        ESTADO_MEZCLA_ANALIZADO -> Pair(
+        EstadoMezcla.ANALIZADO.toString() -> Pair(
             Color(0xFFFFF3E0), // naranja claro
             Color(0xFFE65100)
         )
 
-        ESTADO_MEZCLA_ENTREGADO -> Pair(
+        EstadoMezcla.ENTREGADO.toString() -> Pair(
             Color(0xFFE8F5E9), // verde claro
             Color(0xFF2E7D32)
         )
@@ -766,7 +692,7 @@ private fun AccionesEstadoMezcla(
     onIrAnalizado: () -> Unit
 ) {
     when (estadoActual.uppercase()) {
-        ESTADO_MEZCLA_CREADO -> {
+        EstadoMezcla.CREADO.toString() -> {
             Button(
                 onClick = onIrPendienteEntrega,
                 modifier = Modifier.fillMaxWidth()
@@ -775,7 +701,7 @@ private fun AccionesEstadoMezcla(
             }
         }
 
-        ESTADO_MEZCLA_PENDIENTE_ENTREGA -> {
+        EstadoMezcla.PENDIENTE_ENTREGA.toString() -> {
             Button(
                 onClick = onIrEntregado,
                 modifier = Modifier.fillMaxWidth()
@@ -784,7 +710,7 @@ private fun AccionesEstadoMezcla(
             }
         }
 
-        ESTADO_MEZCLA_ENTREGADO -> {
+        EstadoMezcla.ENTREGADO.toString() -> {
             Button(
                 onClick = onIrAnalizado,
                 modifier = Modifier.fillMaxWidth()
@@ -793,7 +719,7 @@ private fun AccionesEstadoMezcla(
             }
         }
 
-        ESTADO_MEZCLA_ANALIZADO -> {
+        EstadoMezcla.ANALIZADO.toString() -> {
             Text(
                 text = "Proceso finalizado",
                 style = MaterialTheme.typography.bodyMedium

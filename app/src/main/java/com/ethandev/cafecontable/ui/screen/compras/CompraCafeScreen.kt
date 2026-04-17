@@ -54,6 +54,14 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
     val total = if (cantidad > 0 && precio > 0) (cantidad * precio).toLong() else 0L
     val saldo = total - abono
 
+
+    var expandedOperacion by remember { mutableStateOf(false) }
+
+    val operacionesCompra = state.operacionesCompra
+    val operacionCompraId = state.operacionCompraIdSeleccionada
+    val operacionCompraSeleccionada = operacionesCompra.firstOrNull { it.id == operacionCompraId }
+
+
     LaunchedEffect(state.error, state.okMsg) {
         state.error?.let {
             snackbarHostState.showSnackbar(it)
@@ -179,6 +187,42 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
             }
 
             item {
+                ExposedDropdownMenuBox(
+                    expanded = expandedOperacion,
+                    onExpandedChange = { expandedOperacion = !expandedOperacion }
+                ) {
+                    OutlinedTextField(
+                        value = operacionCompraSeleccionada?.nombre ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Operación de compra") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expandedOperacion)
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+
+                    DropdownMenu(
+                        expanded = expandedOperacion,
+                        onDismissRequest = { expandedOperacion = false }
+                    ) {
+                        operacionesCompra.forEach { operacion ->
+                            DropdownMenuItem(
+                                text = { Text(operacion.nombre) },
+                                onClick = {
+                                    vm.seleccionarOperacionCompra(operacion.id)
+                                    expandedOperacion = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+
+            item {
                 OutlinedTextField(
                     value = proveedorTxt,
                     onValueChange = { proveedorTxt = it },
@@ -250,7 +294,8 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
                                     proveedor = proveedorTxt.ifBlank { null },
                                     esCredito = esCredito,
                                     nota = notaTxt.ifBlank { null },
-                                    abono = abono
+                                    abono = abono,
+                                    operacionCompraId = operacionCompraId
                                 )
                             )
 

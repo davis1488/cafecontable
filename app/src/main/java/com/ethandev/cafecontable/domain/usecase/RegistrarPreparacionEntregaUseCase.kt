@@ -6,6 +6,7 @@ import com.ethandev.cafecontable.data.local.dao.VentaPedidoDao
 import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
 import com.ethandev.cafecontable.data.local.entity.PreparacionEntregaDetalleEntity
 import com.ethandev.cafecontable.data.local.entity.PreparacionEntregaEntity
+import com.ethandev.cafecontable.domain.constants.EstadoAnuncio
 import com.ethandev.cafecontable.domain.model.RegistrarPreparacionEntregaInput
 import com.ethandev.cafecontable.domain.util.calcularAjustePorFactor
 import java.util.UUID
@@ -129,13 +130,13 @@ class RegistrarPreparacionEntregaUseCase(
 
         val nuevaCantidadEntregada = venta.cantidadAsignada + cantidadPreparada
 
-        val nuevoEstado = when {
-            nuevaCantidadEntregada <= 0.0 -> "PENDIENTE_PREPARACION"
-            nuevaCantidadEntregada < venta.cantidadPactada -> "ENTREGA_PARCIAL"
-            else -> "ENTREGADA"
+        val nuevoEstado = if (nuevaCantidadEntregada < venta.cantidadPactada) {
+            EstadoAnuncio.ENTREGA_PARCIAL.valorDb
+        } else {
+            EstadoAnuncio.ENTREGA_TOTAL.valorDb
         }
 
-        ventaPedidoDao.actualizarEntregaYEstado(
+        ventaPedidoDao.actualizarCantidadAsignadaYEstado(
             pedidoId = venta.id,
             cantidadAsignada = nuevaCantidadEntregada,
             estado = nuevoEstado

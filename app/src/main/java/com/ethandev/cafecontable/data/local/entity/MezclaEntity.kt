@@ -7,11 +7,21 @@ import androidx.room.PrimaryKey
 data class MezclaEntity(
     @PrimaryKey
     val id: String,
+
     val fecha: Long,
+
+    val operacionMezclaId: String?,
+
     val cantidadTotal: Double,
     val cantidadDisponible: Double,
+
+    val costoCafeBase: Long,
+    val gastosCompraAcumulados: Long,
+    val gastosMezcla: Long,
+
     val costoTotal: Long,
     val costoPromedioKg: Long,
+
     val estado: String,
     val nota: String?,
 

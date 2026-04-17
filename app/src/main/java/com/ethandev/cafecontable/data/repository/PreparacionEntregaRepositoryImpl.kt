@@ -195,7 +195,7 @@ class PreparacionEntregaRepositoryImpl(
                 else -> "ENTREGADA"
             }
 
-            ventaPedidoDao.actualizarEntregaYEstado(
+            ventaPedidoDao.actualizarCantidadAsignadaYEstado(
                 pedidoId = venta.id,
                 cantidadAsignada = nuevaCantidadEntregada,
                 estado = nuevoEstado

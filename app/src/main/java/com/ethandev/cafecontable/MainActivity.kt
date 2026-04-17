@@ -27,9 +27,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val compraVm = CompraCafeViewModel(
-            AppModule.provideCompraUseCase(this)
-        )
+        val compraVm = AppModule.provideCompraCafeViewModel(this)
 
         val ventaVm = VentaCafeViewModel(
             AppModule.provideVentaUseCase(this)
@@ -42,6 +40,8 @@ class MainActivity : ComponentActivity() {
         val asignacionMezclaPedidoVm = AppModule.provideAsignacionMezclaPedidoViewModel(this)
         val mezclaVm = AppModule.provideMezclasViewModel(this)
         val liquidacionVm = AppModule.provideLiquidacionViewModel(this)
+        val operacionesgastosVm = AppModule.provideOperacionViewModel(this)
+
 
 //        provideMezclasViewModel
 
@@ -113,7 +113,8 @@ class MainActivity : ComponentActivity() {
                     prestamosVm  = prestamosVm,
                     mezclaVm = mezclaVm,
                     asignacionMezclaPedidoVm = asignacionMezclaPedidoVm,
-                    liquidacionVm =  liquidacionVm
+                    liquidacionVm =  liquidacionVm,
+                    operacionesgastosVm = operacionesgastosVm
 
                 )
             }
