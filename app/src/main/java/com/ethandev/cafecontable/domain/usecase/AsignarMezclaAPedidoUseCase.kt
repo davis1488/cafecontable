@@ -4,6 +4,8 @@ import com.ethandev.cafecontable.data.local.dao.AsignacionMezclaPedidoDao
 import com.ethandev.cafecontable.data.local.dao.MezclaDao
 import com.ethandev.cafecontable.data.local.dao.VentaPedidoDao
 import com.ethandev.cafecontable.data.local.entity.AsignacionMezclaPedidoEntity
+import com.ethandev.cafecontable.domain.constants.EstadoAnuncio
+import com.ethandev.cafecontable.domain.constants.EstadoMezcla
 import com.ethandev.cafecontable.domain.model.AsignarMezclaAPedidoInput
 import com.ethandev.cafecontable.domain.util.calcularAjustePorFactor
 import java.util.UUID
@@ -60,12 +62,13 @@ class AsignarMezclaAPedidoUseCase(
         asignacionDao.insert(asignacion)
 
         val nuevaCantidadDisponible = mezcla.cantidadDisponible - input.cantidadAsignada
-       // val nuevoEstadoMezcla = if (nuevaCantidadDisponible <= 0.0) "AGOTADA" else "DISPONIBLE"
-        val nuevoEstadoMezcla = when {
-            mezcla.estado.equals("ANALIZADA", ignoreCase = true) &&
-                    nuevaCantidadDisponible <= 0.0 -> "FINALIZADA"
 
-            mezcla.estado.equals("ANALIZADA", ignoreCase = true) -> "FINALIZADA"
+        val nuevoEstadoMezcla = when {
+            nuevaCantidadDisponible <= 0.0 && mezcla.estado.equals(EstadoMezcla.ANALIZADO.name, ignoreCase = true) ->
+                EstadoMezcla.ANALIZADO
+
+            nuevaCantidadDisponible <= 0.0 && mezcla.estado.equals(EstadoMezcla.ENTREGADO.name, ignoreCase = true) ->
+                EstadoMezcla.ENTREGADO
 
             else -> mezcla.estado
         }
@@ -73,17 +76,17 @@ class AsignarMezclaAPedidoUseCase(
         mezclaDao.actualizarDisponibleYEstado(
             mezclaId = mezcla.id,
             cantidadDisponible = nuevaCantidadDisponible,
-            estado = nuevoEstadoMezcla
+            estado = nuevoEstadoMezcla.toString()
         )
 
         val nuevaCantidadAsignada = pedido.cantidadAsignada + input.cantidadAsignada
+
         val nuevoEstadoPedido = when {
-            nuevaCantidadAsignada <= 0.0 -> "PENDIENTE_ASIGNACION"
-            nuevaCantidadAsignada < pedido.cantidadPactada -> "ASIGNACION_PARCIAL"
-            else -> "ASIGNADO"
+            nuevaCantidadAsignada < pedido.cantidadPactada -> EstadoAnuncio.ENTREGA_PARCIAL.valorDb
+            else -> EstadoAnuncio.ENTREGA_TOTAL.valorDb
         }
 
-        ventaPedidoDao.actualizarEntregaYEstado(
+        ventaPedidoDao.actualizarCantidadAsignadaYEstado(
             pedidoId = pedido.id,
             cantidadAsignada = nuevaCantidadAsignada,
             estado = nuevoEstadoPedido

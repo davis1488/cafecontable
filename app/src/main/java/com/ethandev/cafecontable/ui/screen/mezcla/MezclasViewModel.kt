@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ethandev.cafecontable.data.local.dao.CompraDao
 import com.ethandev.cafecontable.data.local.entity.CompraDisponibleDb
+import com.ethandev.cafecontable.data.local.entity.OperacionEntity
+import com.ethandev.cafecontable.domain.constants.TipoOperacion
 import com.ethandev.cafecontable.domain.model.MezclaDetalleInput
 import com.ethandev.cafecontable.domain.model.MezclaHistorialItem
 import com.ethandev.cafecontable.domain.model.RegistrarMezclaInput
-import com.ethandev.cafecontable.domain.usecase.ActualizarEstadoMezclaUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarOperacionesPorTipoUseCase
 import com.ethandev.cafecontable.domain.usecase.MarcarMezclaAnalizadoUseCase
 import com.ethandev.cafecontable.domain.usecase.MarcarMezclaEntregadoUseCase
 import com.ethandev.cafecontable.domain.usecase.MarcarMezclaPendienteEntregaUseCase
@@ -16,6 +18,7 @@ import com.ethandev.cafecontable.domain.usecase.RegistrarMezclaUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class MezclaFormItem(
@@ -23,7 +26,8 @@ data class MezclaFormItem(
     val productoId: String,
     val productoNombre: String,
     val cantidadUsada: Double,
-    val costoUnitCompra: Long
+    val costoUnitCompra: Long,
+    val operacionMezclaId: String? = null
 )
 
 data class CompraDisponibleUi(
@@ -38,6 +42,8 @@ data class MezclasState(
     val loading: Boolean = false,
     val loadingCompras: Boolean = false,
     val comprasDisponibles: List<CompraDisponibleUi> = emptyList(),
+    val operacionesMezcla: List<OperacionEntity> = emptyList(),
+    val operacionMezclaIdSeleccionada: String? = null,
     val okMsg: String? = null,
     val error: String? = null,
     val loadingHistorial: Boolean = false,
@@ -47,10 +53,10 @@ data class MezclasState(
 class MezclasViewModel(
     private val registrarMezclaUseCase: RegistrarMezclaUseCase,
     private val obtenerHistorialMezclasUseCase: ObtenerHistorialMezclasUseCase,
-    //private val actualizarEstadoMezclaUseCase: ActualizarEstadoMezclaUseCase,
-    private val marcarMezclaPendienteEntregaUseCase:MarcarMezclaPendienteEntregaUseCase,
-    private  val marcarMezclaEntregadoUseCase: MarcarMezclaEntregadoUseCase,
-    private  val marcarMezclaAnalizadoUseCase: MarcarMezclaAnalizadoUseCase,
+    private val marcarMezclaPendienteEntregaUseCase: MarcarMezclaPendienteEntregaUseCase,
+    private val marcarMezclaEntregadoUseCase: MarcarMezclaEntregadoUseCase,
+    private val marcarMezclaAnalizadoUseCase: MarcarMezclaAnalizadoUseCase,
+    private val listarOperacionesPorTipoUseCase: ListarOperacionesPorTipoUseCase,
     private val compraCafeDao: CompraDao
 ) : ViewModel() {
 
@@ -58,6 +64,7 @@ class MezclasViewModel(
     val state: StateFlow<MezclasState> = _state.asStateFlow()
 
     init {
+        cargarOperacionesMezcla()
         cargarComprasDisponibles()
         cargarHistorialMezclas()
     }
@@ -67,6 +74,30 @@ class MezclasViewModel(
             okMsg = null,
             error = null
         )
+    }
+
+    fun seleccionarOperacionMezcla(operacionId: String) {
+        _state.update { it.copy(operacionMezclaIdSeleccionada = operacionId) }
+    }
+
+    fun cargarOperacionesMezcla() {
+        viewModelScope.launch {
+            runCatching {
+                listarOperacionesPorTipoUseCase(TipoOperacion.MEZCLA)
+            }.onSuccess { operaciones ->
+                _state.update { actual ->
+                    actual.copy(
+                        operacionesMezcla = operaciones,
+                        operacionMezclaIdSeleccionada = actual.operacionMezclaIdSeleccionada
+                            ?: operaciones.firstOrNull()?.id
+                    )
+                }
+            }.onFailure { e ->
+                _state.update {
+                    it.copy(error = e.message ?: "Error al cargar operaciones de mezcla")
+                }
+            }
+        }
     }
 
     fun cargarHistorialMezclas() {
@@ -132,8 +163,9 @@ class MezclasViewModel(
             compraId = compra.compraId,
             productoId = compra.productoId,
             productoNombre = compra.productoNombre,
-            cantidadUsada = 0.0,
-            costoUnitCompra = compra.costoUnitCompra
+            cantidadUsada = compra.cantidadDisponible,
+            costoUnitCompra = compra.costoUnitCompra,
+            operacionMezclaId = _state.value.operacionMezclaIdSeleccionada
         )
     }
 
@@ -144,6 +176,15 @@ class MezclasViewModel(
         if (items.isEmpty()) {
             _state.value = _state.value.copy(
                 error = "Debes agregar al menos un item a la mezcla",
+                okMsg = null
+            )
+            return
+        }
+
+        val operacionMezclaId = _state.value.operacionMezclaIdSeleccionada
+        if (operacionMezclaId.isNullOrBlank()) {
+            _state.value = _state.value.copy(
+                error = "Debes seleccionar una operación de mezcla",
                 okMsg = null
             )
             return
@@ -183,6 +224,7 @@ class MezclasViewModel(
                     RegistrarMezclaInput(
                         fecha = System.currentTimeMillis(),
                         nota = nota?.trim()?.ifBlank { null },
+                        operacionMezclaId = operacionMezclaId,
                         items = items.map {
                             MezclaDetalleInput(
                                 compraId = it.compraId,

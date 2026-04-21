@@ -7,13 +7,11 @@ import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
 import com.ethandev.cafecontable.data.local.entity.MezclaDetalleEntity
 import com.ethandev.cafecontable.data.local.entity.MezclaEntity
+import com.ethandev.cafecontable.domain.constants.EstadoMezcla
 import com.ethandev.cafecontable.domain.model.MezclaHistorialItem
 import com.ethandev.cafecontable.domain.model.RegistrarMezclaInput
 import com.ethandev.cafecontable.domain.repository.MezclaRepository
-import com.ethandev.cafecontable.ui.screen.mezcla.ESTADO_MEZCLA_ANALIZADO
-import com.ethandev.cafecontable.ui.screen.mezcla.ESTADO_MEZCLA_CREADO
-import com.ethandev.cafecontable.ui.screen.mezcla.ESTADO_MEZCLA_ENTREGADO
-import com.ethandev.cafecontable.ui.screen.mezcla.ESTADO_MEZCLA_PENDIENTE_ENTREGA
+
 import java.util.UUID
 
 class MezclaRepositoryImpl(
@@ -101,8 +99,15 @@ class MezclaRepositoryImpl(
                     cantidadDisponible = cantidadTotal,
                     costoTotal = costoTotal,
                     costoPromedioKg = costoPromedioKg,
-                    estado = ESTADO_MEZCLA_CREADO,
-                    nota = nota
+                    estado = EstadoMezcla.CREADO.toString(),
+                    nota = nota,
+                    operacionMezclaId = input.operacionMezclaId,
+                    costoCafeBase = costoTotal,
+                    gastosCompraAcumulados = 0L,
+                    //gastosMezcla = 0L
+
+
+
                 )
             )
 
@@ -156,7 +161,7 @@ class MezclaRepositoryImpl(
     ): Int {
         return mezclaDao.marcarPendienteEntrega(
             mezclaId = mezclaId,
-            estado = ESTADO_MEZCLA_PENDIENTE_ENTREGA,
+            estado = EstadoMezcla.PENDIENTE_ENTREGA.toString(),
             numeroSacosEnviados = numeroSacosEnviados,
             kilajeEnviado = kilajeEnviado
         )
@@ -170,7 +175,7 @@ class MezclaRepositoryImpl(
     ): Int {
         return mezclaDao.marcarEntregado(
             mezclaId = mezclaId,
-            estado = ESTADO_MEZCLA_ENTREGADO,
+            estado = EstadoMezcla.ENTREGADO.toString(),
             numeroSacosEntregados = numeroSacosEntregados,
             kilajeEntregado = kilajeEntregado,
             lugarEntrega = lugarEntrega
@@ -183,7 +188,7 @@ class MezclaRepositoryImpl(
     ): Int {
         return mezclaDao.marcarAnalizado(
             mezclaId = mezclaId,
-            estado = ESTADO_MEZCLA_ANALIZADO,
+            estado = EstadoMezcla.ANALIZADO.toString(),
             factorRendimiento = factorRendimiento
         )
     }

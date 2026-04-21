@@ -1,4 +1,4 @@
-package com.ethandev.cafecontable.data.entity
+package com.ethandev.cafecontable.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

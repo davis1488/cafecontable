@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ethandev.cafecontable.data.local.dao.MezclaDao
 import com.ethandev.cafecontable.data.local.dao.VentaPedidoDao
+import com.ethandev.cafecontable.domain.constants.EstadoMezcla
 import com.ethandev.cafecontable.domain.model.AsignarMezclaAPedidoInput
 import com.ethandev.cafecontable.domain.usecase.AsignarMezclaAPedidoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,7 +70,7 @@ class AsignacionMezclaPedidoViewModel(
 
             runCatching {
                 val pedidos = ventaPedidoDao.obtenerPedidosDisponiblesParaAsignacion()
-                val mezclas = mezclaDao.obtenerMezclasDisponiblesParaAsignacion()
+                val mezclas = mezclaDao.obtenerMezclasDisponiblesParaAsignacion(EstadoMezcla.TODOS.map{ it.name})
                 pedidos to mezclas
             }.onSuccess { (pedidos, mezclas) ->
                 _state.value = _state.value.copy(

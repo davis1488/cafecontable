@@ -4,16 +4,13 @@ import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.entity.VentaPedidoEntity
 import com.ethandev.cafecontable.domain.constants.EstadoAnuncio
 import com.ethandev.cafecontable.domain.model.VentaPedido
-import com.ethandev.cafecontable.domain.repository.VentaPedidoInput
 import com.ethandev.cafecontable.domain.repository.VentaPedidoRepository
+import com.ethandev.cafecontable.domain.repository.dto.VentaPedidoInput
 import java.util.UUID
-
-
 
 class VentaPedidoRepositoryImpl(
     private val db: AppDatabase
 ) : VentaPedidoRepository {
-
 
     override suspend fun actualizarEstado(
         pedidoId: String,
@@ -45,7 +42,6 @@ class VentaPedidoRepositoryImpl(
         )
     }
 
-
     override suspend fun actualizarAnalisis(
         pedidoId: String,
         estado: String,
@@ -63,20 +59,12 @@ class VentaPedidoRepositoryImpl(
     override suspend fun registrarVenta(input: VentaPedidoInput) {
         val cliente = input.cliente.trim()
         val nota = input.nota?.trim()?.ifBlank { null }
-
-        require(cliente.isNotBlank()) {
-            "Debes ingresar el cliente"
-        }
-
-        require(input.cantidadPactada > 0.0) {
-            "La cantidad debe ser mayor a 0"
-        }
-
-        require(input.precioUnitVenta > 0L) {
-            "El precio de venta debe ser mayor a 0"
-        }
-
         val unidad = input.unidad.trim().uppercase()
+
+        require(cliente.isNotBlank()) { "Debes ingresar el cliente" }
+        require(input.cantidadPactada > 0.0) { "La cantidad debe ser mayor a 0" }
+        require(input.precioUnitVenta > 0L) { "El precio de venta debe ser mayor a 0" }
+
         val totalVenta = (input.cantidadPactada * input.precioUnitVenta).toLong()
 
         db.ventaPedidoDao().insert(
@@ -89,22 +77,18 @@ class VentaPedidoRepositoryImpl(
                 precioUnitVenta = input.precioUnitVenta,
                 totalVenta = totalVenta,
                 cantidadAsignada = 0.0,
-                estado = EstadoAnuncio.CREADO.toString(),
+                estado = EstadoAnuncio.CREADO.valorDb,
                 nota = nota
             )
         )
     }
 
     override suspend fun listarVentas(): List<VentaPedido> {
-        return db.ventaPedidoDao().getAll().map { pedido ->
-            pedido.toDomain()
-        }
+        return db.ventaPedidoDao().getAll().map { it.toDomain() }
     }
 
     override suspend fun listarVentasPendientes(): List<VentaPedido> {
-        return db.ventaPedidoDao().getPendientes().map { pedido ->
-            pedido.toDomain()
-        }
+        return db.ventaPedidoDao().getPendientes().map { it.toDomain() }
     }
 
     override suspend fun obtenerVentaPorId(id: String): VentaPedido? {
@@ -116,7 +100,7 @@ class VentaPedidoRepositoryImpl(
         cantidadAsignada: Double,
         estado: String
     ) {
-        db.ventaPedidoDao().actualizarEntregaYEstado(
+        db.ventaPedidoDao().actualizarCantidadAsignadaYEstado(
             pedidoId = id,
             cantidadAsignada = cantidadAsignada,
             estado = estado
@@ -128,32 +112,35 @@ class VentaPedidoRepositoryImpl(
             ?: throw IllegalStateException("No existe el pedido")
 
         if (pedido.cantidadAsignada <= 0.0) {
-            throw IllegalStateException("No puedes marcar como entregado un pedido sin cantidad asignada")
+            throw IllegalStateException("No puedes pasar a entrega total un pedido sin cantidad asignada")
         }
 
-        db.ventaPedidoDao().marcarComoEntregado(id)
+        db.ventaPedidoDao().actualizarEstado(
+            pedidoId = id,
+            estado = EstadoAnuncio.ENTREGA_TOTAL.valorDb
+        )
     }
 
     override suspend fun marcarComoAnalizado(id: String) {
-        val pedido = db.ventaPedidoDao().obtenerPorId(id)
-            ?: throw IllegalStateException("No existe el pedido")
-
-        if (pedido.estado == "FINALIZADO") {
-            throw IllegalStateException("No puedes analizar un pedido finalizado")
-        }
-
-        db.ventaPedidoDao().marcarComoAnalizado(id)
+        throw UnsupportedOperationException(
+            "El estado ANALIZADO ya no aplica para pedidos/anuncios. Usa estados de mezcla para ese flujo."
+        )
     }
 
     override suspend fun finalizarVenta(id: String) {
         val pedido = db.ventaPedidoDao().obtenerPorId(id)
             ?: throw IllegalStateException("No existe el pedido")
 
-        if (pedido.estado != "ENTREGADO" && pedido.estado != "ANALIZADO") {
-            throw IllegalStateException("Solo puedes finalizar pedidos entregados o analizados")
+        val estadoActual = EstadoAnuncio.from(pedido.estado)
+
+        if (estadoActual != EstadoAnuncio.ENTREGA_TOTAL) {
+            throw IllegalStateException("Solo puedes liquidar pedidos en ENTREGA_TOTAL")
         }
 
-        db.ventaPedidoDao().finalizarVenta(id)
+        db.ventaPedidoDao().actualizarEstado(
+            pedidoId = id,
+            estado = EstadoAnuncio.LIQUIDADO.valorDb
+        )
     }
 
     private fun VentaPedidoEntity.toDomain(): VentaPedido {
@@ -170,6 +157,4 @@ class VentaPedidoRepositoryImpl(
             nota = nota
         )
     }
-
-
 }

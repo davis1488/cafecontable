@@ -30,15 +30,17 @@ import com.ethandev.cafecontable.ui.screen.liquidacion.LiquidacionScreen
 import com.ethandev.cafecontable.ui.screen.liquidacion.LiquidacionViewModel
 import com.ethandev.cafecontable.ui.screen.mezcla.MezclasScreen
 import com.ethandev.cafecontable.ui.screen.mezcla.MezclasViewModel
+import com.ethandev.cafecontable.ui.screen.operacion.OperacionScreen
+import com.ethandev.cafecontable.ui.screen.operacion.OperacionViewModel
 import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntregaScreen
 import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntregaViewModel
 import com.ethandev.cafecontable.ui.screen.prestamos.ConsultaPrestamosScreen
 import com.ethandev.cafecontable.ui.screen.prestamos.PrestamosScreen
+import com.ethandev.cafecontable.ui.screen.prestamos.PrestamosViewModel
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeScreen
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeViewModel
 import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoScreen
 import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoViewModel
-import com.ethandev.cafecontable.ui.viewmodel.PrestamosViewModel
 
 @Composable
 fun AppNavGraph(
@@ -54,7 +56,8 @@ fun AppNavGraph(
     preparacionEntregaVm: PreparacionEntregaViewModel,
     mezclaVm : MezclasViewModel,
     asignacionMezclaPedidoVm : AsignacionMezclaPedidoViewModel,
-    liquidacionVm : LiquidacionViewModel
+    liquidacionVm : LiquidacionViewModel,
+    operacionesgastosVm: OperacionViewModel
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -74,6 +77,7 @@ fun AppNavGraph(
         Routes.PRESTAMOS -> "Prestamos"
         Routes.CONSULTA_PRESTAMOS -> "Consulta Prestamos"
         Routes.ROUTE_LIQUIDACION -> "Liquidacion"
+        Routes.ROUTE_OPERACION_GASTOS -> "operaciones y gastos"
         else -> "Inicio"
     }
 
@@ -88,6 +92,8 @@ fun AppNavGraph(
             currentRoute == Routes.MEZCLAS ||
             currentRoute == Routes.ASIGNACION_MEZCLA_PEDIDO ||
             currentRoute == Routes.ROUTE_LIQUIDACION ||
+            currentRoute == Routes.ROUTE_OPERACION_GASTOS ||
+
 
             currentRoute?.startsWith("${Routes.PREPARACION_ENTREGA}/") == true
 
@@ -120,10 +126,12 @@ fun AppNavGraph(
                     onGoPrestamos = { navController.navigate(Routes.PRESTAMOS) },
                     onGoMezclas  = { navController.navigate(Routes.MEZCLAS) },
                     onGoAsignacionMezclaPedido  = { navController.navigate(Routes.ASIGNACION_MEZCLA_PEDIDO) },
-                    onGoLiquidacion  = { navController.navigate(Routes.ROUTE_LIQUIDACION) }
+                    onGoLiquidacion  = { navController.navigate(Routes.ROUTE_LIQUIDACION) },
+                    onGoOperacionesGastos  = { navController.navigate(Routes.ROUTE_OPERACION_GASTOS) }
 
 
-                    )
+
+                )
             }
 
             composable(Routes.COMPRAS) {
@@ -210,6 +218,13 @@ fun AppNavGraph(
                 LiquidacionScreen(liquidacionVm)
 
             }
+
+            composable(Routes.ROUTE_OPERACION_GASTOS) {
+                OperacionScreen(operacionesgastosVm)
+
+            }
+
+
 
         }
     }

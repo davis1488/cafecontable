@@ -6,4 +6,5 @@ data class MezclaDetalleInput(
     val productoNombre: String,
     val cantidadUsada: Double,
     val costoUnitCompra: Long
+//    val operacionMezclaId: String
 )

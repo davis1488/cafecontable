@@ -4,33 +4,37 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.ethandev.cafecontable.data.dao.AbonoPrestamoDao
-import com.ethandev.cafecontable.data.dao.PrestamoDao
-import com.ethandev.cafecontable.data.entity.AbonoPrestamoEntity
-import com.ethandev.cafecontable.data.entity.PrestamoEntity
+import com.ethandev.cafecontable.data.local.dao.AbonoPrestamoDao
 import com.ethandev.cafecontable.data.local.dao.AsignacionMezclaPedidoDao
 import com.ethandev.cafecontable.data.local.dao.CompraDao
 import com.ethandev.cafecontable.data.local.dao.CuentaPorCobrarDao
 import com.ethandev.cafecontable.data.local.dao.CuentaPorPagarDao
+import com.ethandev.cafecontable.data.local.dao.GastoOperacionDao
 import com.ethandev.cafecontable.data.local.dao.InventarioDao
 import com.ethandev.cafecontable.data.local.dao.LiquidacionDao
 import com.ethandev.cafecontable.data.local.dao.MezclaDao
+import com.ethandev.cafecontable.data.local.dao.OperacionDao
 import com.ethandev.cafecontable.data.local.dao.PreparacionEntregaDao
+import com.ethandev.cafecontable.data.local.dao.PrestamoDao
 import com.ethandev.cafecontable.data.local.dao.ProductoDao
 import com.ethandev.cafecontable.data.local.dao.VentaDao
 import com.ethandev.cafecontable.data.local.dao.VentaPedidoDao
 import com.ethandev.cafecontable.data.local.entity.AbonoCuentaPorCobrarEntity
 import com.ethandev.cafecontable.data.local.entity.AbonoCuentaPorPagarEntity
+import com.ethandev.cafecontable.data.local.entity.AbonoPrestamoEntity
 import com.ethandev.cafecontable.data.local.entity.AsignacionMezclaPedidoEntity
 import com.ethandev.cafecontable.data.local.entity.CompraCafeEntity
 import com.ethandev.cafecontable.data.local.entity.CuentaPorCobrarEntity
 import com.ethandev.cafecontable.data.local.entity.CuentaPorPagarEntity
+import com.ethandev.cafecontable.data.local.entity.GastoOperacionEntity
 import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
 import com.ethandev.cafecontable.data.local.entity.LiquidacionEntregaEntity
 import com.ethandev.cafecontable.data.local.entity.MezclaDetalleEntity
 import com.ethandev.cafecontable.data.local.entity.MezclaEntity
+import com.ethandev.cafecontable.data.local.entity.OperacionEntity
 import com.ethandev.cafecontable.data.local.entity.PreparacionEntregaDetalleEntity
 import com.ethandev.cafecontable.data.local.entity.PreparacionEntregaEntity
+import com.ethandev.cafecontable.data.local.entity.PrestamoEntity
 import com.ethandev.cafecontable.data.local.entity.ProductoEntity
 import com.ethandev.cafecontable.data.local.entity.VentaCafeEntity
 import com.ethandev.cafecontable.data.local.entity.VentaPedidoEntity
@@ -53,10 +57,12 @@ import com.ethandev.cafecontable.data.local.entity.VentaPedidoEntity
         MezclaEntity::class,
         MezclaDetalleEntity::class,
         AsignacionMezclaPedidoEntity::class,
-        LiquidacionEntregaEntity::class
+        LiquidacionEntregaEntity::class,
+        OperacionEntity::class,
+        GastoOperacionEntity::class
 
                ],
-    version = 18,
+    version = 21,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -74,6 +80,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun mezclaDao(): MezclaDao
     abstract fun asignacionMezclaPedidoDao(): AsignacionMezclaPedidoDao
     abstract fun liquidacionDao(): LiquidacionDao
+    abstract fun operacionDao(): OperacionDao
+    abstract fun gastoOperacionDao(): GastoOperacionDao
 
     companion object {
         @Volatile

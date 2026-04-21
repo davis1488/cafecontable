@@ -57,19 +57,6 @@ interface MezclaDao {
         estado: String
     )
 
-//    @Query("""
-//    SELECT
-//        m.id AS mezclaId,
-//        COALESCE(m.nota, 'Mezcla sin nota') AS descripcion,
-//        m.cantidadTotal AS cantidadTotal,
-//        m.cantidadDisponible AS cantidadDisponible,
-//        m.costoPromedioKg AS costoPromedioKg
-//    FROM mezcla m
-//    WHERE m.estado = 'DISPONIBLE'
-//    ORDER BY m.fecha DESC
-//""")
-//    suspend fun obtenerMezclasDisponiblesParaAsignacion(): List<MezclaDisponibleDb>
-
     @Query("""
     SELECT
         m.id AS mezclaId,
@@ -80,23 +67,12 @@ interface MezclaDao {
         m.estado AS estado
     FROM mezcla m
     WHERE m.cantidadDisponible > 0
-      AND m.estado IN ('CREADO', 'ENTREGADA', 'ANALIZADA', 'DISPONIBLE')
+      AND m.estado IN (:estados)
     ORDER BY m.fecha DESC
-    """)
-    suspend fun obtenerMezclasDisponiblesParaAsignacion(): List<MezclaDisponibleDb>
-
-//    @Query("""
-//    SELECT
-//        m.id AS id,
-//        m.fecha AS fecha,
-//        m.cantidadTotal AS cantidadTotal,
-//        m.costoTotal AS costoTotal,
-//        m.estado AS estado,
-//        m.nota AS nota
-//    FROM mezcla m
-//    ORDER BY m.fecha DESC
-//""")
-//    suspend fun obtenerHistorialMezclas(): List<MezclaHistorialDb>
+""")
+    suspend fun obtenerMezclasDisponiblesParaAsignacion(
+        estados: List<String>
+    ): List<MezclaDisponibleDb>
 
 
     @Query("""
