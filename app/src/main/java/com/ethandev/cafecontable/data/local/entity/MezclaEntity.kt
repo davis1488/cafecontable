@@ -17,8 +17,8 @@ data class MezclaEntity(
 
     val costoCafeBase: Long,
     val gastosCompraAcumulados: Long,
-    val gastosMezcla: Long,
-
+//    val gastosMezcla: Long,
+//
     val costoTotal: Long,
     val costoPromedioKg: Long,
 

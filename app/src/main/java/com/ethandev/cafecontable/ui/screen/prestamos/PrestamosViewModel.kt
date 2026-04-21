@@ -1,4 +1,4 @@
-package com.ethandev.cafecontable.ui.viewmodel
+package com.ethandev.cafecontable.ui.screen.prestamos
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

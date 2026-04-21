@@ -1,10 +1,10 @@
-package com.ethandev.cafecontable.data.dao
+package com.ethandev.cafecontable.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.ethandev.cafecontable.data.entity.AbonoPrestamoEntity
+import com.ethandev.cafecontable.data.local.entity.AbonoPrestamoEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao

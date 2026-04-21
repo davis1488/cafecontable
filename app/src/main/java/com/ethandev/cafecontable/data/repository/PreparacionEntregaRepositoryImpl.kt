@@ -7,7 +7,7 @@ import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
 import com.ethandev.cafecontable.data.local.entity.PreparacionEntregaDetalleEntity
 import com.ethandev.cafecontable.data.local.entity.PreparacionEntregaEntity
 import com.ethandev.cafecontable.domain.repository.PreparacionEntregaRepository
-import com.ethandev.cafecontable.domain.repository.RegistrarPreparacionEntregaInput
+import com.ethandev.cafecontable.domain.repository.dto.RegistrarPreparacionEntregaInput
 import java.util.UUID
 
 class PreparacionEntregaRepositoryImpl(

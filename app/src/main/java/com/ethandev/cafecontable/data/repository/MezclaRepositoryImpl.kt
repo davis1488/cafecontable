@@ -104,7 +104,7 @@ class MezclaRepositoryImpl(
                     operacionMezclaId = input.operacionMezclaId,
                     costoCafeBase = costoTotal,
                     gastosCompraAcumulados = 0L,
-                    gastosMezcla = 0L
+                    //gastosMezcla = 0L
 
 
 

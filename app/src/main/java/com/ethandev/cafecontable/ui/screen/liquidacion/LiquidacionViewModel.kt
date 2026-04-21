@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ethandev.cafecontable.domain.model.LiquidacionHistorial
 import com.ethandev.cafecontable.domain.model.LiquidacionPendiente
-import com.ethandev.cafecontable.domain.repository.RegistrarLiquidacionInput
+import com.ethandev.cafecontable.domain.repository.dto.RegistrarLiquidacionInput
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialLiquidacionesUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerLiquidacionesPendientesUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarLiquidacionUseCase

@@ -41,7 +41,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ethandev.cafecontable.domain.constants.EstadoAnuncio
 import com.ethandev.cafecontable.domain.model.VentaPedido
-import com.ethandev.cafecontable.domain.repository.VentaPedidoInput
+import com.ethandev.cafecontable.domain.repository.dto.VentaPedidoInput
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

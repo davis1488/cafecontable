@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ethandev.cafecontable.domain.model.RegistrarPrestamoInput
 import com.ethandev.cafecontable.ui.navigation.Routes
-import com.ethandev.cafecontable.ui.viewmodel.PrestamosViewModel
 
 @Composable
 fun PrestamosScreen(

@@ -2,6 +2,7 @@
 package com.ethandev.cafecontable.domain.repository
 
 import com.ethandev.cafecontable.domain.model.VentaPedido
+import com.ethandev.cafecontable.domain.repository.dto.VentaPedidoInput
 
 interface VentaPedidoRepository {
     suspend fun registrarVenta(input: VentaPedidoInput)

@@ -3,7 +3,7 @@ package com.ethandev.cafecontable.ui.screen.ventaspedido
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ethandev.cafecontable.domain.model.VentaPedido
-import com.ethandev.cafecontable.domain.repository.VentaPedidoInput
+import com.ethandev.cafecontable.domain.repository.dto.VentaPedidoInput
 import com.ethandev.cafecontable.domain.usecase.FinalizarVentaPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarVentasPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.MarcarVentaPedidoComoAnalizadoUseCase

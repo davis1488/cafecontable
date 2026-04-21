@@ -4,8 +4,8 @@ import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.entity.VentaPedidoEntity
 import com.ethandev.cafecontable.domain.constants.EstadoAnuncio
 import com.ethandev.cafecontable.domain.model.VentaPedido
-import com.ethandev.cafecontable.domain.repository.VentaPedidoInput
 import com.ethandev.cafecontable.domain.repository.VentaPedidoRepository
+import com.ethandev.cafecontable.domain.repository.dto.VentaPedidoInput
 import java.util.UUID
 
 class VentaPedidoRepositoryImpl(

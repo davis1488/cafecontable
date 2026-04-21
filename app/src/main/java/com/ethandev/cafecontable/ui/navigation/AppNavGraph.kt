@@ -36,11 +36,11 @@ import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntrega
 import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntregaViewModel
 import com.ethandev.cafecontable.ui.screen.prestamos.ConsultaPrestamosScreen
 import com.ethandev.cafecontable.ui.screen.prestamos.PrestamosScreen
+import com.ethandev.cafecontable.ui.screen.prestamos.PrestamosViewModel
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeScreen
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeViewModel
 import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoScreen
 import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoViewModel
-import com.ethandev.cafecontable.ui.viewmodel.PrestamosViewModel
 
 @Composable
 fun AppNavGraph(

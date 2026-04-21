@@ -36,6 +36,10 @@ class CompraCafeViewModel(
         _state.value = _state.value.copy(error = null, okMsg = null)
     }
 
+    fun limpiarOperacionSeleccionada() {
+        _state.update { it.copy(operacionCompraIdSeleccionada = null) }
+    }
+
     fun cargarOperacionesCompra() {
         viewModelScope.launch {
             runCatching {

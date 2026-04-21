@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.ethandev.cafecontable.domain.model.RegistrarAbonoPrestamoInput
-import com.ethandev.cafecontable.ui.viewmodel.PrestamosViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

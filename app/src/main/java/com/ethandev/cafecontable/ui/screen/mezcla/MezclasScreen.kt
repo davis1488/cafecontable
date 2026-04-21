@@ -40,6 +40,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +53,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ethandev.cafecontable.domain.constants.EstadoMezcla
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun MezclasScreen(
@@ -58,7 +65,14 @@ fun MezclasScreen(
     val state by viewModel.state.collectAsState()
 
     val items = remember { mutableStateListOf<MezclaFormItem>() }
-    var nota by remember { mutableStateOf("") }
+    val fechaActual = remember {
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    }
+
+    var nota by remember {
+        mutableStateOf("MEZCLA $fechaActual")
+    }
+
     var selectedTab by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
@@ -71,7 +85,7 @@ fun MezclasScreen(
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
             viewModel.limpiarMensajes()
             items.clear()
-            nota = ""
+            nota = "MEZCLA $fechaActual"
             viewModel.cargarHistorialMezclas()
         }
 
@@ -111,6 +125,7 @@ fun MezclasScreen(
                 items = items,
                 nota = nota,
                 onNotaChange = { nota = it },
+                onSeleccionarOperacion = viewModel::seleccionarOperacionMezcla,
                 onAgregarCompra = { compra ->
                     val yaAgregada = items.any { it.compraId == compra.compraId }
                     if (yaAgregada) {
@@ -127,8 +142,7 @@ fun MezclasScreen(
                     items.removeAt(index)
                 },
                 onCantidadChange = { index, nuevaCantidad ->
-                    val item = items[index]
-                    items[index] = item.copy(cantidadUsada = nuevaCantidad)
+                    items[index] = items[index].copy(cantidadUsada = nuevaCantidad)
                 },
                 calcularCantidadTotal = { viewModel.calcularCantidadTotal(items) },
                 calcularCostoTotal = { viewModel.calcularCostoTotal(items) },
@@ -175,6 +189,7 @@ private fun RegistrarMezclaTab(
     items: List<MezclaFormItem>,
     nota: String,
     onNotaChange: (String) -> Unit,
+    onSeleccionarOperacion: (String) -> Unit,
     onAgregarCompra: (CompraDisponibleUi) -> Unit,
     onEliminarItem: (Int) -> Unit,
     onCantidadChange: (Int, Double) -> Unit,
@@ -193,6 +208,21 @@ private fun RegistrarMezclaTab(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+
+        SectionHeader(
+            titulo = "Operación de mezcla",
+            subtitulo = "Selecciona a qué operación pertenece esta mezcla"
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        SelectOperacionMezcla(
+            state = state,
+            onSeleccionarOperacion = onSeleccionarOperacion
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         SectionHeader(
             titulo = "Compras disponibles",
             subtitulo = "Selecciona una compra activa para agregarla a la mezcla"
@@ -296,6 +326,17 @@ private fun RegistrarMezclaTab(
                 items.forEachIndexed { index, item ->
                     val compraOriginal = state.comprasDisponibles.firstOrNull { it.compraId == item.compraId }
 
+                    var cantidadTxt by remember(item.compraId) {
+                        mutableStateOf(item.cantidadUsada.toString())
+                    }
+
+                    LaunchedEffect(item.cantidadUsada) {
+                        val nuevoValor = item.cantidadUsada.toString()
+                        if (cantidadTxt != nuevoValor) {
+                            cantidadTxt = nuevoValor
+                        }
+                    }
+
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -338,8 +379,9 @@ private fun RegistrarMezclaTab(
                             Spacer(modifier = Modifier.height(12.dp))
 
                             OutlinedTextField(
-                                value = if (item.cantidadUsada == 0.0) "" else item.cantidadUsada.toString(),
+                                value = cantidadTxt,
                                 onValueChange = { value ->
+                                    cantidadTxt = value
                                     val nuevaCantidad = value.toDoubleOrNull() ?: 0.0
                                     onCantidadChange(index, nuevaCantidad)
                                 },
@@ -361,7 +403,7 @@ private fun RegistrarMezclaTab(
                             }
 
                             Text(
-                                text = "Subtotal: ${(item.cantidadUsada * item.costoUnitCompra.toDouble()).toLong()}",
+                                text = "Subtotal: ${((item.cantidadUsada * item.costoUnitCompra.toDouble())).toLong()}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -422,6 +464,7 @@ private fun RegistrarMezclaTab(
     }
 }
 
+
 @Composable
 private fun SectionHeader(
     titulo: String,
@@ -462,6 +505,52 @@ private fun InfoRow(
             text = value,
             style = MaterialTheme.typography.bodyLarge
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SelectOperacionMezcla(
+    state: MezclasState,
+    onSeleccionarOperacion: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    val operacionSeleccionada = state.operacionesMezcla
+        .firstOrNull { it.id == state.operacionMezclaIdSeleccionada }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        OutlinedTextField(
+            value = operacionSeleccionada?.nombre ?: "",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Operación") },
+            placeholder = { Text("Selecciona una operación") },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            state.operacionesMezcla.forEach { operacion ->
+                DropdownMenuItem(
+                    text = { Text(operacion.nombre) },
+                    onClick = {
+                        onSeleccionarOperacion(operacion.id)
+                        expanded = false
+                    }
+                )
+            }
+        }
     }
 }
 

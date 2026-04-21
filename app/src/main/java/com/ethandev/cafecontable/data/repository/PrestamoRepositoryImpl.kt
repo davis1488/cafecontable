@@ -1,9 +1,10 @@
 package com.ethandev.cafecontable.data.repository
 
-import com.ethandev.cafecontable.data.dao.AbonoPrestamoDao
-import com.ethandev.cafecontable.data.dao.PrestamoDao
-import com.ethandev.cafecontable.data.entity.AbonoPrestamoEntity
-import com.ethandev.cafecontable.data.entity.PrestamoEntity
+
+import com.ethandev.cafecontable.data.local.dao.AbonoPrestamoDao
+import com.ethandev.cafecontable.data.local.dao.PrestamoDao
+import com.ethandev.cafecontable.data.local.entity.AbonoPrestamoEntity
+import com.ethandev.cafecontable.data.local.entity.PrestamoEntity
 import com.ethandev.cafecontable.domain.model.AbonoPrestamoModel
 import com.ethandev.cafecontable.domain.model.PrestamoModel
 import com.ethandev.cafecontable.domain.repository.PrestamoRepository

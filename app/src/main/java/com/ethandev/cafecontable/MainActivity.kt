@@ -18,9 +18,9 @@ import com.ethandev.cafecontable.ui.screen.cuentasporpagar.CuentasPorPagarViewMo
 import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
 import com.ethandev.cafecontable.ui.screen.historialventas.HistorialVentasViewModel
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
+import com.ethandev.cafecontable.ui.screen.prestamos.PrestamosViewModel
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeViewModel
 import com.ethandev.cafecontable.ui.theme.CafecontableTheme
-import com.ethandev.cafecontable.ui.viewmodel.PrestamosViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

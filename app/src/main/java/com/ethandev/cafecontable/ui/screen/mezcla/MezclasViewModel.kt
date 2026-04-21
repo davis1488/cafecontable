@@ -163,7 +163,7 @@ class MezclasViewModel(
             compraId = compra.compraId,
             productoId = compra.productoId,
             productoNombre = compra.productoNombre,
-            cantidadUsada = 0.0,
+            cantidadUsada = compra.cantidadDisponible,
             costoUnitCompra = compra.costoUnitCompra,
             operacionMezclaId = _state.value.operacionMezclaIdSeleccionada
         )

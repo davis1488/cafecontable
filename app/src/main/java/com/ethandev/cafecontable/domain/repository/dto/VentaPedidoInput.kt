@@ -1,4 +1,4 @@
-package com.ethandev.cafecontable.domain.repository
+package com.ethandev.cafecontable.domain.repository.dto
 
 data class VentaPedidoInput(
     val cliente: String,
