@@ -53,6 +53,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ethandev.cafecontable.domain.constants.EstadoMezcla
+import com.ethandev.cafecontable.domain.model.MezclaHistorialItem
+import com.ethandev.cafecontable.ui.utils.formatNumber
+import com.ethandev.cafecontable.ui.utils.formatNumberString
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -65,6 +68,7 @@ fun MezclasScreen(
     val state by viewModel.state.collectAsState()
 
     val items = remember { mutableStateListOf<MezclaFormItem>() }
+    var mezclaEditandoId by remember { mutableStateOf<String?>(null) }
     val fechaActual = remember {
         SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
     }
@@ -78,6 +82,7 @@ fun MezclasScreen(
     LaunchedEffect(Unit) {
         viewModel.cargarComprasDisponibles()
         viewModel.cargarHistorialMezclas()
+        viewModel.cargarOperacionesMezcla()
     }
 
     LaunchedEffect(state.okMsg, state.error) {
@@ -124,6 +129,7 @@ fun MezclasScreen(
                 state = state,
                 items = items,
                 nota = nota,
+                mezclaEditandoId = mezclaEditandoId,
                 onNotaChange = { nota = it },
                 onSeleccionarOperacion = viewModel::seleccionarOperacionMezcla,
                 onAgregarCompra = { compra ->
@@ -148,15 +154,37 @@ fun MezclasScreen(
                 calcularCostoTotal = { viewModel.calcularCostoTotal(items) },
                 calcularCostoPromedioKg = { viewModel.calcularCostoPromedioKg(items) },
                 onGuardar = {
-                    viewModel.registrarMezcla(
-                        items = items.toList(),
-                        nota = nota
-                    )
+                    val idEditando = mezclaEditandoId
+                    if (idEditando == null) {
+                        viewModel.registrarMezcla(
+                            items = items.toList(),
+                            nota = nota
+                        )
+                    } else {
+                        viewModel.agregarComprasAMezcla(
+                            mezclaId = idEditando,
+                            items = items.toList(),
+                            nota = nota
+                        )
+                    }
+                },
+                onCancelarEdicion = {
+                    mezclaEditandoId = null
+                    items.clear()
+                    nota = "MEZCLA $fechaActual"
+                    viewModel.cargarComprasDisponibles()
                 }
             )
 
             1 -> HistorialMezclasTab(
                 state = state,
+                onAgregarCompras = { mezcla ->
+                    mezclaEditandoId = mezcla.id
+                    nota = mezcla.nota ?: "MEZCLA $fechaActual"
+                    selectedTab = 0
+                    items.clear()
+                    viewModel.cargarComprasDisponiblesParaAgregarAMezcla(mezcla.id)
+                },
                 onMarcarPendienteEntrega = { mezclaId, numeroSacos, kilajeEnviado ->
                     viewModel.marcarPendienteEntrega(
                         mezclaId = mezclaId,
@@ -188,6 +216,7 @@ private fun RegistrarMezclaTab(
     state: MezclasState,
     items: List<MezclaFormItem>,
     nota: String,
+    mezclaEditandoId: String?,
     onNotaChange: (String) -> Unit,
     onSeleccionarOperacion: (String) -> Unit,
     onAgregarCompra: (CompraDisponibleUi) -> Unit,
@@ -196,7 +225,8 @@ private fun RegistrarMezclaTab(
     calcularCantidadTotal: () -> Double,
     calcularCostoTotal: () -> Long,
     calcularCostoPromedioKg: () -> Long,
-    onGuardar: () -> Unit
+    onGuardar: () -> Unit,
+    onCancelarEdicion: () -> Unit
 ) {
     val cantidadTotal = calcularCantidadTotal()
     val costoTotal = calcularCostoTotal()
@@ -208,6 +238,39 @@ private fun RegistrarMezclaTab(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+
+        if (mezclaEditandoId != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Editando mezcla existente",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Mezcla ID: $mezclaEditandoId",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedButton(
+                        onClick = onCancelarEdicion,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Cancelar edición")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+        }
 
         SectionHeader(
             titulo = "Operación de mezcla",
@@ -457,7 +520,7 @@ private fun RegistrarMezclaTab(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
-            Text("Guardar mezcla")
+            Text(if (mezclaEditandoId == null) "Guardar mezcla" else "Actualizar mezcla")
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -557,6 +620,7 @@ private fun SelectOperacionMezcla(
 @Composable
 private fun HistorialMezclasTab(
     state: MezclasState,
+    onAgregarCompras: (MezclaHistorialItem) -> Unit,
     onMarcarPendienteEntrega: (String, Int, Double) -> Unit,
     onMarcarEntregado: (String, Int, Double, String) -> Unit,
     onMarcarAnalizado: (String, Double) -> Unit
@@ -698,10 +762,12 @@ private fun HistorialMezclasTab(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        InfoRow("ID", mezcla.id)
+                        //InfoRow("ID", mezcla.id)
                         InfoRow("Fecha", mezcla.fechaTexto)
                         InfoRow("Cantidad total", "${mezcla.cantidadTotal} kg")
-                        InfoRow("Costo total", "$${mezcla.costoTotal}")
+                        InfoRow("Costo total", "$${formatNumberString(mezcla.costoTotal)}")
+                        InfoRow("Costo por KG", "$${formatNumberString((mezcla.costoTotal/mezcla.cantidadTotal).toLong())}")
+
 
                         Spacer(modifier = Modifier.height(8.dp))
                         EstadoMezclaChip(estado = mezcla.estado)
@@ -715,6 +781,17 @@ private fun HistorialMezclasTab(
                         }
 
                         Spacer(modifier = Modifier.height(12.dp))
+
+                        if (mezcla.estado.equals(EstadoMezcla.CREADO.name, ignoreCase = true)) {
+                            Button(
+                                onClick = { onAgregarCompras(mezcla) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Agregar compras")
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
 
                         AccionesEstadoMezcla(
                             estadoActual = mezcla.estado,

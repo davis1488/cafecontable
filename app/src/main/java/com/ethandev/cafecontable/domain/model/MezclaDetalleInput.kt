@@ -5,6 +5,7 @@ data class MezclaDetalleInput(
     val productoId: String,
     val productoNombre: String,
     val cantidadUsada: Double,
-    val costoUnitCompra: Long
+    val costoUnitCompra: Long,
+ //   val subtotal: Long
 //    val operacionMezclaId: String
 )

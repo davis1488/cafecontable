@@ -62,7 +62,7 @@ import com.ethandev.cafecontable.data.local.entity.VentaPedidoEntity
         GastoOperacionEntity::class
 
                ],
-    version = 21,
+    version = 22,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

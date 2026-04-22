@@ -13,5 +13,4 @@ data class MezclaDetalleEntity(
     val productoNombre: String,
     val cantidadUsada: Double,
     val costoUnitCompra: Long,
-    val subtotal: Long
 )
