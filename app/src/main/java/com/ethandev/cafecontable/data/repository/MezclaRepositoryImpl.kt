@@ -120,7 +120,7 @@ class MezclaRepositoryImpl(
                     productoNombre = item.productoNombre,
                     cantidadUsada = item.cantidadUsada,
                     costoUnitCompra = item.costoUnitCompra,
-                    subtotal = (item.cantidadUsada * item.costoUnitCompra.toDouble()).toLong()
+                  //  subtotal = (item.cantidadUsada * item.costoUnitCompra.toDouble()).toLong()
                 )
             }
 

@@ -62,12 +62,25 @@ interface MezclaDao {
         m.id AS mezclaId,
         COALESCE(m.nota, 'Mezcla sin nota') AS descripcion,
         m.cantidadTotal AS cantidadTotal,
-        m.cantidadDisponible AS cantidadDisponible,
+        (
+            m.cantidadTotal - COALESCE(SUM(amp.cantidadAsignada), 0)
+        ) AS cantidadDisponible,
         m.costoPromedioKg AS costoPromedioKg,
         m.estado AS estado
     FROM mezcla m
-    WHERE m.cantidadDisponible > 0
-      AND m.estado IN (:estados)
+    LEFT JOIN asignacion_mezcla_pedido amp
+        ON amp.mezclaId = m.id
+    WHERE m.estado IN (:estados)
+    GROUP BY
+        m.id,
+        m.nota,
+        m.cantidadTotal,
+        m.costoPromedioKg,
+        m.estado,
+        m.fecha
+    HAVING (
+        m.cantidadTotal - COALESCE(SUM(amp.cantidadAsignada), 0)
+    ) > 0
     ORDER BY m.fecha DESC
 """)
     suspend fun obtenerMezclasDisponiblesParaAsignacion(
@@ -143,6 +156,47 @@ interface MezclaDao {
         estado: String,
         factorRendimiento: Double
     ): Int
+
+
+    //////// editar mezclas
+
+    @Query("SELECT * FROM mezcla WHERE id = :mezclaId LIMIT 1")
+    suspend fun obtenerMezclaPorId(mezclaId: String): MezclaEntity?
+
+    @Query("SELECT * FROM mezcla_detalle WHERE mezclaId = :mezclaId")
+    suspend fun obtenerDetallesPorMezclaId(mezclaId: String): List<MezclaDetalleEntity>
+
+    @Insert
+    suspend fun insertarDetalleMezcla(detalle: MezclaDetalleEntity)
+
+    @Insert
+    suspend fun insertarDetallesMezcla(detalles: List<MezclaDetalleEntity>)
+
+    @Query("""
+    UPDATE mezcla
+    SET cantidadTotal = :cantidadTotal,
+        costoTotal = :costoTotal,
+        costoPromedioKg = :costoPromedioKg
+    WHERE id = :mezclaId
+""")
+    suspend fun actualizarTotalesMezcla(
+        mezclaId: String,
+        cantidadTotal: Double,
+        costoTotal: Long,
+        costoPromedioKg: Long
+    )
+
+    @Query("""
+    SELECT COUNT(*) 
+    FROM mezcla_detalle 
+    WHERE mezclaId = :mezclaId AND compraId = :compraId
+""")
+    suspend fun existeCompraEnMezcla(
+        mezclaId: String,
+        compraId: String
+    ): Int
+
+
 }
 
 

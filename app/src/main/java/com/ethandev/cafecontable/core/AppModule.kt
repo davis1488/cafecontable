@@ -32,6 +32,7 @@ import com.ethandev.cafecontable.domain.repository.VentaRepository
 import com.ethandev.cafecontable.domain.usecase.ActualizarCompraUseCase
 import com.ethandev.cafecontable.domain.usecase.ActualizarEstadoMezclaUseCase
 import com.ethandev.cafecontable.domain.usecase.ActualizarMovimientoKardexUseCase
+import com.ethandev.cafecontable.domain.usecase.AgregarComprasAMezclaUseCase
 import com.ethandev.cafecontable.domain.usecase.AnularCompraUseCase
 import com.ethandev.cafecontable.domain.usecase.AsignarMezclaAPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.BuscarPrestamosUseCase
@@ -435,7 +436,8 @@ object AppModule {
             marcarMezclaEntregadoUseCase = provideMarcarEntregadoUseCase(context),
             marcarMezclaPendienteEntregaUseCase = provideMarcarPendienteEntregaUseCase(context),
             compraCafeDao = db.compraDao(),
-            listarOperacionesPorTipoUseCase = provideListarOperacionesPorTipoUseCase(context)
+            listarOperacionesPorTipoUseCase = provideListarOperacionesPorTipoUseCase(context),
+            agregarComprasAMezclaUseCase =  provideAgregarComprasAMezclaUseCase(context)
         )
     }
 
@@ -541,4 +543,12 @@ object AppModule {
             db = db
         )
     }
+
+    fun provideAgregarComprasAMezclaUseCase(context: Context): AgregarComprasAMezclaUseCase {
+        val db = provideDatabase(context)
+        return AgregarComprasAMezclaUseCase(db)
+    }
+//    fun provideAgregarComprasAMezclaUseCase(db: AppDatabase ): AgregarComprasAMezclaUseCase {
+//        return AgregarComprasAMezclaUseCase(db)
+//    }
 }

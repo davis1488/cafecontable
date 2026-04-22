@@ -74,6 +74,7 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
    // val operacionCompraSeleccionada = operacionesCompra.firstOrNull { it.id == operacionCompraId }
     //var operacionCompraSeleccionada by remember { mutableStateOf<OperacionEntity?>(null) }
 
+
     LaunchedEffect(state.error, state.okMsg) {
         state.error?.let {
             snackbarHostState.showSnackbar(it)
