@@ -73,6 +73,7 @@ import com.ethandev.cafecontable.domain.usecase.RegistrarPreparacionEntregaUseCa
 import com.ethandev.cafecontable.domain.usecase.RegistrarPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaPedidoUseCase
+import com.ethandev.cafecontable.domain.usecase.ResolverOperacionUseCase
 import com.ethandev.cafecontable.ui.screen.asignacionmezcla.AsignacionMezclaPedidoViewModel
 import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
 import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
@@ -92,7 +93,7 @@ object AppModule {
         return db ?: Room.databaseBuilder(
             context.applicationContext,
             AppDatabase::class.java,
-            "cafecontable.db"
+            "cafe_contable_db"
         ).fallbackToDestructiveMigration()
             .build()
             .also { db = it }
@@ -121,8 +122,14 @@ object AppModule {
     fun provideCompraCafeViewModel(context: Context): CompraCafeViewModel {
         return CompraCafeViewModel(
             registrarCompra = provideCompraUseCase(context),
-            listarOperacionesPorTipoUseCase = provideListarOperacionesPorTipoUseCase(context)
+            listarOperacionesPorTipoUseCase = provideListarOperacionesPorTipoUseCase(context),
+            resolverOperacionUseCase = provideResolverOperacionUseCase(context)
         )
+    }
+
+    fun provideResolverOperacionUseCase(context: Context): ResolverOperacionUseCase {
+        val db = AppDatabase.getDatabase(context)
+        return ResolverOperacionUseCase(db.operacionDao())
     }
 
     fun provideInventarioRepository(context: Context): InventarioRepository {
@@ -437,7 +444,8 @@ object AppModule {
             marcarMezclaPendienteEntregaUseCase = provideMarcarPendienteEntregaUseCase(context),
             compraCafeDao = db.compraDao(),
             listarOperacionesPorTipoUseCase = provideListarOperacionesPorTipoUseCase(context),
-            agregarComprasAMezclaUseCase =  provideAgregarComprasAMezclaUseCase(context)
+            agregarComprasAMezclaUseCase =  provideAgregarComprasAMezclaUseCase(context),
+            resolverOperacionUseCase = provideResolverOperacionUseCase(context)
         )
     }
 

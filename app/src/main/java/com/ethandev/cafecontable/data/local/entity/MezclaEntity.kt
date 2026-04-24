@@ -13,10 +13,10 @@ data class MezclaEntity(
     val operacionMezclaId: String?,
 
     val cantidadTotal: Double,
-    val cantidadDisponible: Double,
+ //   val cantidadDisponible: Double,
 
-    val costoCafeBase: Long,
-    val gastosCompraAcumulados: Long,
+ //   val costoCafeBase: Long,
+  //  val gastosCompraAcumulados: Long,
 //    val gastosMezcla: Long,
 //
     val costoTotal: Long,

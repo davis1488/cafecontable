@@ -96,14 +96,14 @@ class MezclaRepositoryImpl(
                     id = mezclaId,
                     fecha = input.fecha,
                     cantidadTotal = cantidadTotal,
-                    cantidadDisponible = cantidadTotal,
+                    //cantidadDisponible = cantidadTotal,
                     costoTotal = costoTotal,
                     costoPromedioKg = costoPromedioKg,
                     estado = EstadoMezcla.CREADO.toString(),
                     nota = nota,
                     operacionMezclaId = input.operacionMezclaId,
-                    costoCafeBase = costoTotal,
-                    gastosCompraAcumulados = 0L,
+                    //costoCafeBase = costoTotal,
+                   // gastosCompraAcumulados = 0L,
                     //gastosMezcla = 0L
 
 

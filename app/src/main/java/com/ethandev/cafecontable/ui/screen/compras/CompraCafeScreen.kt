@@ -11,7 +11,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ethandev.cafecontable.data.local.entity.OperacionEntity
-import com.ethandev.cafecontable.domain.repository.CompraCafeImput
+import com.ethandev.cafecontable.domain.constants.OPERACION_NUEVA_ID
+import com.ethandev.cafecontable.domain.model.CompraCafeImput
 import com.ethandev.cafecontable.ui.utils.formatNumber
 
 fun parseCantidad(input: String): Double {
@@ -64,9 +65,9 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
     var expandedOperacion by remember { mutableStateOf(false) }
 
     val operacionesCompra = state.operacionesCompra
-    val operacionCompraId = state.operacionCompraIdSeleccionada
+   // val operacionCompraId = operacionSeleccionadaId
 
-    val operacionCompraSeleccionada = operacionesCompra.firstOrNull { it.id == operacionCompraId }
+    //al operacionCompraSeleccionada = operacionesCompra.firstOrNull { it.id == operacionCompraId }
 
 
     //val operacionCompraId = state.operacionCompraIdSeleccionada
@@ -74,6 +75,7 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
    // val operacionCompraSeleccionada = operacionesCompra.firstOrNull { it.id == operacionCompraId }
     //var operacionCompraSeleccionada by remember { mutableStateOf<OperacionEntity?>(null) }
 
+    val operacionCompraId: String?
 
     LaunchedEffect(state.error, state.okMsg) {
         state.error?.let {
@@ -200,39 +202,52 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
             }
 
             item {
-            ExposedDropdownMenuBox (
-                expanded = expandedOperacion,
-                onExpandedChange = { expandedOperacion = !expandedOperacion }
-            ) {
-                OutlinedTextField(
-                    value = operacionCompraSeleccionada?.nombre ?: "",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Operación de compra") },
-                    isError = operacionCompraSeleccionada == null,
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expandedOperacion)
-                    },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
-                )
+                val opcionesOperacion = listOf(
+                    OPERACION_NUEVA_ID to "Nuevo"
+                ) + operacionesCompra.map { it.id to it.nombre }
 
-                DropdownMenu(
+                val operacionCompraId = state.operacionCompraIdSeleccionada
+
+
+                val textoOperacionSeleccionada =
+                    if (operacionCompraId == OPERACION_NUEVA_ID) {
+                        "Nuevo"
+                    } else {
+                        operacionesCompra.firstOrNull { it.id == operacionCompraId }?.nombre ?: "Nuevo"
+                    }
+
+                ExposedDropdownMenuBox(
                     expanded = expandedOperacion,
-                    onDismissRequest = { expandedOperacion = false }
+                    onExpandedChange = { expandedOperacion = !expandedOperacion }
                 ) {
-                    operacionesCompra.forEach { operacion ->
-                        DropdownMenuItem(
-                            text = { Text(operacion.nombre) },
-                            onClick = {
-                                vm.seleccionarOperacionCompra(operacion.id)
-                                expandedOperacion = false
-                            }
-                        )
+                    OutlinedTextField(
+                        value = textoOperacionSeleccionada,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Operación de compra") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedOperacion)
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expandedOperacion,
+                        onDismissRequest = { expandedOperacion = false }
+                    ) {
+                        opcionesOperacion.forEach { (id, nombre) ->
+                            DropdownMenuItem(
+                                text = { Text(nombre) },
+                                onClick = {
+                                    vm.seleccionarOperacionCompra(id)
+                                    expandedOperacion = false
+                                }
+                            )
+                        }
                     }
                 }
-            }
             }
 
             item {
@@ -297,21 +312,12 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
             item {
                 Button(
                     onClick = {
-                        val operacionSeleccionada = operacionCompraSeleccionada
+                        val operacionSeleccionadaId = state.operacionCompraIdSeleccionada
 
-                        if (operacionSeleccionada == null) {
+                        if (operacionSeleccionadaId.isNullOrBlank()) {
                             Toast.makeText(
                                 context,
-                                "Debes seleccionar una operación activa",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@Button
-                        }
-
-                        if (operacionSeleccionada.estado != "ACTIVA") {
-                            Toast.makeText(
-                                context,
-                                "La operación seleccionada no está activa",
+                                "Debes seleccionar una operación",
                                 Toast.LENGTH_SHORT
                             ).show()
                             return@Button
@@ -345,7 +351,7 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
                                 esCredito = esCredito,
                                 nota = notaTxt.ifBlank { null },
                                 abono = abono,
-                                operacionCompraId = operacionSeleccionada.id
+                                operacionCompraId = operacionSeleccionadaId
                             )
                         )
 
@@ -355,7 +361,6 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
                         notaTxt = ""
                         esCredito = false
                         abonoTxt = ""
-                        //operacionCompraSeleccionada = null
                         expandedOperacion = false
                     },
                     enabled = !state.loading,
@@ -364,6 +369,7 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
                     Text(if (state.loading) "Guardando..." else "Guardar compra")
                 }
             }
+
             item {
                 Spacer(modifier = Modifier.height(20.dp))
             }

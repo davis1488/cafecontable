@@ -1,5 +1,6 @@
 package com.ethandev.cafecontable.domain.usecase
 
+import com.ethandev.cafecontable.data.local.dao.OperacionDao
 import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.entity.OperacionEntity
 import com.ethandev.cafecontable.domain.model.CrearOperacionInput
@@ -9,7 +10,6 @@ class CrearOperacionUseCase(
     private val db: AppDatabase
 ) {
     suspend operator fun invoke(input: CrearOperacionInput) {
-
         if (input.nombre.isBlank()) {
             throw IllegalStateException("Debe ingresar un nombre")
         }

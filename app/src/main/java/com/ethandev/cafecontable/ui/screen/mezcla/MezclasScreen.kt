@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ethandev.cafecontable.domain.constants.EstadoMezcla
+import com.ethandev.cafecontable.domain.constants.OPERACION_NUEVA_ID
 import com.ethandev.cafecontable.domain.model.MezclaHistorialItem
 import com.ethandev.cafecontable.ui.utils.formatNumber
 import com.ethandev.cafecontable.ui.utils.formatNumberString
@@ -579,19 +580,28 @@ private fun SelectOperacionMezcla(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    val operacionSeleccionada = state.operacionesMezcla
-        .firstOrNull { it.id == state.operacionMezclaIdSeleccionada }
+    val opcionesOperacion = listOf(
+        OPERACION_NUEVA_ID to "Nuevo"
+    ) + state.operacionesMezcla.map { it.id to it.nombre }
+
+    val textoOperacionSeleccionada =
+        when (state.operacionMezclaIdSeleccionada) {
+            OPERACION_NUEVA_ID -> "Nuevo"
+            null -> "Nuevo"
+            else -> state.operacionesMezcla
+                .firstOrNull { it.id == state.operacionMezclaIdSeleccionada }
+                ?.nombre ?: "Nuevo"
+        }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded }
     ) {
         OutlinedTextField(
-            value = operacionSeleccionada?.nombre ?: "",
+            value = textoOperacionSeleccionada,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Operación") },
-            placeholder = { Text("Selecciona una operación") },
+            label = { Text("Operación de mezcla") },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
@@ -604,11 +614,11 @@ private fun SelectOperacionMezcla(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            state.operacionesMezcla.forEach { operacion ->
+            opcionesOperacion.forEach { (id, nombre) ->
                 DropdownMenuItem(
-                    text = { Text(operacion.nombre) },
+                    text = { Text(nombre) },
                     onClick = {
-                        onSeleccionarOperacion(operacion.id)
+                        onSeleccionarOperacion(id)
                         expanded = false
                     }
                 )

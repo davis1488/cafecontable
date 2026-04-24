@@ -31,12 +31,12 @@ interface MezclaDao {
     """)
     suspend fun getById(mezclaId: String): MezclaEntity?
 
-    @Query("""
-        SELECT * FROM mezcla
-        WHERE estado = 'DISPONIBLE' AND cantidadDisponible > 0
-        ORDER BY fecha DESC
-    """)
-    suspend fun getDisponibles(): List<MezclaEntity>
+//    @Query("""
+//        SELECT * FROM mezcla
+//        WHERE estado = 'DISPONIBLE' AND cantidadDisponible > 0
+//        ORDER BY fecha DESC
+//    """)
+//    suspend fun getDisponibles(): List<MezclaEntity>
 
     @Query("""
         SELECT * FROM mezcla_detalle
@@ -45,15 +45,16 @@ interface MezclaDao {
     """)
     suspend fun getDetallesByMezclaId(mezclaId: String): List<MezclaDetalleEntity>
 
+    // cantidadDisponible = :cantidadDisponible,
+
     @Query("""
         UPDATE mezcla
-        SET cantidadDisponible = :cantidadDisponible,
-            estado = :estado
+        SET estado = :estado
         WHERE id = :mezclaId
     """)
     suspend fun actualizarDisponibleYEstado(
         mezclaId: String,
-        cantidadDisponible: Double,
+        //cantidadDisponible: Double,
         estado: String
     )
 
