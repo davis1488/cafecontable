@@ -2,10 +2,13 @@ package com.ethandev.cafecontable.ui.screen.operacion
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ethandev.cafecontable.data.local.db.AppDatabase
+import com.ethandev.cafecontable.domain.constants.TipoOperacion
 import com.ethandev.cafecontable.domain.model.CrearOperacionInput
+import com.ethandev.cafecontable.domain.model.GastoOperacionModel
 import com.ethandev.cafecontable.domain.model.RegistrarGastoOperacionInput
 import com.ethandev.cafecontable.domain.usecase.CrearOperacionUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarGastosPorOperacionUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarOperacionesUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarGastoOperacionUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,45 +18,64 @@ import kotlinx.coroutines.launch
 class OperacionViewModel(
     private val crearOperacionUseCase: CrearOperacionUseCase,
     private val registrarGastoUseCase: RegistrarGastoOperacionUseCase,
-    private val db: AppDatabase
+    private val listarOperacionesUseCase: ListarOperacionesUseCase,
+    private val listarGastosPorOperacionUseCase: ListarGastosPorOperacionUseCase
 ) : ViewModel() {
 
     private val _operaciones = MutableStateFlow<List<OperacionResumenUi>>(emptyList())
     val operaciones: StateFlow<List<OperacionResumenUi>> = _operaciones.asStateFlow()
 
-    fun cargar(tipo: String) {
-        viewModelScope.launch {
-            val lista = db.operacionDao().listarPorTipo(tipo)
+    private val _gastosOperacionSeleccionada =
+        MutableStateFlow<List<GastoOperacionModel>>(emptyList())
 
-            val resumen = lista.map { operacion ->
+    val gastosOperacionSeleccionada: StateFlow<List<GastoOperacionModel>> =
+        _gastosOperacionSeleccionada.asStateFlow()
+
+    private val _tipoSeleccionado = MutableStateFlow(TipoOperacion.COMPRA)
+    val tipoSeleccionado: StateFlow<String> = _tipoSeleccionado.asStateFlow()
+
+    init {
+        cargarTodo()
+    }
+
+    fun seleccionarTipo(tipo: String) {
+        _tipoSeleccionado.value = tipo
+    }
+
+    fun cargarTodo() {
+        viewModelScope.launch {
+            val lista = listarOperacionesUseCase()
+
+            _operaciones.value = lista.map { operacion ->
                 OperacionResumenUi(
                     id = operacion.id,
                     nombre = operacion.nombre,
                     tipo = operacion.tipo,
                     descripcion = operacion.descripcion,
-                    totalGastos = db.gastoOperacionDao().obtenerTotalGastosPorOperacion(operacion.id)
+                    totalGastos = operacion.totalGastos
                 )
             }
-
-            _operaciones.value = resumen
         }
     }
 
-    fun crearOperacion(tipo: String, nombre: String, descripcion: String?) {
+    fun crearOperacion(
+        nombre: String,
+        descripcion: String?
+    ) {
         viewModelScope.launch {
             crearOperacionUseCase(
                 CrearOperacionInput(
-                    tipo = tipo,
+                    tipo = _tipoSeleccionado.value,
                     nombre = nombre,
                     descripcion = descripcion
                 )
             )
-            cargar(tipo)
+
+            cargarTodo()
         }
     }
 
     fun registrarGasto(
-        tipo: String,
         operacionId: String,
         categoria: String,
         descripcion: String?,
@@ -72,7 +94,16 @@ class OperacionViewModel(
                     observacion = observacion
                 )
             )
-            cargar(tipo)
+
+            cargarTodo()
+            cargarGastosDeOperacion(operacionId)
+        }
+    }
+
+    fun cargarGastosDeOperacion(operacionId: String) {
+        viewModelScope.launch {
+            _gastosOperacionSeleccionada.value =
+                listarGastosPorOperacionUseCase(operacionId)
         }
     }
 }

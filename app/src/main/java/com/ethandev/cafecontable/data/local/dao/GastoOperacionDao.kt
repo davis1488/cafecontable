@@ -27,4 +27,10 @@ interface GastoOperacionDao {
 """)
     suspend fun obtenerTotalGastosPorOperacion(operacionId: String): Long
 
+    @Query("""
+    SELECT * FROM gasto_operacion
+    WHERE operacionId = :operacionId
+    ORDER BY fecha DESC
+""")
+    suspend fun listarPorOperacion(operacionId: String): List<GastoOperacionEntity>
 }

@@ -13,8 +13,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.ethandev.cafecontable.ui.screen.asignacionmezcla.AsignacionMezclaPedidoScreen
 import com.ethandev.cafecontable.ui.screen.asignacionmezcla.AsignacionMezclaPedidoViewModel
+import com.ethandev.cafecontable.ui.screen.asignacionmezcla.MezclaAnuncioTabScreen
 import com.ethandev.cafecontable.ui.screen.compras.CompraCafeScreen
 import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
+import com.ethandev.cafecontable.ui.screen.compras.ComprasTabScreen
 import com.ethandev.cafecontable.ui.screen.cuentasporcobrar.CuentasPorCobrarScreen
 import com.ethandev.cafecontable.ui.screen.cuentasporcobrar.CuentasPorCobrarViewModel
 import com.ethandev.cafecontable.ui.screen.cuentasporpagar.CuentasPorPagarScreen
@@ -119,10 +121,10 @@ fun AppNavGraph(
                     onGoVentas = { navController.navigate(Routes.VENTAS) },
                     onGoVentasPedido = { navController.navigate(Routes.VENTAS_PEDIDO) },
                     onGoInventario = { navController.navigate(Routes.INVENTARIO) },
-                    onGoHistorialCompras = { navController.navigate(Routes.HISTORIAL_COMPRA) },
+                   //onGoHistorialCompras = { navController.navigate(Routes.HISTORIAL_COMPRA) },
                     onGoHistorialVentas = { navController.navigate(Routes.HISTORIAL_VENTA) },
                     onGoCuentasPorCobrar = { navController.navigate(Routes.CUENTAS_POR_COBRAR) },
-                    onGoCuentasPorPagar = { navController.navigate(Routes.CUENTAS_POR_PAGAR) },
+                   onGoCuentasPorPagar = { navController.navigate(Routes.CUENTAS_POR_PAGAR) },
                     onGoPrestamos = { navController.navigate(Routes.PRESTAMOS) },
                     onGoMezclas  = { navController.navigate(Routes.MEZCLAS) },
                     onGoAsignacionMezclaPedido  = { navController.navigate(Routes.ASIGNACION_MEZCLA_PEDIDO) },
@@ -134,12 +136,38 @@ fun AppNavGraph(
                 )
             }
 
-            composable(Routes.COMPRAS) {
-                CompraCafeScreen(compraVm)
+//            composable(Routes.COMPRAS) {
+//                CompraCafeScreen(compraVm)
+//            }
+//            composable(Routes.HISTORIAL_COMPRA) {
+//                HistorialComprasScreen(historialComprasVm)
+//            }
+
+
+            composable("compras") {
+                ComprasTabScreen(
+                    compraVm = compraVm,
+                    historialVm = historialComprasVm
+                )
             }
 
-            composable(Routes.VENTAS) {
-                VentaCafeScreen(ventaVm)
+
+
+            ///////////////////////////////////////////////////
+
+//            composable(Routes.MEZCLAS) {
+//                MezclaAnuncioTabScreen(
+//                    MezclasVm = mezclaVm,
+//                    VentasPedidoVm = ventasPedidoVm,
+//                    AsignacionMezclaPedidoVm = asignacionMezclaPedidoVm,
+//                    onIrAsignacionMezcla = { ventaId ->
+//                        navController.navigate(Routes.asignacionMezclaRoute(ventaId))
+//                    }
+//                )
+//            }
+
+            composable(Routes.MEZCLAS) {
+                MezclasScreen(mezclaVm)
             }
 
             composable(Routes.VENTAS_PEDIDO) {
@@ -151,12 +179,13 @@ fun AppNavGraph(
                 )
             }
 
-            composable(Routes.MEZCLAS) {
-                MezclasScreen(mezclaVm)
-            }
-
             composable(Routes.ASIGNACION_MEZCLA_PEDIDO) {
                 AsignacionMezclaPedidoScreen(asignacionMezclaPedidoVm)
+            }
+///////////////////////////////////////////////////
+
+            composable(Routes.VENTAS) {
+                VentaCafeScreen(ventaVm)
             }
 
             composable(
@@ -179,9 +208,6 @@ fun AppNavGraph(
                 InventarioScreen(inventarioVm)
             }
 
-            composable(Routes.HISTORIAL_COMPRA) {
-                HistorialComprasScreen(historialComprasVm)
-            }
 
             composable(Routes.HISTORIAL_VENTA) {
                 HistorialVentasScreen(historialVentasVm)

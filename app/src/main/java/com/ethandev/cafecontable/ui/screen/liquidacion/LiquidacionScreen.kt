@@ -49,6 +49,10 @@ fun LiquidacionScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Pendientes", "Histórico")
 
+    LaunchedEffect(Unit) {
+        viewModel.cargarTodo()
+    }
+
     LaunchedEffect(state.error, state.okMsg) {
         state.error?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -86,7 +90,7 @@ fun LiquidacionScreen(
 
         when (selectedTab) {
             0 -> PendientesLiquidacionTab(
-                items = state.pendientes,
+                pendientes  = state.pendientes,
                 onGuardar = { item, descuentoCooperativa, otrosDescuentos, nota ->
                     viewModel.registrarLiquidacion(
                         item = item,
@@ -105,7 +109,7 @@ fun LiquidacionScreen(
 
 @Composable
 private fun PendientesLiquidacionTab(
-    items: List<LiquidacionPendiente>,
+    pendientes: List<LiquidacionPendiente>,
     onGuardar: (LiquidacionPendiente, Long, Long, String?) -> Unit
 ) {
     LazyColumn(
@@ -115,10 +119,10 @@ private fun PendientesLiquidacionTab(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("Asignaciones pendientes por liquidar")
+            Text("Asignaciones pendientes por liquidar: ${pendientes.size}")
         }
 
-        if (items.isEmpty()) {
+        if (pendientes.isEmpty()) {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Text(
@@ -129,15 +133,17 @@ private fun PendientesLiquidacionTab(
             }
         }
 
-        items(items, key = { it.asignacionId }) { item ->
+        items(
+            count = pendientes.size,
+            key = { index -> pendientes[index].asignacionId }
+        ) { index ->
             PendienteLiquidacionCard(
-                item = item,
+                item = pendientes[index],
                 onGuardar = onGuardar
             )
         }
     }
 }
-
 @Composable
 private fun PendienteLiquidacionCard(
     item: LiquidacionPendiente,
@@ -152,9 +158,9 @@ private fun PendienteLiquidacionCard(
     val otrosDescuentos = otrosDescuentosTxt.toLongOrNull() ?: 0L
 
     val valorBase = (item.cantidadKg * item.precioBaseKg.toDouble()).roundToLong()
-    val diferencia = item.factorReal - 90.0
+    val diferencia = 90.0 - item.factorReal
     val ajusteFactor = ((valorBase * diferencia) / 100.0).roundToLong()
-    val valorNeto = valorBase - ajusteFactor - descuentoCooperativa - otrosDescuentos
+    val valorNeto = valorBase + ajusteFactor - descuentoCooperativa - otrosDescuentos
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {

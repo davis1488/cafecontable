@@ -10,6 +10,7 @@ import com.ethandev.cafecontable.domain.repository.ProductoRepository
 import com.ethandev.cafecontable.data.repository.CompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.CuentaPorCobrarRepositoryImpl
 import com.ethandev.cafecontable.data.repository.CuentaPorPagarRepositoryImpl
+import com.ethandev.cafecontable.data.repository.GastoOperacionRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialCompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialVentaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.InventarioRepositoryImpl
@@ -21,6 +22,7 @@ import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaPedidoRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaRepositoryImpl
 import com.ethandev.cafecontable.domain.repository.CompraRepository
+import com.ethandev.cafecontable.domain.repository.GastoOperacionRepository
 import com.ethandev.cafecontable.domain.repository.HistorialCompraRepository
 import com.ethandev.cafecontable.domain.repository.InventarioRepository
 import com.ethandev.cafecontable.domain.repository.LiquidacionRepository
@@ -43,8 +45,10 @@ import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentasPorCobrarUseC
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorPagarUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarGastosPorOperacionUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarOperacionesPorTipoUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarOperacionesUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarPrestamosUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarVentasPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.MarcarMezclaAnalizadoUseCase
@@ -519,40 +523,73 @@ object AppModule {
 //        return OperacionRepositoryImpl(db.operacionDao())
 //    }
 //
-//    fun provideListarOperacionesPorTipoUseCase(db: AppDatabase): ListarOperacionesPorTipoUseCase {
-//        return ListarOperacionesPorTipoUseCase(repository = provideOperacionRepository(db))
-//    }
+    fun provideListarOperacionesPorTipoUseCase(
+        context: Context
+    ): ListarOperacionesPorTipoUseCase {
+        return ListarOperacionesPorTipoUseCase(
+            repository = provideOperacionRepository(context)
+        )
+    }
 
-    fun provideOperacionRepository(context: android.content.Context): OperacionRepository {
+
+    fun provideOperacionRepository(
+        context: Context
+    ): OperacionRepository {
+        val db = provideDatabase(context)
+        return OperacionRepositoryImpl(db)
+    }
+
+    fun provideGastoOperacionRepository(
+        context: Context
+    ): GastoOperacionRepository {
         val database = provideDatabase(context)
-        return OperacionRepositoryImpl(database.operacionDao())
+
+        return GastoOperacionRepositoryImpl(database)
     }
 
-    fun provideListarOperacionesPorTipoUseCase(context: android.content.Context): ListarOperacionesPorTipoUseCase {
+    fun provideListarOperacionesUseCase(
+        context: Context
+    ): ListarOperacionesUseCase {
         val repo = provideOperacionRepository(context)
-        return ListarOperacionesPorTipoUseCase(repo)
+        return ListarOperacionesUseCase(repo)
     }
 
-    fun provideCrearOperacionUseCase(context: Context): CrearOperacionUseCase {
+    fun provideListarGastosPorOperacionUseCase(
+        context: Context
+    ): ListarGastosPorOperacionUseCase {
+        val repo = provideGastoOperacionRepository(context)
+        return ListarGastosPorOperacionUseCase(repo)
+    }
+
+    fun provideCrearOperacionUseCase(
+        context: Context
+    ): CrearOperacionUseCase {
         val db = provideDatabase(context)
         return CrearOperacionUseCase(db)
     }
 
-    fun provideRegistrarGastoOperacionUseCase(context: Context): RegistrarGastoOperacionUseCase {
+    fun provideRegistrarGastoOperacionUseCase(
+        context: Context
+    ): RegistrarGastoOperacionUseCase {
         val db = provideDatabase(context)
         return RegistrarGastoOperacionUseCase(db)
     }
 
-    fun provideOperacionViewModel(context: Context): OperacionViewModel {
-        val db = provideDatabase(context)
+    fun provideOperacionViewModel(
+        context: Context
+    ): OperacionViewModel {
+
         return OperacionViewModel(
             crearOperacionUseCase = provideCrearOperacionUseCase(context),
             registrarGastoUseCase = provideRegistrarGastoOperacionUseCase(context),
-            db = db
+            listarOperacionesUseCase = provideListarOperacionesUseCase(context),
+            listarGastosPorOperacionUseCase = provideListarGastosPorOperacionUseCase(context)
         )
     }
 
-    fun provideAgregarComprasAMezclaUseCase(context: Context): AgregarComprasAMezclaUseCase {
+    fun provideAgregarComprasAMezclaUseCase(
+        context: Context
+    ): AgregarComprasAMezclaUseCase {
         val db = provideDatabase(context)
         return AgregarComprasAMezclaUseCase(db)
     }

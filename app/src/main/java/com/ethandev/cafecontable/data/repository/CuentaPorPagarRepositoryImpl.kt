@@ -2,6 +2,7 @@ package com.ethandev.cafecontable.data.repository
 
 import com.ethandev.cafecontable.data.local.dao.CuentaPorPagarDao
 import com.ethandev.cafecontable.data.local.entity.AbonoCuentaPorPagarEntity
+import com.ethandev.cafecontable.domain.constants.EstadoCuentaPorPagar
 import com.ethandev.cafecontable.domain.model.AbonoCuentaPorPagarModel
 import com.ethandev.cafecontable.domain.model.CuentaPorPagarModel
 import com.ethandev.cafecontable.domain.model.RegistrarAbonoInput
@@ -51,8 +52,11 @@ class CuentaPorPagarRepositoryImpl(
         )
 
         val nuevoSaldo = cuenta.saldoPendiente - input.valor
-        val nuevoEstado = if (nuevoSaldo == 0L) "PAGADO" else "PENDIENTE"
-
+        val nuevoEstado = if (nuevoSaldo == 0L) {
+            EstadoCuentaPorPagar.CANCELADO
+        } else {
+            EstadoCuentaPorPagar.PENDIENTE
+        }
         dao.update(
             cuenta.copy(
                 saldoPendiente = nuevoSaldo,

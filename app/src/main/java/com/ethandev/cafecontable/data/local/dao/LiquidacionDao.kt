@@ -26,14 +26,19 @@ interface LiquidacionDao {
     FROM asignacion_mezcla_pedido amp
     INNER JOIN venta_pedido vp ON vp.id = amp.pedidoId
     INNER JOIN mezcla m ON m.id = amp.mezclaId
-    WHERE NOT EXISTS (
-        SELECT 1
-        FROM liquidacion_entrega le
-        WHERE le.asignacionId = amp.id
-    )
+    WHERE vp.estado = :estadoPedido
+      AND m.estado = :estadoMezcla
+      AND NOT EXISTS (
+          SELECT 1
+          FROM liquidacion_entrega le
+          WHERE le.asignacionId = amp.id
+      )
     ORDER BY amp.fecha DESC
 """)
-    suspend fun obtenerPendientesLiquidacion(): List<LiquidacionPendienteDb>
+    suspend fun obtenerPendientesLiquidacion(
+        estadoPedido: String,
+        estadoMezcla: String
+    ): List<LiquidacionPendienteDb>
 
     @Query("""
         SELECT

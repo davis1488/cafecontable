@@ -18,14 +18,14 @@ interface CuentaPorPagarDao {
         SELECT * FROM cuenta_por_pagar
         ORDER BY fecha DESC
     """)
-    suspend fun listarTodas(): List<CuentaPorPagarEntity>
+    suspend fun  listarPendientes(): List<CuentaPorPagarEntity>
 
     @Query("""
         SELECT * FROM cuenta_por_pagar
         WHERE estado = 'PENDIENTE'
         ORDER BY fecha DESC
     """)
-    suspend fun listarPendientes(): List<CuentaPorPagarEntity>
+    suspend fun listarTodas(): List<CuentaPorPagarEntity>
 
     @Query("""
         SELECT * FROM cuenta_por_pagar

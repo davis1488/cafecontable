@@ -11,6 +11,7 @@ import com.ethandev.cafecontable.domain.usecase.RegistrarLiquidacionUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class LiquidacionState(
@@ -36,23 +37,32 @@ class LiquidacionViewModel(
 
     fun cargarTodo() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(loading = true, error = null, okMsg = null)
-            try {
+            _state.update {
+                it.copy(
+                    loading = true,
+                    error = null,
+                    okMsg = null
+                )
+            }
+
+            runCatching {
                 val pendientes = obtenerLiquidacionesPendientesUseCase()
                 val historial = obtenerHistorialLiquidacionesUseCase()
 
-                println("DEBUG pendientes: $pendientes")
-                println("DEBUG cantidad: ${pendientes.size}")
-                _state.value = _state.value.copy(
-                    loading = false,
-                    pendientes = pendientes,
-                    historial = historial
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    loading = false,
-                    error = e.message ?: "Error cargando módulo de liquidación"
-                )
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        pendientes = pendientes,
+                        historial = historial
+                    )
+                }
+            }.onFailure { e ->
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        error = e.message ?: "Error cargando módulo de liquidación"
+                    )
+                }
             }
         }
     }
@@ -64,8 +74,15 @@ class LiquidacionViewModel(
         nota: String?
     ) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(loading = true, error = null, okMsg = null)
-            try {
+            _state.update {
+                it.copy(
+                    loading = true,
+                    error = null,
+                    okMsg = null
+                )
+            }
+
+            runCatching {
                 registrarLiquidacionUseCase(
                     RegistrarLiquidacionInput(
                         asignacionId = item.asignacionId,
@@ -84,22 +101,31 @@ class LiquidacionViewModel(
                 val pendientes = obtenerLiquidacionesPendientesUseCase()
                 val historial = obtenerHistorialLiquidacionesUseCase()
 
-                _state.value = _state.value.copy(
-                    loading = false,
-                    pendientes = pendientes,
-                    historial = historial,
-                    okMsg = "Liquidación registrada correctamente"
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    loading = false,
-                    error = e.message ?: "No se pudo registrar la liquidación"
-                )
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        pendientes = pendientes,
+                        historial = historial,
+                        okMsg = "Liquidación registrada correctamente"
+                    )
+                }
+            }.onFailure { e ->
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        error = e.message ?: "No se pudo registrar la liquidación"
+                    )
+                }
             }
         }
     }
 
     fun limpiarMensajes() {
-        _state.value = _state.value.copy(error = null, okMsg = null)
+        _state.update {
+            it.copy(
+                error = null,
+                okMsg = null
+            )
+        }
     }
 }

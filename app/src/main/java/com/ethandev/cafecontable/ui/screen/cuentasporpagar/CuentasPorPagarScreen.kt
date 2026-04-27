@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -33,6 +34,10 @@ import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.ui.text.input.KeyboardType
+import com.ethandev.cafecontable.domain.constants.EstadoCuentaPorPagar
 
 @Composable
 fun CuentasPorPagarScreen(vm: CuentasPorPagarViewModel) {
@@ -43,6 +48,19 @@ fun CuentasPorPagarScreen(vm: CuentasPorPagarViewModel) {
     var cuentaHistorialId by remember { mutableStateOf<String?>(null) }
     var valorAbonoTxt by remember { mutableStateOf("") }
     var notaAbonoTxt by remember { mutableStateOf("") }
+
+
+    var tabSeleccionado by remember { mutableStateOf(0) }
+
+    val tabs = listOf("Pendientes", "Canceladas", "Todas")
+
+    val cuentasFiltradas = when (tabSeleccionado) {
+        0 -> state.items.filter { it.estado == EstadoCuentaPorPagar.PENDIENTE }
+        1 -> state.items.filter { it.estado == EstadoCuentaPorPagar.CANCELADO }
+        else -> state.items
+    }
+
+
 
     LaunchedEffect(Unit) { vm.cargar() }
 
@@ -75,11 +93,35 @@ fun CuentasPorPagarScreen(vm: CuentasPorPagarViewModel) {
                 Text("No hay cuentas por pagar pendientes.")
             }
 
+
+
+            TabRow(selectedTabIndex = tabSeleccionado) {
+                tabs.forEachIndexed { index, titulo ->
+                    Tab(
+                        selected = tabSeleccionado == index,
+                        onClick = { tabSeleccionado = index },
+                        text = { Text(titulo) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.padding(6.dp))
+
+            if (!state.loading && cuentasFiltradas.isEmpty()) {
+                Text(
+                    text = when (tabSeleccionado) {
+                        0 -> "No hay cuentas por pagar pendientes."
+                        1 -> "No hay cuentas canceladas."
+                        else -> "No hay cuentas por pagar registradas."
+                    }
+                )
+            }
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(state.items) { item ->
+                items(cuentasFiltradas) { item ->
                     val fecha = remember(item.fecha) {
                         SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
                             .format(Date(item.fecha))
@@ -105,17 +147,18 @@ fun CuentasPorPagarScreen(vm: CuentasPorPagarViewModel) {
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Button(
-                                    onClick = {
-                                        cuentaSeleccionadaId = item.id
-                                        valorAbonoTxt = ""
-                                        notaAbonoTxt = ""
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Registrar abono")
+                                if (item.estado == EstadoCuentaPorPagar.PENDIENTE) {
+                                    Button(
+                                        onClick = {
+                                            cuentaSeleccionadaId = item.id
+                                            valorAbonoTxt = item.saldoPendiente.toString()
+                                            notaAbonoTxt = ""
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("Registrar abono")
+                                    }
                                 }
-
                                 OutlinedButton(
                                     onClick = {
                                         cuentaHistorialId = item.id
@@ -135,6 +178,7 @@ fun CuentasPorPagarScreen(vm: CuentasPorPagarViewModel) {
     }
 
     if (cuentaSeleccionadaId != null) {
+
         AlertDialog(
             onDismissRequest = { cuentaSeleccionadaId = null },
             title = { Text("Registrar abono") },
@@ -144,8 +188,11 @@ fun CuentasPorPagarScreen(vm: CuentasPorPagarViewModel) {
                         value = valorAbonoTxt,
                         onValueChange = { valorAbonoTxt = it.filter(Char::isDigit) },
                         label = { Text("Valor abonado") },
-                        modifier = Modifier.fillMaxWidth()
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
                     )
+
 
                     OutlinedTextField(
                         value = notaAbonoTxt,
