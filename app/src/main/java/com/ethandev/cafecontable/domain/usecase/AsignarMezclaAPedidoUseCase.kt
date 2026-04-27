@@ -28,7 +28,12 @@ class AsignarMezclaAPedidoUseCase(
         val mezcla = mezclaDao.getById(input.mezclaId)
             ?: throw IllegalArgumentException("No se encontró la mezcla")
 
-        require(mezcla.cantidadDisponible >= input.cantidadAsignada) {
+//        require(mezcla.cantidadDisponible >= input.cantidadAsignada) {
+//            "La mezcla no tiene saldo suficiente"
+//        }
+        val totalAsignado = asignacionDao.totalAsignadoPorMezcla(input.mezclaId)
+        val disponible = mezcla.cantidadTotal - totalAsignado
+        require(disponible >= input.cantidadAsignada) {
             "La mezcla no tiene saldo suficiente"
         }
 
@@ -61,7 +66,7 @@ class AsignarMezclaAPedidoUseCase(
 
         asignacionDao.insert(asignacion)
 
-        val nuevaCantidadDisponible = mezcla.cantidadDisponible - input.cantidadAsignada
+        val nuevaCantidadDisponible = disponible - input.cantidadAsignada
 
         val nuevoEstadoMezcla = when {
             nuevaCantidadDisponible <= 0.0 && mezcla.estado.equals(EstadoMezcla.ANALIZADO.name, ignoreCase = true) ->
@@ -75,7 +80,7 @@ class AsignarMezclaAPedidoUseCase(
 
         mezclaDao.actualizarDisponibleYEstado(
             mezclaId = mezcla.id,
-            cantidadDisponible = nuevaCantidadDisponible,
+            //cantidadDisponible = nuevaCantidadDisponible,
             estado = nuevoEstadoMezcla.toString()
         )
 

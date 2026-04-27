@@ -17,6 +17,7 @@ import com.ethandev.cafecontable.data.local.dao.OperacionDao
 import com.ethandev.cafecontable.data.local.dao.PreparacionEntregaDao
 import com.ethandev.cafecontable.data.local.dao.PrestamoDao
 import com.ethandev.cafecontable.data.local.dao.ProductoDao
+import com.ethandev.cafecontable.data.local.dao.UtilidadOperacionDao
 import com.ethandev.cafecontable.data.local.dao.VentaDao
 import com.ethandev.cafecontable.data.local.dao.VentaPedidoDao
 import com.ethandev.cafecontable.data.local.entity.AbonoCuentaPorCobrarEntity
@@ -36,6 +37,7 @@ import com.ethandev.cafecontable.data.local.entity.PreparacionEntregaDetalleEnti
 import com.ethandev.cafecontable.data.local.entity.PreparacionEntregaEntity
 import com.ethandev.cafecontable.data.local.entity.PrestamoEntity
 import com.ethandev.cafecontable.data.local.entity.ProductoEntity
+import com.ethandev.cafecontable.data.local.entity.UtilidadOperacionEntity
 import com.ethandev.cafecontable.data.local.entity.VentaCafeEntity
 import com.ethandev.cafecontable.data.local.entity.VentaPedidoEntity
 
@@ -59,10 +61,12 @@ import com.ethandev.cafecontable.data.local.entity.VentaPedidoEntity
         AsignacionMezclaPedidoEntity::class,
         LiquidacionEntregaEntity::class,
         OperacionEntity::class,
-        GastoOperacionEntity::class
+        GastoOperacionEntity::class,
+        UtilidadOperacionEntity::class,
 
-               ],
-    version = 22,
+
+    ],
+    version = 30,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -82,6 +86,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun liquidacionDao(): LiquidacionDao
     abstract fun operacionDao(): OperacionDao
     abstract fun gastoOperacionDao(): GastoOperacionDao
+    abstract fun utilidadOperacionDao(): UtilidadOperacionDao
 
     companion object {
         @Volatile

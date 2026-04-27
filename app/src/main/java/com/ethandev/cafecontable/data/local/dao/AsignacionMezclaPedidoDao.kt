@@ -25,4 +25,11 @@ interface AsignacionMezclaPedidoDao {
         ORDER BY fecha DESC
     """)
     suspend fun getByMezclaId(mezclaId: String): List<AsignacionMezclaPedidoEntity>
+
+    @Query("""
+    SELECT COALESCE(SUM(cantidadAsignada), 0)
+    FROM asignacion_mezcla_pedido
+    WHERE mezclaId = :mezclaId
+""")
+    suspend fun totalAsignadoPorMezcla(mezclaId: String): Double
 }

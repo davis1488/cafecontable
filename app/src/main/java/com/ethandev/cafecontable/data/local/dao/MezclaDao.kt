@@ -31,12 +31,12 @@ interface MezclaDao {
     """)
     suspend fun getById(mezclaId: String): MezclaEntity?
 
-    @Query("""
-        SELECT * FROM mezcla
-        WHERE estado = 'DISPONIBLE' AND cantidadDisponible > 0
-        ORDER BY fecha DESC
-    """)
-    suspend fun getDisponibles(): List<MezclaEntity>
+//    @Query("""
+//        SELECT * FROM mezcla
+//        WHERE estado = 'DISPONIBLE' AND cantidadDisponible > 0
+//        ORDER BY fecha DESC
+//    """)
+//    suspend fun getDisponibles(): List<MezclaEntity>
 
     @Query("""
         SELECT * FROM mezcla_detalle
@@ -45,15 +45,16 @@ interface MezclaDao {
     """)
     suspend fun getDetallesByMezclaId(mezclaId: String): List<MezclaDetalleEntity>
 
+    // cantidadDisponible = :cantidadDisponible,
+
     @Query("""
         UPDATE mezcla
-        SET cantidadDisponible = :cantidadDisponible,
-            estado = :estado
+        SET estado = :estado
         WHERE id = :mezclaId
     """)
     suspend fun actualizarDisponibleYEstado(
         mezclaId: String,
-        cantidadDisponible: Double,
+        //cantidadDisponible: Double,
         estado: String
     )
 
@@ -195,6 +196,24 @@ interface MezclaDao {
         mezclaId: String,
         compraId: String
     ): Int
+
+    @Query("""
+        SELECT COALESCE(SUM(
+            md.cantidadUsada * (
+                SELECT COALESCE(SUM(go.valor), 0) * 1.0 / c.cantidad
+                FROM gasto_operacion go
+                WHERE go.operacionId = c.operacionCompraId
+                AND go.estado = 'ACTIVO'
+            )
+        ), 0)
+        FROM mezcla_detalle md
+        INNER JOIN compra_cafe c ON c.id = md.compraId
+        WHERE md.mezclaId = :mezclaId
+    """)
+    suspend fun totalGastosCompraProrrateadosPorMezcla(
+        mezclaId: String
+    ): Double
+
 
 
 }

@@ -10,6 +10,7 @@ import com.ethandev.cafecontable.domain.repository.ProductoRepository
 import com.ethandev.cafecontable.data.repository.CompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.CuentaPorCobrarRepositoryImpl
 import com.ethandev.cafecontable.data.repository.CuentaPorPagarRepositoryImpl
+import com.ethandev.cafecontable.data.repository.GastoOperacionRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialCompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialVentaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.InventarioRepositoryImpl
@@ -18,15 +19,18 @@ import com.ethandev.cafecontable.data.repository.MezclaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.OperacionRepositoryImpl
 import com.ethandev.cafecontable.data.repository.PreparacionEntregaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
+import com.ethandev.cafecontable.data.repository.UtilidadOperacionRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaPedidoRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaRepositoryImpl
 import com.ethandev.cafecontable.domain.repository.CompraRepository
+import com.ethandev.cafecontable.domain.repository.GastoOperacionRepository
 import com.ethandev.cafecontable.domain.repository.HistorialCompraRepository
 import com.ethandev.cafecontable.domain.repository.InventarioRepository
 import com.ethandev.cafecontable.domain.repository.LiquidacionRepository
 import com.ethandev.cafecontable.domain.repository.MezclaRepository
 import com.ethandev.cafecontable.domain.repository.OperacionRepository
 import com.ethandev.cafecontable.domain.repository.PreparacionEntregaRepository
+import com.ethandev.cafecontable.domain.repository.UtilidadOperacionRepository
 import com.ethandev.cafecontable.domain.repository.VentaPedidoRepository
 import com.ethandev.cafecontable.domain.repository.VentaRepository
 import com.ethandev.cafecontable.domain.usecase.ActualizarCompraUseCase
@@ -36,6 +40,7 @@ import com.ethandev.cafecontable.domain.usecase.AgregarComprasAMezclaUseCase
 import com.ethandev.cafecontable.domain.usecase.AnularCompraUseCase
 import com.ethandev.cafecontable.domain.usecase.AsignarMezclaAPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.BuscarPrestamosUseCase
+import com.ethandev.cafecontable.domain.usecase.CalcularUtilidadUseCase
 import com.ethandev.cafecontable.domain.usecase.CrearOperacionUseCase
 import com.ethandev.cafecontable.domain.usecase.FinalizarVentaPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentaPorPagarUseCase
@@ -43,9 +48,13 @@ import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentasPorCobrarUseC
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorPagarUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarGastosPorOperacionUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarHistorialUtilidadesUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarOperacionesPorTipoUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarOperacionesUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarPrestamosUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarUtilidadesPendientesUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarVentasPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.MarcarMezclaAnalizadoUseCase
 import com.ethandev.cafecontable.domain.usecase.MarcarMezclaEntregadoUseCase
@@ -61,6 +70,7 @@ import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialVentasUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerLiquidacionesPendientesUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerMovimientoKardexPorCompraIdUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerResumenUtilidadUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoCuentaPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoCuentaPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoPrestamoUseCase
@@ -73,6 +83,7 @@ import com.ethandev.cafecontable.domain.usecase.RegistrarPreparacionEntregaUseCa
 import com.ethandev.cafecontable.domain.usecase.RegistrarPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaPedidoUseCase
+import com.ethandev.cafecontable.domain.usecase.ResolverOperacionUseCase
 import com.ethandev.cafecontable.ui.screen.asignacionmezcla.AsignacionMezclaPedidoViewModel
 import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
 import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
@@ -81,6 +92,7 @@ import com.ethandev.cafecontable.ui.screen.liquidacion.LiquidacionViewModel
 import com.ethandev.cafecontable.ui.screen.mezcla.MezclasViewModel
 import com.ethandev.cafecontable.ui.screen.operacion.OperacionViewModel
 import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntregaViewModel
+import com.ethandev.cafecontable.ui.screen.utilidad.UtilidadViewModel
 import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoViewModel
 
 
@@ -92,7 +104,7 @@ object AppModule {
         return db ?: Room.databaseBuilder(
             context.applicationContext,
             AppDatabase::class.java,
-            "cafecontable.db"
+            "cafe_contable_db"
         ).fallbackToDestructiveMigration()
             .build()
             .also { db = it }
@@ -121,8 +133,14 @@ object AppModule {
     fun provideCompraCafeViewModel(context: Context): CompraCafeViewModel {
         return CompraCafeViewModel(
             registrarCompra = provideCompraUseCase(context),
-            listarOperacionesPorTipoUseCase = provideListarOperacionesPorTipoUseCase(context)
+            listarOperacionesPorTipoUseCase = provideListarOperacionesPorTipoUseCase(context),
+            resolverOperacionUseCase = provideResolverOperacionUseCase(context)
         )
+    }
+
+    fun provideResolverOperacionUseCase(context: Context): ResolverOperacionUseCase {
+        val db = AppDatabase.getDatabase(context)
+        return ResolverOperacionUseCase(db.operacionDao())
     }
 
     fun provideInventarioRepository(context: Context): InventarioRepository {
@@ -437,7 +455,8 @@ object AppModule {
             marcarMezclaPendienteEntregaUseCase = provideMarcarPendienteEntregaUseCase(context),
             compraCafeDao = db.compraDao(),
             listarOperacionesPorTipoUseCase = provideListarOperacionesPorTipoUseCase(context),
-            agregarComprasAMezclaUseCase =  provideAgregarComprasAMezclaUseCase(context)
+            agregarComprasAMezclaUseCase =  provideAgregarComprasAMezclaUseCase(context),
+            resolverOperacionUseCase = provideResolverOperacionUseCase(context)
         )
     }
 
@@ -511,44 +530,137 @@ object AppModule {
 //        return OperacionRepositoryImpl(db.operacionDao())
 //    }
 //
-//    fun provideListarOperacionesPorTipoUseCase(db: AppDatabase): ListarOperacionesPorTipoUseCase {
-//        return ListarOperacionesPorTipoUseCase(repository = provideOperacionRepository(db))
-//    }
+    fun provideListarOperacionesPorTipoUseCase(
+        context: Context
+    ): ListarOperacionesPorTipoUseCase {
+        return ListarOperacionesPorTipoUseCase(
+            repository = provideOperacionRepository(context)
+        )
+    }
 
-    fun provideOperacionRepository(context: android.content.Context): OperacionRepository {
+
+    fun provideOperacionRepository(
+        context: Context
+    ): OperacionRepository {
+        val db = provideDatabase(context)
+        return OperacionRepositoryImpl(db)
+    }
+
+    fun provideGastoOperacionRepository(
+        context: Context
+    ): GastoOperacionRepository {
         val database = provideDatabase(context)
-        return OperacionRepositoryImpl(database.operacionDao())
+
+        return GastoOperacionRepositoryImpl(database)
     }
 
-    fun provideListarOperacionesPorTipoUseCase(context: android.content.Context): ListarOperacionesPorTipoUseCase {
+    fun provideListarOperacionesUseCase(
+        context: Context
+    ): ListarOperacionesUseCase {
         val repo = provideOperacionRepository(context)
-        return ListarOperacionesPorTipoUseCase(repo)
+        return ListarOperacionesUseCase(repo)
     }
 
-    fun provideCrearOperacionUseCase(context: Context): CrearOperacionUseCase {
+    fun provideListarGastosPorOperacionUseCase(
+        context: Context
+    ): ListarGastosPorOperacionUseCase {
+        val repo = provideGastoOperacionRepository(context)
+        return ListarGastosPorOperacionUseCase(repo)
+    }
+
+    fun provideCrearOperacionUseCase(
+        context: Context
+    ): CrearOperacionUseCase {
         val db = provideDatabase(context)
         return CrearOperacionUseCase(db)
     }
 
-    fun provideRegistrarGastoOperacionUseCase(context: Context): RegistrarGastoOperacionUseCase {
+    fun provideRegistrarGastoOperacionUseCase(
+        context: Context
+    ): RegistrarGastoOperacionUseCase {
         val db = provideDatabase(context)
         return RegistrarGastoOperacionUseCase(db)
     }
 
-    fun provideOperacionViewModel(context: Context): OperacionViewModel {
-        val db = provideDatabase(context)
+    fun provideOperacionViewModel(
+        context: Context
+    ): OperacionViewModel {
+
         return OperacionViewModel(
             crearOperacionUseCase = provideCrearOperacionUseCase(context),
             registrarGastoUseCase = provideRegistrarGastoOperacionUseCase(context),
-            db = db
+            listarOperacionesUseCase = provideListarOperacionesUseCase(context),
+            listarGastosPorOperacionUseCase = provideListarGastosPorOperacionUseCase(context)
         )
     }
 
-    fun provideAgregarComprasAMezclaUseCase(context: Context): AgregarComprasAMezclaUseCase {
+    fun provideAgregarComprasAMezclaUseCase(
+        context: Context
+    ): AgregarComprasAMezclaUseCase {
         val db = provideDatabase(context)
         return AgregarComprasAMezclaUseCase(db)
     }
 //    fun provideAgregarComprasAMezclaUseCase(db: AppDatabase ): AgregarComprasAMezclaUseCase {
 //        return AgregarComprasAMezclaUseCase(db)
 //    }
+
+
+    ////////////////// utilidad/////////////////////////
+
+    fun provideUtilidadOperacionRepository(
+        context: Context
+    ): UtilidadOperacionRepository {
+        val db = provideDatabase(context)
+
+        return UtilidadOperacionRepositoryImpl(
+            utilidadDao = db.utilidadOperacionDao(),
+            gastoDao = db.gastoOperacionDao(),
+            mezclaDao = db.mezclaDao()
+        )
+    }
+
+    fun provideListarUtilidadesPendientesUseCase(
+        context: Context
+    ): ListarUtilidadesPendientesUseCase {
+        return ListarUtilidadesPendientesUseCase(
+            provideUtilidadOperacionRepository(context)
+        )
+    }
+
+    fun provideListarHistorialUtilidadesUseCase(
+        context: Context
+    ): ListarHistorialUtilidadesUseCase {
+        return ListarHistorialUtilidadesUseCase(
+            provideUtilidadOperacionRepository(context)
+        )
+    }
+
+    fun provideCalcularUtilidadUseCase(
+        context: Context
+    ): CalcularUtilidadUseCase {
+        return CalcularUtilidadUseCase(
+            provideUtilidadOperacionRepository(context)
+        )
+    }
+
+    fun provideObtenerResumenUtilidadUseCase(
+        context: Context
+    ): ObtenerResumenUtilidadUseCase {
+        return ObtenerResumenUtilidadUseCase(
+            provideUtilidadOperacionRepository(context)
+        )
+    }
+
+    fun provideUtilidadViewModel(
+        context: Context
+    ): UtilidadViewModel {
+        return UtilidadViewModel(
+            listarPendientesUseCase = provideListarUtilidadesPendientesUseCase(context),
+            listarHistorialUseCase = provideListarHistorialUtilidadesUseCase(context),
+            calcularUtilidadUseCase = provideCalcularUtilidadUseCase(context),
+            obtenerResumenUseCase = provideObtenerResumenUtilidadUseCase(context)
+        )
+    }
+
+    ////////////////// utilidad/////////////////////////
 }

@@ -41,6 +41,8 @@ class MainActivity : ComponentActivity() {
         val mezclaVm = AppModule.provideMezclasViewModel(this)
         val liquidacionVm = AppModule.provideLiquidacionViewModel(this)
         val operacionesgastosVm = AppModule.provideOperacionViewModel(this)
+        val utilidadVm = AppModule.provideUtilidadViewModel(this)
+
 
 
 //        provideMezclasViewModel
@@ -114,7 +116,8 @@ class MainActivity : ComponentActivity() {
                     mezclaVm = mezclaVm,
                     asignacionMezclaPedidoVm = asignacionMezclaPedidoVm,
                     liquidacionVm =  liquidacionVm,
-                    operacionesgastosVm = operacionesgastosVm
+                    operacionesgastosVm = operacionesgastosVm,
+                    utilidadVm =  utilidadVm
 
                 )
             }

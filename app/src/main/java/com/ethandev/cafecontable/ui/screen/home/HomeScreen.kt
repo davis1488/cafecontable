@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory2
@@ -48,13 +49,15 @@ fun HomeScreen(
     onGoInventario: () -> Unit,
     onGoMezclas: () -> Unit,
     onGoAsignacionMezclaPedido: () -> Unit,
-    onGoHistorialCompras: () -> Unit,
+   // onGoHistorialCompras: () -> Unit,
     onGoHistorialVentas: () -> Unit,
     onGoCuentasPorCobrar: () -> Unit,
     onGoCuentasPorPagar: () -> Unit,
     onGoPrestamos: () -> Unit,
     onGoLiquidacion: () -> Unit,
-    onGoOperacionesGastos: () -> Unit
+    onGoOperacionesGastos: () -> Unit,
+    onGoUtilidad: () -> Unit
+
 ) {
     LazyColumn(
         modifier = Modifier
@@ -75,19 +78,29 @@ fun HomeScreen(
         item {
             HomeMenuCard(
                 title = "Registrar compra",
-                subtitle = "Ingresa compras de café y actualiza existencias",
+                subtitle = "Ingresa compras de café e Historial",
                 icon = Icons.Filled.ShoppingCart,
                 onClick = onGoCompras
             )
         }
 
+        ///////////////////////PENDINTE VENTAS////////////////////////
+
+//        item {
+//            HomeMenuCard(
+//                title = "Registrar venta",
+//                subtitle = "Guarda ventas directas y descuenta inventario",
+//                icon = Icons.Filled.PointOfSale,
+//                onClick = onGoVentas
+//            )
+//        }
+
+
+        ///////////////////////Anuncios y Mezclas/////////////////////////
+
+
         item {
-            HomeMenuCard(
-                title = "Registrar venta",
-                subtitle = "Guarda ventas directas y descuenta inventario",
-                icon = Icons.Filled.PointOfSale,
-                onClick = onGoVentas
-            )
+            SectionTitle("Anuncios y Entregas")
         }
 
         item {
@@ -116,6 +129,10 @@ fun HomeScreen(
                 onClick = onGoAsignacionMezclaPedido
             )
         }
+////////////////////////////////
+        item {
+            SectionTitle("Liquidaciones y Operaciones")
+        }
 
         item {
             HomeMenuCard(
@@ -135,6 +152,10 @@ fun HomeScreen(
             )
         }
 
+
+        item {
+            SectionTitle("Inventarios y Utilidad")
+        }
         item {
             HomeMenuCard(
                 title = "Inventario",
@@ -145,39 +166,45 @@ fun HomeScreen(
         }
 
         item {
-            SectionTitle("Consultas e historial")
-        }
-
-        item {
             HomeMenuCard(
-                title = "Historial de compras",
-                subtitle = "Revisa todas las compras registradas",
-                icon = Icons.Filled.History,
-                onClick = onGoHistorialCompras
+                title = "Utilidades",
+                subtitle = "Calcula ganancias y resultados de operaciones",
+                icon = Icons.Filled.AttachMoney,
+                onClick = onGoUtilidad
             )
         }
 
-        item {
-            HomeMenuCard(
-                title = "Historial de ventas",
-                subtitle = "Revisa ventas y movimientos realizados",
-                icon = Icons.Filled.History,
-                onClick = onGoHistorialVentas
-            )
-        }
+
 
         item {
-            HomeMenuCard(
-                title = "Cuentas por cobrar",
-                subtitle = "Consulta saldos pendientes de clientes",
-                icon = Icons.Filled.AccountBalanceWallet,
-                onClick = onGoCuentasPorCobrar
-            )
+            SectionTitle("Creditos y Movimientos")
         }
 
+
+        ////////////////////////////////////////////////
+
+//        item {
+//            HomeMenuCard(
+//                title = "Historial de compras",
+//                subtitle = "Revisa todas las compras registradas",
+//                icon = Icons.Filled.History,
+//                onClick = onGoHistorialCompras
+//            )
+//        }
+///////////////////////////////////////PENDIENTE VENTAS
+        //item {
+//            HomeMenuCard(
+//                title = "Cuentas por COBRAR",
+//                subtitle = "Consulta saldos pendientes de clientes",
+//                icon = Icons.Filled.AccountBalanceWallet,
+//                onClick = onGoCuentasPorCobrar
+//            )
+//        }
+
+//////////////////////////////////////////////////////////////
         item {
             HomeMenuCard(
-                title = "Cuentas por pagar",
+                title = "Cuentas por PAGAR",
                 subtitle = "Consulta obligaciones y compras a crédito",
                 icon = Icons.Filled.AccountBalanceWallet,
                 onClick = onGoCuentasPorPagar

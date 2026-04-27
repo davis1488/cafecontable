@@ -8,7 +8,7 @@ import com.ethandev.cafecontable.data.local.entity.CompraCafeEntity
 import com.ethandev.cafecontable.data.local.entity.CuentaPorPagarEntity
 import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
 import com.ethandev.cafecontable.data.local.entity.ProductoEntity
-import com.ethandev.cafecontable.domain.repository.CompraCafeImput
+import com.ethandev.cafecontable.domain.model.CompraCafeImput
 import com.ethandev.cafecontable.domain.repository.CompraRepository
 import java.util.UUID
 
@@ -27,7 +27,7 @@ class CompraRepositoryImpl(
             val unidadProducto = input.unidad.trim().uppercase()
             val proveedor = input.proveedor?.trim()?.ifBlank { null }
 
-            val abono = input.abono ?: 0L
+            val abono = input.abono
 
 
             val nota = input.nota?.trim()?.ifBlank { null }
@@ -47,6 +47,9 @@ class CompraRepositoryImpl(
                 nuevo.id
             }
 
+            val operacionCompraId = input.operacionCompraId?.trim()
+                ?: throw IllegalStateException("Debe seleccionar una operación activa")
+
             val compraId = compraDao.insert(
                 CompraCafeEntity(
                     id = 0,
@@ -57,9 +60,10 @@ class CompraRepositoryImpl(
                     proveedor = proveedor,
                     esCredito = input.esCredito,
                     nota = nota,
-                    operacionCompraId = input.operacionCompraId
+                    operacionCompraId = operacionCompraId
                 )
             ).toString()
+
             Log.d("DEBUG_COMPRA", "compraId real = $compraId")
             inventarioDao.insertMov(
                 KardexMovimientoEntity(
@@ -102,7 +106,7 @@ class CompraRepositoryImpl(
                             id = UUID.randomUUID().toString(),
                             cuentaId = idCompra,
                             fecha = System.currentTimeMillis(),
-                            valor = totalCompra-abono,
+                            valor = abono,
                             nota = input.nota?.trim()?.ifBlank { null }
                         )
                     )

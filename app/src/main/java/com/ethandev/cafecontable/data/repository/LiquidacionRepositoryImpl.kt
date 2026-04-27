@@ -5,6 +5,7 @@ import com.ethandev.cafecontable.data.local.dao.LiquidacionDao
 import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.entity.LiquidacionEntregaEntity
 import com.ethandev.cafecontable.domain.constants.EstadoAnuncio
+import com.ethandev.cafecontable.domain.constants.EstadoMezcla
 import com.ethandev.cafecontable.domain.model.LiquidacionHistorial
 import com.ethandev.cafecontable.domain.model.LiquidacionPendiente
 import com.ethandev.cafecontable.domain.repository.LiquidacionRepository
@@ -18,7 +19,13 @@ class LiquidacionRepositoryImpl(
 ) : LiquidacionRepository {
 
     override suspend fun obtenerPendientes(): List<LiquidacionPendiente> {
-        return liquidacionDao.obtenerPendientesLiquidacion().map {
+        println("Estado pedido enviado: ${EstadoAnuncio.ENTREGA_TOTAL}")
+        println("Estado pedido name: ${EstadoAnuncio.ENTREGA_TOTAL.name}")
+        println("Estado mezcla name: ${EstadoMezcla.ANALIZADO.name}")
+        return liquidacionDao.obtenerPendientesLiquidacion(
+            estadoPedido = EstadoAnuncio.ENTREGA_TOTAL.toString(),
+            estadoMezcla = EstadoMezcla.ANALIZADO.toString()
+        ).map {
             LiquidacionPendiente(
                 asignacionId = it.asignacionId,
                 pedidoId = it.pedidoId,
@@ -74,10 +81,10 @@ class LiquidacionRepositoryImpl(
             // 90 = base
             // >90 = descuento
             // <90 = bonificación
-            val diferencia = input.factorReal - 90.0
+            val diferencia = 90.0 - input.factorReal
             val ajusteFactor = ((valorBase * diferencia) / 100.0).roundToLong()
 
-            val valorNeto = valorBase -
+            val valorNeto = valorBase +
                     ajusteFactor -
                     input.descuentoCooperativa -
                     input.otrosDescuentos

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ethandev.cafecontable.data.local.dao.CompraDao
 import com.ethandev.cafecontable.data.local.entity.CompraDisponibleDb
 import com.ethandev.cafecontable.data.local.entity.OperacionEntity
+import com.ethandev.cafecontable.domain.constants.OPERACION_NUEVA_ID
 import com.ethandev.cafecontable.domain.constants.TipoOperacion
 import com.ethandev.cafecontable.domain.model.AgregarComprasAMezclaInput
 import com.ethandev.cafecontable.domain.model.MezclaDetalleInput
@@ -17,6 +18,7 @@ import com.ethandev.cafecontable.domain.usecase.MarcarMezclaEntregadoUseCase
 import com.ethandev.cafecontable.domain.usecase.MarcarMezclaPendienteEntregaUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialMezclasUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarMezclaUseCase
+import com.ethandev.cafecontable.domain.usecase.ResolverOperacionUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,7 +64,8 @@ class MezclasViewModel(
     private val marcarMezclaAnalizadoUseCase: MarcarMezclaAnalizadoUseCase,
     private val listarOperacionesPorTipoUseCase: ListarOperacionesPorTipoUseCase,
     private val compraCafeDao: CompraDao,
-    private val agregarComprasAMezclaUseCase: AgregarComprasAMezclaUseCase
+    private val agregarComprasAMezclaUseCase: AgregarComprasAMezclaUseCase,
+    private val resolverOperacionUseCase: ResolverOperacionUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MezclasState())
@@ -114,11 +117,18 @@ class MezclasViewModel(
             runCatching {
                 listarOperacionesPorTipoUseCase(TipoOperacion.MEZCLA)
             }.onSuccess { operaciones ->
+                val ultimaOperacionId = operaciones.lastOrNull()?.id ?: OPERACION_NUEVA_ID
+
                 _state.update { actual ->
                     actual.copy(
                         operacionesMezcla = operaciones,
-                        operacionMezclaIdSeleccionada = actual.operacionMezclaIdSeleccionada
-                            ?: operaciones.firstOrNull()?.id
+                        operacionMezclaIdSeleccionada =
+                        actual.operacionMezclaIdSeleccionada
+                            ?.takeIf { seleccionada ->
+                                seleccionada == OPERACION_NUEVA_ID ||
+                                        operaciones.any { it.id == seleccionada }
+                            }
+                            ?: ultimaOperacionId
                     )
                 }
             }.onFailure { e ->
@@ -229,8 +239,8 @@ class MezclasViewModel(
             return
         }
 
-        val operacionMezclaId = _state.value.operacionMezclaIdSeleccionada
-        if (operacionMezclaId.isNullOrBlank()) {
+        val operacionMezclaIdSeleccionada = _state.value.operacionMezclaIdSeleccionada
+        if (operacionMezclaIdSeleccionada.isNullOrBlank()) {
             _state.update {
                 it.copy(
                     error = "Debes seleccionar una operación de mezcla",
@@ -274,11 +284,18 @@ class MezclasViewModel(
             }
 
             runCatching {
+                val operacionMezclaIdFinal = resolverOperacionUseCase(
+                    operacionIdSeleccionada = _state.value.operacionMezclaIdSeleccionada,
+                    tipo = TipoOperacion.MEZCLA,
+                    nombreAutomatico = "MEZCLA ${System.currentTimeMillis()}",
+                    descripcionAutomatica = "Generada automáticamente desde mezclas"
+                )
+
                 registrarMezclaUseCase(
                     RegistrarMezclaInput(
                         fecha = System.currentTimeMillis(),
                         nota = nota?.trim()?.ifBlank { null },
-                        operacionMezclaId = operacionMezclaId,
+                        operacionMezclaId = operacionMezclaIdFinal,
                         items = items.map {
                             MezclaDetalleInput(
                                 compraId = it.compraId,
@@ -300,6 +317,7 @@ class MezclasViewModel(
                         editandoMezcla = false
                     )
                 }
+                cargarOperacionesMezcla()
                 cargarComprasDisponibles()
                 cargarHistorialMezclas()
             }.onFailure { e ->

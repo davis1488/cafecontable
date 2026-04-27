@@ -18,6 +18,7 @@ object Routes {
     const val ASIGNACION_MEZCLA_PEDIDO = "asignacion_mezcla_pedido"
     const val ROUTE_LIQUIDACION = "liquidacion"
     const val ROUTE_OPERACION_GASTOS = "operacion_gastos"
+    const val ROUTE_UTILIDAD = "utilidad"
 
 
     fun asignacionMezclaRoute(ventaId: String) =
