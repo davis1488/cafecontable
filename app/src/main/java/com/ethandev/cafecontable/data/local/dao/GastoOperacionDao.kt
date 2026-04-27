@@ -33,4 +33,15 @@ interface GastoOperacionDao {
     ORDER BY fecha DESC
 """)
     suspend fun listarPorOperacion(operacionId: String): List<GastoOperacionEntity>
+
+    @Query("""
+    SELECT COALESCE(SUM(valor), 0)
+    FROM gasto_operacion
+    WHERE operacionId = :operacionId
+    AND estado = 'ACTIVO'
+""")
+    suspend fun totalPorOperacionYCategoria(
+        operacionId: String,
+   //     categoria: String
+    ): Long
 }

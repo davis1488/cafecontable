@@ -197,6 +197,24 @@ interface MezclaDao {
         compraId: String
     ): Int
 
+    @Query("""
+        SELECT COALESCE(SUM(
+            md.cantidadUsada * (
+                SELECT COALESCE(SUM(go.valor), 0) * 1.0 / c.cantidad
+                FROM gasto_operacion go
+                WHERE go.operacionId = c.operacionCompraId
+                AND go.estado = 'ACTIVO'
+            )
+        ), 0)
+        FROM mezcla_detalle md
+        INNER JOIN compra_cafe c ON c.id = md.compraId
+        WHERE md.mezclaId = :mezclaId
+    """)
+    suspend fun totalGastosCompraProrrateadosPorMezcla(
+        mezclaId: String
+    ): Double
+
+
 
 }
 

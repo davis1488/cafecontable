@@ -19,6 +19,7 @@ import com.ethandev.cafecontable.data.repository.MezclaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.OperacionRepositoryImpl
 import com.ethandev.cafecontable.data.repository.PreparacionEntregaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
+import com.ethandev.cafecontable.data.repository.UtilidadOperacionRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaPedidoRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaRepositoryImpl
 import com.ethandev.cafecontable.domain.repository.CompraRepository
@@ -29,6 +30,7 @@ import com.ethandev.cafecontable.domain.repository.LiquidacionRepository
 import com.ethandev.cafecontable.domain.repository.MezclaRepository
 import com.ethandev.cafecontable.domain.repository.OperacionRepository
 import com.ethandev.cafecontable.domain.repository.PreparacionEntregaRepository
+import com.ethandev.cafecontable.domain.repository.UtilidadOperacionRepository
 import com.ethandev.cafecontable.domain.repository.VentaPedidoRepository
 import com.ethandev.cafecontable.domain.repository.VentaRepository
 import com.ethandev.cafecontable.domain.usecase.ActualizarCompraUseCase
@@ -38,6 +40,7 @@ import com.ethandev.cafecontable.domain.usecase.AgregarComprasAMezclaUseCase
 import com.ethandev.cafecontable.domain.usecase.AnularCompraUseCase
 import com.ethandev.cafecontable.domain.usecase.AsignarMezclaAPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.BuscarPrestamosUseCase
+import com.ethandev.cafecontable.domain.usecase.CalcularUtilidadUseCase
 import com.ethandev.cafecontable.domain.usecase.CrearOperacionUseCase
 import com.ethandev.cafecontable.domain.usecase.FinalizarVentaPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentaPorPagarUseCase
@@ -46,10 +49,12 @@ import com.ethandev.cafecontable.domain.usecase.ListarAbonosPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarCuentasPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarGastosPorOperacionUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarHistorialUtilidadesUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarOperacionesPorTipoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarOperacionesUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarPrestamosUseCase
+import com.ethandev.cafecontable.domain.usecase.ListarUtilidadesPendientesUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarVentasPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.MarcarMezclaAnalizadoUseCase
 import com.ethandev.cafecontable.domain.usecase.MarcarMezclaEntregadoUseCase
@@ -65,6 +70,7 @@ import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialVentasUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerLiquidacionesPendientesUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerMovimientoKardexPorCompraIdUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerResumenUtilidadUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoCuentaPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoCuentaPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarAbonoPrestamoUseCase
@@ -86,6 +92,7 @@ import com.ethandev.cafecontable.ui.screen.liquidacion.LiquidacionViewModel
 import com.ethandev.cafecontable.ui.screen.mezcla.MezclasViewModel
 import com.ethandev.cafecontable.ui.screen.operacion.OperacionViewModel
 import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntregaViewModel
+import com.ethandev.cafecontable.ui.screen.utilidad.UtilidadViewModel
 import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoViewModel
 
 
@@ -596,4 +603,64 @@ object AppModule {
 //    fun provideAgregarComprasAMezclaUseCase(db: AppDatabase ): AgregarComprasAMezclaUseCase {
 //        return AgregarComprasAMezclaUseCase(db)
 //    }
+
+
+    ////////////////// utilidad/////////////////////////
+
+    fun provideUtilidadOperacionRepository(
+        context: Context
+    ): UtilidadOperacionRepository {
+        val db = provideDatabase(context)
+
+        return UtilidadOperacionRepositoryImpl(
+            utilidadDao = db.utilidadOperacionDao(),
+            gastoDao = db.gastoOperacionDao(),
+            mezclaDao = db.mezclaDao()
+        )
+    }
+
+    fun provideListarUtilidadesPendientesUseCase(
+        context: Context
+    ): ListarUtilidadesPendientesUseCase {
+        return ListarUtilidadesPendientesUseCase(
+            provideUtilidadOperacionRepository(context)
+        )
+    }
+
+    fun provideListarHistorialUtilidadesUseCase(
+        context: Context
+    ): ListarHistorialUtilidadesUseCase {
+        return ListarHistorialUtilidadesUseCase(
+            provideUtilidadOperacionRepository(context)
+        )
+    }
+
+    fun provideCalcularUtilidadUseCase(
+        context: Context
+    ): CalcularUtilidadUseCase {
+        return CalcularUtilidadUseCase(
+            provideUtilidadOperacionRepository(context)
+        )
+    }
+
+    fun provideObtenerResumenUtilidadUseCase(
+        context: Context
+    ): ObtenerResumenUtilidadUseCase {
+        return ObtenerResumenUtilidadUseCase(
+            provideUtilidadOperacionRepository(context)
+        )
+    }
+
+    fun provideUtilidadViewModel(
+        context: Context
+    ): UtilidadViewModel {
+        return UtilidadViewModel(
+            listarPendientesUseCase = provideListarUtilidadesPendientesUseCase(context),
+            listarHistorialUseCase = provideListarHistorialUtilidadesUseCase(context),
+            calcularUtilidadUseCase = provideCalcularUtilidadUseCase(context),
+            obtenerResumenUseCase = provideObtenerResumenUtilidadUseCase(context)
+        )
+    }
+
+    ////////////////// utilidad/////////////////////////
 }

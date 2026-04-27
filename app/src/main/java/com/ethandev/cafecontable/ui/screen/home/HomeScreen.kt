@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory2
@@ -54,7 +55,9 @@ fun HomeScreen(
     onGoCuentasPorPagar: () -> Unit,
     onGoPrestamos: () -> Unit,
     onGoLiquidacion: () -> Unit,
-    onGoOperacionesGastos: () -> Unit
+    onGoOperacionesGastos: () -> Unit,
+    onGoUtilidad: () -> Unit
+
 ) {
     LazyColumn(
         modifier = Modifier
@@ -161,6 +164,17 @@ fun HomeScreen(
                 onClick = onGoInventario
             )
         }
+
+        item {
+            HomeMenuCard(
+                title = "Utilidades",
+                subtitle = "Calcula ganancias y resultados de operaciones",
+                icon = Icons.Filled.AttachMoney,
+                onClick = onGoUtilidad
+            )
+        }
+
+
 
         item {
             SectionTitle("Creditos y Movimientos")

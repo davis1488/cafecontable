@@ -39,6 +39,8 @@ import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntrega
 import com.ethandev.cafecontable.ui.screen.prestamos.ConsultaPrestamosScreen
 import com.ethandev.cafecontable.ui.screen.prestamos.PrestamosScreen
 import com.ethandev.cafecontable.ui.screen.prestamos.PrestamosViewModel
+import com.ethandev.cafecontable.ui.screen.utilidad.UtilidadScreen
+import com.ethandev.cafecontable.ui.screen.utilidad.UtilidadViewModel
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeScreen
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeViewModel
 import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoScreen
@@ -59,7 +61,10 @@ fun AppNavGraph(
     mezclaVm : MezclasViewModel,
     asignacionMezclaPedidoVm : AsignacionMezclaPedidoViewModel,
     liquidacionVm : LiquidacionViewModel,
-    operacionesgastosVm: OperacionViewModel
+    operacionesgastosVm: OperacionViewModel,
+    utilidadVm: UtilidadViewModel
+
+
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -95,6 +100,8 @@ fun AppNavGraph(
             currentRoute == Routes.ASIGNACION_MEZCLA_PEDIDO ||
             currentRoute == Routes.ROUTE_LIQUIDACION ||
             currentRoute == Routes.ROUTE_OPERACION_GASTOS ||
+            currentRoute == Routes.ROUTE_UTILIDAD ||
+
 
 
             currentRoute?.startsWith("${Routes.PREPARACION_ENTREGA}/") == true
@@ -129,11 +136,13 @@ fun AppNavGraph(
                     onGoMezclas  = { navController.navigate(Routes.MEZCLAS) },
                     onGoAsignacionMezclaPedido  = { navController.navigate(Routes.ASIGNACION_MEZCLA_PEDIDO) },
                     onGoLiquidacion  = { navController.navigate(Routes.ROUTE_LIQUIDACION) },
-                    onGoOperacionesGastos  = { navController.navigate(Routes.ROUTE_OPERACION_GASTOS) }
+                    onGoOperacionesGastos  = { navController.navigate(Routes.ROUTE_OPERACION_GASTOS) },
+                    onGoUtilidad  = { navController.navigate(Routes.ROUTE_UTILIDAD) },
 
 
 
-                )
+
+                    )
             }
 
 //            composable(Routes.COMPRAS) {
@@ -249,6 +258,13 @@ fun AppNavGraph(
                 OperacionScreen(operacionesgastosVm)
 
             }
+
+
+            composable(Routes.ROUTE_UTILIDAD) {
+                UtilidadScreen(utilidadVm)
+
+            }
+
 
 
 
