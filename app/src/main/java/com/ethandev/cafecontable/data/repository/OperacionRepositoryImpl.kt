@@ -3,6 +3,7 @@ package com.ethandev.cafecontable.data.repository
 import com.ethandev.cafecontable.data.local.dao.OperacionDao
 import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.entity.OperacionEntity
+import com.ethandev.cafecontable.domain.constants.EstadoOperacion
 import com.ethandev.cafecontable.domain.constants.TipoOperacion
 import com.ethandev.cafecontable.domain.repository.OperacionRepository
 import com.ethandev.cafecontable.domain.model.GastoOperacionModel
@@ -17,6 +18,10 @@ class OperacionRepositoryImpl(
         tipo: String
     ): List<OperacionEntity> {
         return db.operacionDao().listarPorTipo(tipo)
+    }
+
+    override suspend fun cerrarOperacion(operacionId: String) {
+        db.operacionDao().cerrarOperacion(operacionId)
     }
 
     override suspend fun listarOperaciones(): List<OperacionResumenModel> {
@@ -42,7 +47,9 @@ class OperacionRepositoryImpl(
                         nombre = operacion.nombre,
                         tipo = operacion.tipo,
                         descripcion = operacion.descripcion,
-                        totalGastos = total
+                        totalGastos = total,
+                        estado = operacion.estado
+
                     )
                 )
             }
@@ -50,4 +57,5 @@ class OperacionRepositoryImpl(
 
         return resultado
     }
+
 }

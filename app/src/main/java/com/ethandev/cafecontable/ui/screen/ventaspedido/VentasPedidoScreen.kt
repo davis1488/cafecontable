@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.ethandev.cafecontable.domain.constants.EstadoAnuncio
 import com.ethandev.cafecontable.domain.model.VentaPedido
 import com.ethandev.cafecontable.domain.repository.dto.VentaPedidoInput
+import com.ethandev.cafecontable.ui.utils.formatNumber
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -69,6 +70,7 @@ fun VentasPedidoScreen(
     var cliente by remember { mutableStateOf("") }
     var cantidadTxt by remember { mutableStateOf("") }
     var precioTxt by remember { mutableStateOf("") }
+
     var notaTxt by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
@@ -212,25 +214,46 @@ private fun NuevoPedidoTab(
 
             Spacer(modifier = Modifier.height(10.dp))
 
+//            OutlinedTextField(
+//                value = cantidadTxt,
+//                onValueChange = onCantidadChange,
+//                label = { Text("Cantidad pactada (KG)") },
+//                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+//                modifier = Modifier.fillMaxWidth(),
+//                singleLine = true
+//            )
+
             OutlinedTextField(
-                value = cantidadTxt,
-                onValueChange = onCantidadChange,
+                value = formatNumber(cantidadTxt),
+                onValueChange = { input ->
+                    onCantidadChange(input.filter(Char::isDigit))
+                },
                 label = { Text("Cantidad pactada (KG)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                placeholder = { Text("Ej: 20000") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
+
 
             Spacer(modifier = Modifier.height(10.dp))
 
             OutlinedTextField(
-                value = precioTxt,
-                onValueChange = onPrecioChange,
+                value = formatNumber(precioTxt),
+                onValueChange = { input ->
+                    onPrecioChange(input.filter(Char::isDigit))
+                },
                 label = { Text("Precio venta unitario (COP)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                placeholder = { Text("Ej: 20000") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
+
 
             Spacer(modifier = Modifier.height(10.dp))
 

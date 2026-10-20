@@ -174,18 +174,36 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
                 }
             }
 
+
             item {
-                OutlinedTextField(
-                    value = formatNumber(cantidadTxt),
-                    onValueChange = { input ->
-                        cantidadTxt = input.filter(Char::isDigit)
-                    },
-                    label = { Text("Cantidad ($unidad)") },
-                    placeholder = { Text("Ej: 100") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                val totalCantidad = cantidadTxt
+                    .split("+")
+                    .mapNotNull { it.trim().toLongOrNull() }
+                    .sum()
+
+                Column {
+                    OutlinedTextField(
+                        value = cantidadTxt,
+                        onValueChange = { input ->
+                            cantidadTxt = input.filter {
+                                it.isDigit() || it == '+'
+                            }
+                        },
+                        label = { Text("Cantidad ($unidad)") },
+                        placeholder = { Text("Ej: 100+250+150") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Text(
+                        text = "Total: ${formatNumber(totalCantidad.toString())} $unidad",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
+
 
             item {
                 OutlinedTextField(

@@ -4,42 +4,10 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.ethandev.cafecontable.data.local.dao.AbonoPrestamoDao
-import com.ethandev.cafecontable.data.local.dao.AsignacionMezclaPedidoDao
-import com.ethandev.cafecontable.data.local.dao.CompraDao
-import com.ethandev.cafecontable.data.local.dao.CuentaPorCobrarDao
-import com.ethandev.cafecontable.data.local.dao.CuentaPorPagarDao
-import com.ethandev.cafecontable.data.local.dao.GastoOperacionDao
-import com.ethandev.cafecontable.data.local.dao.InventarioDao
-import com.ethandev.cafecontable.data.local.dao.LiquidacionDao
-import com.ethandev.cafecontable.data.local.dao.MezclaDao
-import com.ethandev.cafecontable.data.local.dao.OperacionDao
-import com.ethandev.cafecontable.data.local.dao.PreparacionEntregaDao
-import com.ethandev.cafecontable.data.local.dao.PrestamoDao
-import com.ethandev.cafecontable.data.local.dao.ProductoDao
-import com.ethandev.cafecontable.data.local.dao.UtilidadOperacionDao
-import com.ethandev.cafecontable.data.local.dao.VentaDao
-import com.ethandev.cafecontable.data.local.dao.VentaPedidoDao
-import com.ethandev.cafecontable.data.local.entity.AbonoCuentaPorCobrarEntity
-import com.ethandev.cafecontable.data.local.entity.AbonoCuentaPorPagarEntity
-import com.ethandev.cafecontable.data.local.entity.AbonoPrestamoEntity
-import com.ethandev.cafecontable.data.local.entity.AsignacionMezclaPedidoEntity
-import com.ethandev.cafecontable.data.local.entity.CompraCafeEntity
-import com.ethandev.cafecontable.data.local.entity.CuentaPorCobrarEntity
-import com.ethandev.cafecontable.data.local.entity.CuentaPorPagarEntity
-import com.ethandev.cafecontable.data.local.entity.GastoOperacionEntity
-import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
-import com.ethandev.cafecontable.data.local.entity.LiquidacionEntregaEntity
-import com.ethandev.cafecontable.data.local.entity.MezclaDetalleEntity
-import com.ethandev.cafecontable.data.local.entity.MezclaEntity
-import com.ethandev.cafecontable.data.local.entity.OperacionEntity
-import com.ethandev.cafecontable.data.local.entity.PreparacionEntregaDetalleEntity
-import com.ethandev.cafecontable.data.local.entity.PreparacionEntregaEntity
-import com.ethandev.cafecontable.data.local.entity.PrestamoEntity
-import com.ethandev.cafecontable.data.local.entity.ProductoEntity
-import com.ethandev.cafecontable.data.local.entity.UtilidadOperacionEntity
-import com.ethandev.cafecontable.data.local.entity.VentaCafeEntity
-import com.ethandev.cafecontable.data.local.entity.VentaPedidoEntity
+import androidx.room.TypeConverters
+import com.ethandev.cafecontable.data.local.Converters
+import com.ethandev.cafecontable.data.local.dao.*
+import com.ethandev.cafecontable.data.local.entity.*
 
 @Database(
     entities = [
@@ -62,14 +30,14 @@ import com.ethandev.cafecontable.data.local.entity.VentaPedidoEntity
         LiquidacionEntregaEntity::class,
         OperacionEntity::class,
         GastoOperacionEntity::class,
-        UtilidadOperacionEntity::class,
-
-
+        UtilidadOperacionEntity::class
     ],
-    version = 30,
+    version = 31,
     exportSchema = true
 )
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
+
     abstract fun productoDao(): ProductoDao
     abstract fun inventarioDao(): InventarioDao
     abstract fun compraDao(): CompraDao
@@ -80,7 +48,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun abonoPrestamoDao(): AbonoPrestamoDao
     abstract fun ventaPedidoDao(): VentaPedidoDao
     abstract fun preparacionEntregaDao(): PreparacionEntregaDao
-
     abstract fun mezclaDao(): MezclaDao
     abstract fun asignacionMezclaPedidoDao(): AsignacionMezclaPedidoDao
     abstract fun liquidacionDao(): LiquidacionDao
@@ -107,5 +74,4 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
     }
-
 }

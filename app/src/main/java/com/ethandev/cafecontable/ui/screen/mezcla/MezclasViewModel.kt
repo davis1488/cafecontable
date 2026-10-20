@@ -19,6 +19,9 @@ import com.ethandev.cafecontable.domain.usecase.MarcarMezclaPendienteEntregaUseC
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialMezclasUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarMezclaUseCase
 import com.ethandev.cafecontable.domain.usecase.ResolverOperacionUseCase
+import com.ethandev.cafecontable.domain.usecase.EditarMezclaUseCase
+import com.ethandev.cafecontable.data.local.dao.MezclaDao
+import com.ethandev.cafecontable.domain.model.EditarMezclaInput
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,7 +56,10 @@ data class MezclasState(
     val loadingHistorial: Boolean = false,
     val historialMezclas: List<MezclaHistorialItem> = emptyList(),
     val mezclaEditandoId: String? = null,
-    val editandoMezcla: Boolean = false
+    val editandoMezcla: Boolean = false,
+    val loadingEdicion: Boolean = false,
+    val itemsEdicion: List<MezclaFormItem> = emptyList(),
+    val notaEdicion: String = ""
 )
 
 class MezclasViewModel(
@@ -65,7 +71,9 @@ class MezclasViewModel(
     private val listarOperacionesPorTipoUseCase: ListarOperacionesPorTipoUseCase,
     private val compraCafeDao: CompraDao,
     private val agregarComprasAMezclaUseCase: AgregarComprasAMezclaUseCase,
-    private val resolverOperacionUseCase: ResolverOperacionUseCase
+    private val resolverOperacionUseCase: ResolverOperacionUseCase,
+    private val editarMezclaUseCase: EditarMezclaUseCase,
+    private val mezclaDao: MezclaDao
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MezclasState())
@@ -101,16 +109,34 @@ class MezclasViewModel(
         }
     }
 
+
     fun cancelarEdicionMezcla() {
         _state.update {
             it.copy(
                 mezclaEditandoId = null,
                 editandoMezcla = false,
+                loadingEdicion = false,
+                itemsEdicion = emptyList(),
+                notaEdicion = "",
                 okMsg = null,
                 error = null
             )
         }
+
+        cargarComprasDisponibles()
     }
+
+
+//    fun cancelarEdicionMezcla() {
+//        _state.update {
+//            it.copy(
+//                mezclaEditandoId = null,
+//                editandoMezcla = false,
+//                okMsg = null,
+//                error = null
+//            )
+//        }
+//    }
 
     fun cargarOperacionesMezcla() {
         viewModelScope.launch {
@@ -213,6 +239,163 @@ class MezclasViewModel(
         iniciarEdicionMezcla(mezclaId)
         cargarComprasDisponibles()
     }
+
+
+    fun cargarMezclaParaEditar(mezclaId: String) {
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    loadingEdicion = true,
+                    editandoMezcla = false,
+                    mezclaEditandoId = null,
+                    itemsEdicion = emptyList(),
+                    error = null
+                )
+            }
+
+            try {
+                val mezcla = mezclaDao.obtenerMezclaPorId(mezclaId)
+                    ?: error("La mezcla no existe")
+
+                require(mezcla.estado == "CREADO") {
+                    "Solo se pueden editar mezclas en estado CREADO"
+                }
+
+                val detalles =
+                    mezclaDao.obtenerDetallesPorMezclaId(mezclaId)
+
+                val items = detalles.map { detalle ->
+                    MezclaFormItem(
+                        compraId = detalle.compraId,
+                        productoId = detalle.productoId,
+                        productoNombre = detalle.productoNombre,
+                        cantidadUsada = detalle.cantidadUsada,
+                        costoUnitCompra = detalle.costoUnitCompra,
+                        operacionMezclaId = mezcla.operacionMezclaId
+                    )
+                }
+
+                val compras = compraCafeDao
+                    .obtenerComprasDisponiblesParaMezcla()
+                    .associateBy { it.compraId }
+                    .toMutableMap()
+
+                detalles.forEach { detalle ->
+                    val compra = compraCafeDao.obtenerCompraParaEdicion(
+                        compraId = detalle.compraId,
+                        mezclaId = mezclaId
+                    ) ?: error(
+                        "No se encontró la compra ${detalle.compraId}"
+                    )
+
+                    compras[compra.compraId] = compra
+                }
+
+                _state.update {
+                    it.copy(
+                        loadingEdicion = false,
+                        editandoMezcla = true,
+                        mezclaEditandoId = mezclaId,
+                        itemsEdicion = items,
+                        notaEdicion = mezcla.nota.orEmpty(),
+                        comprasDisponibles = compras.values.map { compra ->
+                            CompraDisponibleUi(
+                                compraId = compra.compraId,
+                                productoId = compra.productoId,
+                                productoNombre = compra.productoNombre,
+                                cantidadDisponible = compra.cantidadDisponible,
+                                costoUnitCompra = compra.precioUnitCompra
+                            )
+                        },
+                        operacionMezclaIdSeleccionada =
+                        mezcla.operacionMezclaId
+                    )
+                }
+
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        loadingEdicion = false,
+                        error = e.message ?: "Error al cargar mezcla"
+                    )
+                }
+            }
+        }
+    }
+
+
+
+    fun guardarEdicionMezcla(
+        mezclaId: String,
+        items: List<MezclaFormItem>,
+        nota: String?
+    ) {
+        if (_state.value.loading) return
+
+        if (items.isEmpty()) {
+            _state.update {
+                it.copy(
+                    error = "Debes tener al menos una compra en la mezcla",
+                    okMsg = null
+                )
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    loading = true,
+                    error = null,
+                    okMsg = null
+                )
+            }
+
+            try {
+                editarMezclaUseCase(
+                    EditarMezclaInput(
+                        mezclaId = mezclaId,
+                        nota = nota,
+                        items = items.map { item ->
+                            MezclaDetalleInput(
+                                compraId = item.compraId,
+                                productoId = item.productoId,
+                                productoNombre = item.productoNombre,
+                                cantidadUsada = item.cantidadUsada,
+                                costoUnitCompra = item.costoUnitCompra
+                            )
+                        }
+                    )
+                )
+
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        loadingEdicion = false,
+                        editandoMezcla = false,
+                        mezclaEditandoId = null,
+                        itemsEdicion = emptyList(),
+                        notaEdicion = "",
+                        okMsg = "Mezcla actualizada correctamente",
+                        error = null
+                    )
+                }
+
+                cargarComprasDisponibles()
+                cargarHistorialMezclas()
+
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        error = e.message ?: "Error al actualizar mezcla",
+                        okMsg = null
+                    )
+                }
+            }
+        }
+    }
+
 
     fun crearItemDesdeCompra(compra: CompraDisponibleUi): MezclaFormItem {
         return MezclaFormItem(

@@ -154,13 +154,32 @@ private fun PendienteLiquidacionCard(
     var otrosDescuentosTxt by remember { mutableStateOf("0") }
     var notaTxt by remember { mutableStateOf("") }
 
-    val descuentoCooperativa = descuentoCooperativaTxt.toLongOrNull() ?: 0L
+
+    val porcentajeCooperativa = descuentoCooperativaTxt
+        .replace(",", ".")
+        .toDoubleOrNull() ?: 0.0
+
     val otrosDescuentos = otrosDescuentosTxt.toLongOrNull() ?: 0L
 
-    val valorBase = (item.cantidadKg * item.precioBaseKg.toDouble()).roundToLong()
+    val valorBase = (
+            item.cantidadKg * item.precioBaseKg.toDouble()
+            ).roundToLong()
+
     val diferencia = 90.0 - item.factorReal
-    val ajusteFactor = ((valorBase * diferencia) / 100.0).roundToLong()
-    val valorNeto = valorBase + ajusteFactor - descuentoCooperativa - otrosDescuentos
+
+    val ajusteFactor = (
+            (valorBase * diferencia) / 100.0
+            ).roundToLong()
+
+    val valorAjustado = valorBase + ajusteFactor
+
+    val descuentoCooperativa = (
+            valorAjustado * porcentajeCooperativa / 100.0
+            ).roundToLong()
+
+    val valorNeto =
+        valorAjustado - descuentoCooperativa - otrosDescuentos
+
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -191,14 +210,30 @@ private fun PendienteLiquidacionCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+
                 OutlinedTextField(
                     value = descuentoCooperativaTxt,
-                    onValueChange = { descuentoCooperativaTxt = it.filter(Char::isDigit) },
+                    onValueChange = { input ->
+                        val valor = input.replace(',', '.')
+
+                        if (valor.matches(Regex("""\d*(\.\d*)?"""))) {
+                            descuentoCooperativaTxt = valor
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Descuento cooperativa") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
+                    label = { Text("Descuento cooperativa (%)") },
+                    placeholder = { Text("Ej: 0.75") },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal
+                    ),
+                    singleLine = true,
+                    supportingText = {
+                        Text(
+                            "Descuento calculado: ${formatMoney(descuentoCooperativa)}"
+                        )
+                    }
                 )
+
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -236,7 +271,9 @@ private fun PendienteLiquidacionCard(
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = valorNeto >= 0L
+                    enabled = valorNeto >= 0L &&
+                            porcentajeCooperativa.isFinite() &&
+                            porcentajeCooperativa in 0.0..100.0
                 ) {
                     Text("Guardar liquidación")
                 }

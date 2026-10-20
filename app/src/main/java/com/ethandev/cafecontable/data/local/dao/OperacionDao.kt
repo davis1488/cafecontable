@@ -17,4 +17,13 @@ interface OperacionDao {
 
     @Query("SELECT * FROM operacion WHERE id = :id")
     suspend fun obtenerPorId(id: String): OperacionEntity?
+
+    @Query("""
+        UPDATE operacion
+        SET estado = 'CERRADA'
+        WHERE id = :operacionId
+    """)
+    suspend fun cerrarOperacion(operacionId: String)
+
+
 }

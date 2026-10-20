@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ethandev.cafecontable.domain.constants.EstadoOperacion
 import com.ethandev.cafecontable.domain.constants.TipoOperacion
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -17,30 +18,23 @@ fun OperacionScreen(
     viewModel: OperacionViewModel
 ) {
     val categoriasGasto = listOf(
-        "Transporte",
-        "Cargue",
-        "Descargue",
-        "Empaque",
-        "Costales",
-        "Mano de obra",
-        "Secado",
-        "Análisis de café",
-        "Comisión",
-        "Alimentación",
-        "Combustible",
-        "Peaje",
-        "Otro"
+        "Transporte", "Cargue", "Descargue", "Empaque", "Costales",
+        "Mano de obra", "Secado", "Análisis de café", "Comisión",
+        "Alimentación", "Combustible", "Peaje", "Otro"
     )
-
 
     val operaciones by viewModel.operaciones.collectAsStateWithLifecycle()
     val tipoSeleccionado by viewModel.tipoSeleccionado.collectAsStateWithLifecycle()
     val gastosOperacionSeleccionada by viewModel.gastosOperacionSeleccionada.collectAsStateWithLifecycle()
 
+    val operacionesActivas = operaciones.filter { it.estado == EstadoOperacion.ACTIVA }
+    val operacionesCerradas = operaciones.filter { it.estado == EstadoOperacion.CERRADA }
+
     val tabs = listOf(
         "Crear operación",
         "Registrar gasto",
-        "Gastos por operación"
+        "Operaciones activas",
+        "Operaciones cerradas"
     )
 
     val tiposOperacion = listOf(
@@ -48,28 +42,27 @@ fun OperacionScreen(
         TipoOperacion.MEZCLA,
         TipoOperacion.DESPACHO
     )
-    var expandedCategoriaGasto by remember { mutableStateOf(false) }
+
     var tabIndex by remember { mutableStateOf(0) }
+
+    var expandedTipoOperacion by remember { mutableStateOf(false) }
+    var expandedOperacion by remember { mutableStateOf(false) }
+    var expandedCategoriaGasto by remember { mutableStateOf(false) }
+
     var mostrarGastosOperacion by remember { mutableStateOf(false) }
     var nombreOperacionDetalle by remember { mutableStateOf("") }
 
     var nombreOperacion by remember { mutableStateOf("") }
     var descripcionOperacion by remember { mutableStateOf("") }
 
+    var operacionSeleccionadaId by remember { mutableStateOf<String?>(null) }
     var categoriaGasto by remember { mutableStateOf("Transporte") }
     var valorGasto by remember { mutableStateOf("") }
     var descripcionGasto by remember { mutableStateOf("") }
     var terceroGasto by remember { mutableStateOf("") }
     var observacionGasto by remember { mutableStateOf("") }
 
-    var expandedTipoOperacion by remember { mutableStateOf(false) }
-    var expandedOperacion by remember { mutableStateOf(false) }
-
-    var operacionSeleccionadaId by remember {
-        mutableStateOf<String?>(null)
-    }
-
-    val operacionSeleccionada = operaciones.firstOrNull {
+    val operacionSeleccionada = operacionesActivas.firstOrNull {
         it.id == operacionSeleccionadaId
     }
 
@@ -77,12 +70,12 @@ fun OperacionScreen(
         viewModel.cargarTodo()
     }
 
-    LaunchedEffect(operaciones) {
+    LaunchedEffect(operacionesActivas) {
         if (
             operacionSeleccionadaId == null ||
-            operaciones.none { it.id == operacionSeleccionadaId }
+            operacionesActivas.none { it.id == operacionSeleccionadaId }
         ) {
-            operacionSeleccionadaId = operaciones.firstOrNull()?.id
+            operacionSeleccionadaId = operacionesActivas.firstOrNull()?.id
         }
     }
 
@@ -91,7 +84,6 @@ fun OperacionScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-
         Text(
             text = "Gastos y operaciones",
             style = MaterialTheme.typography.titleLarge,
@@ -113,16 +105,13 @@ fun OperacionScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         when (tabIndex) {
-
             0 -> {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+                        Card(modifier = Modifier.fillMaxWidth()) {
                             Column(
                                 modifier = Modifier.padding(14.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -150,7 +139,10 @@ fun OperacionScreen(
                                             )
                                         },
                                         modifier = Modifier
-                                            .menuAnchor()
+                                            .menuAnchor(
+                                                type = MenuAnchorType.PrimaryNotEditable,
+                                                enabled = true
+                                            )
                                             .fillMaxWidth()
                                     )
 
@@ -215,9 +207,7 @@ fun OperacionScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+                        Card(modifier = Modifier.fillMaxWidth()) {
                             Column(
                                 modifier = Modifier.padding(14.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -240,14 +230,17 @@ fun OperacionScreen(
                                         } ?: "",
                                         onValueChange = {},
                                         readOnly = true,
-                                        label = { Text("Operación") },
+                                        label = { Text("Operación activa") },
                                         trailingIcon = {
                                             ExposedDropdownMenuDefaults.TrailingIcon(
                                                 expanded = expandedOperacion
                                             )
                                         },
                                         modifier = Modifier
-                                            .menuAnchor()
+                                            .menuAnchor(
+                                                type = MenuAnchorType.PrimaryNotEditable,
+                                                enabled = true
+                                            )
                                             .fillMaxWidth()
                                     )
 
@@ -257,7 +250,7 @@ fun OperacionScreen(
                                             expandedOperacion = false
                                         }
                                     ) {
-                                        operaciones.forEach { operacion ->
+                                        operacionesActivas.forEach { operacion ->
                                             DropdownMenuItem(
                                                 text = {
                                                     Text("${operacion.nombre} - ${operacion.tipo}")
@@ -271,6 +264,13 @@ fun OperacionScreen(
                                     }
                                 }
 
+                                if (operacionesActivas.isEmpty()) {
+                                    Text(
+                                        text = "No hay operaciones activas para registrar gastos.",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+
                                 ExposedDropdownMenuBox(
                                     expanded = expandedCategoriaGasto,
                                     onExpandedChange = {
@@ -281,15 +281,18 @@ fun OperacionScreen(
                                         value = categoriaGasto,
                                         onValueChange = {},
                                         readOnly = true,
-                                        modifier = Modifier
-                                            .menuAnchor()
-                                            .fillMaxWidth(),
                                         label = { Text("Categoría") },
                                         trailingIcon = {
                                             ExposedDropdownMenuDefaults.TrailingIcon(
                                                 expanded = expandedCategoriaGasto
                                             )
-                                        }
+                                        },
+                                        modifier = Modifier
+                                            .menuAnchor(
+                                                type = MenuAnchorType.PrimaryNotEditable,
+                                                enabled = true
+                                            )
+                                            .fillMaxWidth()
                                     )
 
                                     ExposedDropdownMenu(
@@ -357,7 +360,7 @@ fun OperacionScreen(
                                                 observacion = observacionGasto.ifBlank { null }
                                             )
 
-                                            categoriaGasto = ""
+                                            categoriaGasto = "Transporte"
                                             valorGasto = ""
                                             descripcionGasto = ""
                                             terceroGasto = ""
@@ -380,49 +383,76 @@ fun OperacionScreen(
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(operaciones) { operacion ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(14.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
+                    if (operacionesActivas.isEmpty()) {
+                        item {
+                            Card(modifier = Modifier.fillMaxWidth()) {
                                 Text(
-                                    text = operacion.nombre,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
+                                    text = "No hay operaciones activas.",
+                                    modifier = Modifier.padding(14.dp),
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
-
-                                Text("Tipo: ${operacion.tipo}")
-
-                                if (!operacion.descripcion.isNullOrBlank()) {
-                                    Text("Descripción: ${operacion.descripcion}")
-                                }
-
-                                Text(
-                                    text = "Total gastos: $${operacion.totalGastos}",
-                                    fontWeight = FontWeight.Bold
-                                )
-
-                                Button(
-                                    onClick = {
-                                        nombreOperacionDetalle = operacion.nombre
-                                        viewModel.cargarGastosDeOperacion(operacion.id)
-                                        mostrarGastosOperacion = true
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("Ver gastos")
-                                }
                             }
+                        }
+                    } else {
+                        items(operacionesActivas) { operacion ->
+                            OperacionCard(
+                                nombre = operacion.nombre,
+                                tipo = operacion.tipo,
+                                descripcion = operacion.descripcion,
+                                totalGastos = operacion.totalGastos,
+                                textoEstado = "Activa",
+                                mostrarBotonCerrar = true,
+                                onVerGastos = {
+                                    nombreOperacionDetalle = operacion.nombre
+                                    viewModel.cargarGastosDeOperacion(operacion.id)
+                                    mostrarGastosOperacion = true
+                                },
+                                onCerrarOperacion = {
+                                    viewModel.cerrarOperacion(operacion.id)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            3 -> {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    if (operacionesCerradas.isEmpty()) {
+                        item {
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = "No hay operaciones cerradas.",
+                                    modifier = Modifier.padding(14.dp),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    } else {
+                        items(operacionesCerradas) { operacion ->
+                            OperacionCard(
+                                nombre = operacion.nombre,
+                                tipo = operacion.tipo,
+                                descripcion = operacion.descripcion,
+                                totalGastos = operacion.totalGastos,
+                                textoEstado = "Cerrada",
+                                mostrarBotonCerrar = false,
+                                onVerGastos = {
+                                    nombreOperacionDetalle = operacion.nombre
+                                    viewModel.cargarGastosDeOperacion(operacion.id)
+                                    mostrarGastosOperacion = true
+                                },
+                                onCerrarOperacion = {}
+                            )
                         }
                     }
                 }
             }
         }
     }
-
 
     if (mostrarGastosOperacion) {
         AlertDialog(
@@ -441,9 +471,7 @@ fun OperacionScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         items(gastosOperacionSeleccionada) { gasto ->
-                            Card(
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
+                            Card(modifier = Modifier.fillMaxWidth()) {
                                 Column(
                                     modifier = Modifier.padding(10.dp),
                                     verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -482,5 +510,60 @@ fun OperacionScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun OperacionCard(
+    nombre: String,
+    tipo: String,
+    descripcion: String?,
+    totalGastos: Long,
+    textoEstado: String,
+    mostrarBotonCerrar: Boolean,
+    onVerGastos: () -> Unit,
+    onCerrarOperacion: () -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = nombre,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text("Tipo: $tipo")
+            Text("Estado: $textoEstado")
+
+            if (!descripcion.isNullOrBlank()) {
+                Text("Descripción: $descripcion")
+            }
+
+            Text(
+                text = "Total gastos: $${totalGastos}",
+                fontWeight = FontWeight.Bold
+            )
+
+            Button(
+                onClick = onVerGastos,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Ver gastos")
+            }
+
+            if (mostrarBotonCerrar) {
+                Spacer(modifier = Modifier.height(6.dp))
+
+                OutlinedButton(
+                    onClick = onCerrarOperacion,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cerrar operación")
+                }
+            }
+        }
     }
 }

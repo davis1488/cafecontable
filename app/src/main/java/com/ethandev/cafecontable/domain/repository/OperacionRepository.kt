@@ -10,4 +10,7 @@ interface OperacionRepository {
 
     // 🔹 Para UI (la que estás usando ahora)
     suspend fun listarOperaciones(): List<OperacionResumenModel>
+
+    suspend fun cerrarOperacion(operacionId: String)
+
 }
