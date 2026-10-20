@@ -216,6 +216,48 @@ interface MezclaDao {
 
 
 
+    @Query("""
+    UPDATE mezcla_detalle
+    SET cantidadUsada = :nuevaCantidad
+    WHERE id = :detalleId
+""")
+    suspend fun actualizarCantidadDetalle(
+        detalleId: String,
+        nuevaCantidad: Double
+    ): Int
+
+    @Query("""
+    DELETE FROM mezcla_detalle
+    WHERE id = :detalleId
+      AND mezclaId = :mezclaId
+""")
+    suspend fun eliminarDetalleMezcla(
+        detalleId: String,
+        mezclaId: String
+    ): Int
+
+    @Query("""
+    UPDATE mezcla
+    SET nota = :nota
+    WHERE id = :mezclaId
+      AND estado = 'CREADO'
+""")
+    suspend fun actualizarNotaMezcla(
+        mezclaId: String,
+        nota: String?
+    ): Int
+
+
+    @Query("""
+    DELETE FROM mezcla_detalle
+    WHERE mezclaId = :mezclaId
+""")
+    suspend fun eliminarDetallesPorMezclaId(
+        mezclaId: String
+    ): Int
+
+
+
 }
 
 

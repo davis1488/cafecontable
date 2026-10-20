@@ -10,6 +10,7 @@ import com.ethandev.cafecontable.domain.usecase.CrearOperacionUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarGastosPorOperacionUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarOperacionesUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarGastoOperacionUseCase
+import com.ethandev.cafecontable.domain.usecase.operacion.CerrarOperacionUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +20,10 @@ class OperacionViewModel(
     private val crearOperacionUseCase: CrearOperacionUseCase,
     private val registrarGastoUseCase: RegistrarGastoOperacionUseCase,
     private val listarOperacionesUseCase: ListarOperacionesUseCase,
-    private val listarGastosPorOperacionUseCase: ListarGastosPorOperacionUseCase
+    private val listarGastosPorOperacionUseCase: ListarGastosPorOperacionUseCase,
+    private val cerrarOperacionUseCase: CerrarOperacionUseCase
+
+
 ) : ViewModel() {
 
     private val _operaciones = MutableStateFlow<List<OperacionResumenUi>>(emptyList())
@@ -52,7 +56,9 @@ class OperacionViewModel(
                     nombre = operacion.nombre,
                     tipo = operacion.tipo,
                     descripcion = operacion.descripcion,
-                    totalGastos = operacion.totalGastos
+                    totalGastos = operacion.totalGastos,
+                    estado = operacion.estado
+
                 )
             }
         }
@@ -104,6 +110,16 @@ class OperacionViewModel(
         viewModelScope.launch {
             _gastosOperacionSeleccionada.value =
                 listarGastosPorOperacionUseCase(operacionId)
+        }
+    }
+
+    fun cerrarOperacion(operacionId: String) {
+        viewModelScope.launch {
+            cerrarOperacionUseCase(operacionId)
+
+            _gastosOperacionSeleccionada.value = emptyList()
+
+            cargarTodo()
         }
     }
 }

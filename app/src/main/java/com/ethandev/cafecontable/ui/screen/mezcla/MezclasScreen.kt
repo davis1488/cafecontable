@@ -39,6 +39,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,7 +68,9 @@ fun MezclasScreen(
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
-
+    var modoEdicionCompleta by remember {
+        mutableStateOf(false)
+    }
     val items = remember { mutableStateListOf<MezclaFormItem>() }
     var mezclaEditandoId by remember { mutableStateOf<String?>(null) }
     val fechaActual = remember {
@@ -79,6 +82,28 @@ fun MezclasScreen(
     }
 
     var selectedTab by remember { mutableIntStateOf(0) }
+
+
+    LaunchedEffect(
+        state.mezclaEditandoId,
+        state.editandoMezcla
+    ) {
+        if (
+            state.editandoMezcla &&
+            state.mezclaEditandoId != null &&
+            modoEdicionCompleta
+        ) {
+            mezclaEditandoId = state.mezclaEditandoId
+
+            items.clear()
+            items.addAll(state.itemsEdicion)
+
+            nota = state.notaEdicion
+
+            selectedTab = 0
+        }
+    }
+
 
     LaunchedEffect(Unit) {
         viewModel.cargarComprasDisponibles()
@@ -154,21 +179,55 @@ fun MezclasScreen(
                 calcularCantidadTotal = { viewModel.calcularCantidadTotal(items) },
                 calcularCostoTotal = { viewModel.calcularCostoTotal(items) },
                 calcularCostoPromedioKg = { viewModel.calcularCostoPromedioKg(items) },
+//                onGuardar = {
+//                    val idEditando = mezclaEditandoId
+//                    if (idEditando == null) {
+//                        viewModel.registrarMezcla(
+//                            items = items.toList(),
+//                            nota = nota
+//                        )
+//                    } else {
+//                        viewModel.agregarComprasAMezcla(
+//                            mezclaId = idEditando,
+//                            items = items.toList(),
+//                            nota = nota
+//                        )
+//                    }
+//                },
+
+
                 onGuardar = {
                     val idEditando = mezclaEditandoId
-                    if (idEditando == null) {
-                        viewModel.registrarMezcla(
-                            items = items.toList(),
-                            nota = nota
-                        )
-                    } else {
-                        viewModel.agregarComprasAMezcla(
-                            mezclaId = idEditando,
-                            items = items.toList(),
-                            nota = nota
-                        )
+
+                    when {
+                        // Registrar una mezcla nueva
+                        idEditando == null -> {
+                            viewModel.registrarMezcla(
+                                items = items.toList(),
+                                nota = nota
+                            )
+                        }
+
+                        // Editar compras y cantidades existentes
+                        modoEdicionCompleta -> {
+                            viewModel.guardarEdicionMezcla(
+                                mezclaId = idEditando,
+                                items = items.toList(),
+                                nota = nota
+                            )
+                        }
+
+                        // Agregar nuevas compras a la mezcla
+                        else -> {
+                            viewModel.agregarComprasAMezcla(
+                                mezclaId = idEditando,
+                                items = items.toList(),
+                                nota = nota
+                            )
+                        }
                     }
                 },
+
                 onCancelarEdicion = {
                     mezclaEditandoId = null
                     items.clear()
@@ -179,6 +238,13 @@ fun MezclasScreen(
 
             1 -> HistorialMezclasTab(
                 state = state,
+
+                onEditarMezcla = { mezcla ->
+                    modoEdicionCompleta = true
+                    viewModel.cargarMezclaParaEditar(mezcla.id)
+                },
+
+
                 onAgregarCompras = { mezcla ->
                     mezclaEditandoId = mezcla.id
                     nota = mezcla.nota ?: "MEZCLA $fechaActual"
@@ -206,7 +272,13 @@ fun MezclasScreen(
                         mezclaId = mezclaId,
                         factorRendimiento = factor
                     )
-                }
+                },
+//                onEditarMezcla = { mezcla ->
+//                    mezclaEditandoId = mezcla.id
+//                    nota = mezcla.nota ?: "MEZCLA $fechaActual"
+//                    items.clear()
+//                    selectedTab = 0
+//                },
             )
         }
     }
@@ -630,10 +702,11 @@ private fun SelectOperacionMezcla(
 @Composable
 private fun HistorialMezclasTab(
     state: MezclasState,
+    onEditarMezcla: (MezclaHistorialItem) -> Unit,
     onAgregarCompras: (MezclaHistorialItem) -> Unit,
     onMarcarPendienteEntrega: (String, Int, Double) -> Unit,
     onMarcarEntregado: (String, Int, Double, String) -> Unit,
-    onMarcarAnalizado: (String, Double) -> Unit
+    onMarcarAnalizado: (String, Double) -> Unit,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var mezclaSeleccionadaId by remember { mutableStateOf<String?>(null) }
@@ -653,42 +726,52 @@ private fun HistorialMezclasTab(
     val mezclasFiltradas = state.historialMezclas.filter {
         it.estado.equals(estadoSeleccionado.name, ignoreCase = true)
     }
+    val mezclaSeleccionada = state.historialMezclas
+        .firstOrNull { it.id == mezclaSeleccionadaId }
 
-    if (mostrarDialogPendiente && mezclaSeleccionadaId != null) {
-        PendienteEntregaDialog(
-            onDismiss = {
-                mostrarDialogPendiente = false
-                mezclaSeleccionadaId = null
-            },
-            onConfirm = { numeroSacos, kilajeEnviado ->
-                onMarcarPendienteEntrega(
-                    mezclaSeleccionadaId!!,
-                    numeroSacos,
-                    kilajeEnviado
-                )
-                mostrarDialogPendiente = false
-                mezclaSeleccionadaId = null
-            }
-        )
+    if (mostrarDialogPendiente) {
+        mezclaSeleccionada?.let { mezcla ->
+            PendienteEntregaDialog(
+                cantidadTotal = mezcla.cantidadTotal,
+                onDismiss = {
+                    mostrarDialogPendiente = false
+                    mezclaSeleccionadaId = null
+                },
+                onConfirm = { numeroSacos, kilajeEnviado ->
+                    onMarcarPendienteEntrega(
+                        mezcla.id,
+                        numeroSacos,
+                        kilajeEnviado
+                    )
+
+                    mostrarDialogPendiente = false
+                    mezclaSeleccionadaId = null
+                }
+            )
+        }
     }
 
-    if (mostrarDialogEntregado && mezclaSeleccionadaId != null) {
-        EntregadoDialog(
-            onDismiss = {
-                mostrarDialogEntregado = false
-                mezclaSeleccionadaId = null
-            },
-            onConfirm = { numeroSacos, kilaje, lugar ->
-                onMarcarEntregado(
-                    mezclaSeleccionadaId!!,
-                    numeroSacos,
-                    kilaje,
-                    lugar
-                )
-                mostrarDialogEntregado = false
-                mezclaSeleccionadaId = null
-            }
-        )
+    if (mostrarDialogEntregado) {
+        mezclaSeleccionada?.let { mezcla ->
+            EntregadoDialog(
+                cantidadTotal = mezcla.cantidadTotal,
+                onDismiss = {
+                    mostrarDialogEntregado = false
+                    mezclaSeleccionadaId = null
+                },
+                onConfirm = { numeroSacos, kilaje, lugar ->
+                    onMarcarEntregado(
+                        mezcla.id,
+                        numeroSacos,
+                        kilaje,
+                        lugar
+                    )
+
+                    mostrarDialogEntregado = false
+                    mezclaSeleccionadaId = null
+                }
+            )
+        }
     }
 
     if (mostrarDialogAnalizado && mezclaSeleccionadaId != null) {
@@ -790,14 +873,26 @@ private fun HistorialMezclasTab(
                             )
                         }
 
+
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        if (mezcla.estado.equals(EstadoMezcla.CREADO.name, ignoreCase = true)) {
+                        if (mezcla.estado.equals(
+                                EstadoMezcla.CREADO.name,
+                                ignoreCase = true
+                            )
+                        ) {
                             Button(
-                                onClick = { onAgregarCompras(mezcla) },
+                                onClick = { onEditarMezcla(mezcla) },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("Agregar compras")
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = null
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Text("Editar mezcla")
                             }
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -818,6 +913,8 @@ private fun HistorialMezclasTab(
                                 mostrarDialogAnalizado = true
                             }
                         )
+
+
                     }
                 }
             }
@@ -906,11 +1003,19 @@ private fun AccionesEstadoMezcla(
 
 @Composable
 fun PendienteEntregaDialog(
+    cantidadTotal: Double,
     onDismiss: () -> Unit,
     onConfirm: (numeroSacos: Int, kilajeEnviado: Double) -> Unit
 ) {
-    var numeroSacosTxt by remember { mutableStateOf("") }
-    var kilajeEnviadoTxt by remember { mutableStateOf("") }
+    val sacosCalculados = kotlin.math.ceil(cantidadTotal / 40.0).toInt()
+
+    var numeroSacosTxt by remember(cantidadTotal) {
+        mutableStateOf(sacosCalculados.toString())
+    }
+
+    var kilajeEnviadoTxt by remember(cantidadTotal) {
+        mutableStateOf(cantidadTotal.toString())
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -930,7 +1035,14 @@ fun PendienteEntregaDialog(
 
                 OutlinedTextField(
                     value = kilajeEnviadoTxt,
-                    onValueChange = { kilajeEnviadoTxt = it.replace(',', '.') },
+                    onValueChange = { valor ->
+                        kilajeEnviadoTxt = valor.replace(',', '.')
+
+                        val kilos = valor.replace(',', '.').toDoubleOrNull() ?: 0.0
+                        if (kilos > 0) {
+                            numeroSacosTxt = kotlin.math.ceil(kilos / 40.0).toInt().toString()
+                        }
+                    },
                     label = { Text("Kilaje enviado") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
@@ -953,7 +1065,7 @@ fun PendienteEntregaDialog(
             }
         },
         dismissButton = {
-            OutlinedButton (onClick = onDismiss) {
+            OutlinedButton(onClick = onDismiss) {
                 Text("Cancelar")
             }
         }
@@ -962,6 +1074,7 @@ fun PendienteEntregaDialog(
 
 @Composable
 fun EntregadoDialog(
+    cantidadTotal: Double,
     onDismiss: () -> Unit,
     onConfirm: (
         numeroSacosEntregados: Int,
@@ -969,9 +1082,19 @@ fun EntregadoDialog(
         lugarEntrega: String
     ) -> Unit
 ) {
-    var numeroSacosTxt by remember { mutableStateOf("") }
-    var kilajeEntregadoTxt by remember { mutableStateOf("") }
-    var lugarEntrega by remember { mutableStateOf("") }
+    val sacosCalculados = kotlin.math.ceil(cantidadTotal / 40.0).toInt()
+
+    var numeroSacosTxt by remember(cantidadTotal) {
+        mutableStateOf(sacosCalculados.toString())
+    }
+
+    var kilajeEntregadoTxt by remember(cantidadTotal) {
+        mutableStateOf(cantidadTotal.toString())
+    }
+
+    var lugarEntrega by remember {
+        mutableStateOf("")
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -991,7 +1114,14 @@ fun EntregadoDialog(
 
                 OutlinedTextField(
                     value = kilajeEntregadoTxt,
-                    onValueChange = { kilajeEntregadoTxt = it.replace(',', '.') },
+                    onValueChange = { valor ->
+                        kilajeEntregadoTxt = valor.replace(',', '.')
+
+                        val kilos = valor.replace(',', '.').toDoubleOrNull() ?: 0.0
+                        if (kilos > 0.0) {
+                            numeroSacosTxt = kotlin.math.ceil(kilos / 40.0).toInt().toString()
+                        }
+                    },
                     label = { Text("Kilaje entregado") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,

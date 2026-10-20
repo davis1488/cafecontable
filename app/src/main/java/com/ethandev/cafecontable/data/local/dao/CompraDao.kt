@@ -93,5 +93,80 @@ interface CompraDao {
     HAVING (c.cantidad - COALESCE(SUM(md.cantidadUsada), 0)) > 0
     ORDER BY c.fecha DESC
 """)
+
     suspend fun obtenerComprasDisponiblesParaMezcla(): List<CompraDisponibleDb>
+
+
+    @Query("""
+    SELECT
+        c.id AS compraId,
+        c.productoId AS productoId,
+        p.nombre AS productoNombre,
+        (
+            c.cantidad
+            - COALESCE(SUM(md.cantidadUsada), 0)
+            + COALESCE((
+                SELECT SUM(md2.cantidadUsada)
+                FROM mezcla_detalle md2
+                WHERE md2.compraId = c.id
+                  AND md2.mezclaId = :mezclaId
+            ), 0)
+        ) AS cantidadDisponible,
+        c.precioUnitCompra AS precioUnitCompra
+    FROM compra_cafe c
+    INNER JOIN producto p
+        ON p.id = c.productoId
+    LEFT JOIN mezcla_detalle md
+        ON md.compraId = c.id
+    WHERE c.estado = 'ACTIVA'
+    GROUP BY
+        c.id,
+        c.productoId,
+        p.nombre,
+        c.cantidad,
+        c.precioUnitCompra,
+        c.fecha
+    HAVING (
+        c.cantidad
+        - COALESCE(SUM(md.cantidadUsada), 0)
+        + COALESCE((
+            SELECT SUM(md2.cantidadUsada)
+            FROM mezcla_detalle md2
+            WHERE md2.compraId = c.id
+              AND md2.mezclaId = :mezclaId
+        ), 0)
+    ) > 0
+    ORDER BY c.fecha DESC
+""")
+    suspend fun obtenerComprasParaEditarMezcla(
+        mezclaId: String
+    ): List<CompraDisponibleDb>
+
+
+    @Query("""
+    SELECT
+        c.id AS compraId,
+        c.productoId AS productoId,
+        p.nombre AS productoNombre,
+        (
+            c.cantidad - COALESCE((
+                SELECT SUM(md.cantidadUsada)
+                FROM mezcla_detalle md
+                WHERE md.compraId = c.id
+                  AND md.mezclaId != :mezclaId
+            ), 0)
+        ) AS cantidadDisponible,
+        c.precioUnitCompra AS precioUnitCompra
+    FROM compra_cafe c
+    INNER JOIN producto p ON p.id = c.productoId
+    WHERE c.id = :compraId
+      AND c.estado = 'ACTIVA'
+    LIMIT 1
+""")
+    suspend fun obtenerCompraParaEdicion(
+        compraId: String,
+        mezclaId: String
+    ): CompraDisponibleDb?
+
+
 }

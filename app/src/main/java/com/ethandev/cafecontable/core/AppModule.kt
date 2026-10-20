@@ -42,6 +42,7 @@ import com.ethandev.cafecontable.domain.usecase.AsignarMezclaAPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.BuscarPrestamosUseCase
 import com.ethandev.cafecontable.domain.usecase.CalcularUtilidadUseCase
 import com.ethandev.cafecontable.domain.usecase.CrearOperacionUseCase
+import com.ethandev.cafecontable.domain.usecase.EditarMezclaUseCase
 import com.ethandev.cafecontable.domain.usecase.FinalizarVentaPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentaPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentasPorCobrarUseCase
@@ -84,6 +85,7 @@ import com.ethandev.cafecontable.domain.usecase.RegistrarPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.ResolverOperacionUseCase
+import com.ethandev.cafecontable.domain.usecase.operacion.CerrarOperacionUseCase
 import com.ethandev.cafecontable.ui.screen.asignacionmezcla.AsignacionMezclaPedidoViewModel
 import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
 import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
@@ -456,7 +458,10 @@ object AppModule {
             compraCafeDao = db.compraDao(),
             listarOperacionesPorTipoUseCase = provideListarOperacionesPorTipoUseCase(context),
             agregarComprasAMezclaUseCase =  provideAgregarComprasAMezclaUseCase(context),
-            resolverOperacionUseCase = provideResolverOperacionUseCase(context)
+            resolverOperacionUseCase = provideResolverOperacionUseCase(context),
+            editarMezclaUseCase = EditarMezclaUseCase(db),
+            mezclaDao = db.mezclaDao()
+
         )
     }
 
@@ -590,7 +595,9 @@ object AppModule {
             crearOperacionUseCase = provideCrearOperacionUseCase(context),
             registrarGastoUseCase = provideRegistrarGastoOperacionUseCase(context),
             listarOperacionesUseCase = provideListarOperacionesUseCase(context),
-            listarGastosPorOperacionUseCase = provideListarGastosPorOperacionUseCase(context)
+            listarGastosPorOperacionUseCase = provideListarGastosPorOperacionUseCase(context),
+            cerrarOperacionUseCase = provideCerrarOperacionUseCase(context)
+
         )
     }
 
@@ -600,6 +607,17 @@ object AppModule {
         val db = provideDatabase(context)
         return AgregarComprasAMezclaUseCase(db)
     }
+
+    fun provideCerrarOperacionUseCase(
+        context: Context
+    ): CerrarOperacionUseCase {
+
+        return CerrarOperacionUseCase(
+            repository = provideOperacionRepository(context)
+        )
+    }
+
+
 //    fun provideAgregarComprasAMezclaUseCase(db: AppDatabase ): AgregarComprasAMezclaUseCase {
 //        return AgregarComprasAMezclaUseCase(db)
 //    }
