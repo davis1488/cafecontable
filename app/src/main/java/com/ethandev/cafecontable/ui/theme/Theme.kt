@@ -1,57 +1,68 @@
+
 package com.ethandev.cafecontable.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+private val CafeColorScheme = lightColorScheme(
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    // Colores principales
+    primary = VerdeCafe,
+    onPrimary = SuperficieCafe,
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primaryContainer = VerdeSuave,
+    onPrimaryContainer = CafePrincipal,
+
+    // Colores secundarios
+    secondary = CafePrincipal,
+    onSecondary = SuperficieCafe,
+
+    secondaryContainer = DoradoCafe,
+    onSecondaryContainer = CafePrincipal,
+
+    // Colores terciarios
+    tertiary = CafeMedio,
+    onTertiary = SuperficieCafe,
+
+    // Fondo general
+    background = FondoCafe,
+    onBackground = TextoPrincipal,
+
+    // Tarjetas y formularios
+    surface = SuperficieCafe,
+    onSurface = TextoPrincipal,
+
+    surfaceVariant = FondoCafe,
+    onSurfaceVariant = TextoSecundario,
+
+    surfaceContainer = SuperficieCafe,
+    surfaceContainerLow = FondoCafe,
+    surfaceContainerHigh = VerdeSuave,
+
+    // Bordes
+    outline = BordeCafe,
+    outlineVariant = BordeCafe.copy(alpha = 0.6f),
+
+    // Errores
+    error = RojoError,
+    onError = SuperficieCafe,
+
+    // Colores inversos
+    inverseSurface = CafePrincipal,
+    inverseOnSurface = SuperficieCafe,
+    inversePrimary = DoradoCafe
 )
 
 @Composable
 fun CafecontableTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    darkTheme: Boolean = false,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-      dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-        val context = LocalContext.current
-        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-      }
-      darkTheme -> DarkColorScheme
-      else -> LightColorScheme
-    }
-
     MaterialTheme(
-      colorScheme = colorScheme,
-      typography = Typography,
-      content = content
+        colorScheme = CafeColorScheme,
+        typography = Typography,
+        content = content
     )
 }

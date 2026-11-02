@@ -1,5 +1,7 @@
 package com.ethandev.cafecontable.ui.navigation
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -88,31 +90,39 @@ fun AppNavGraph(
         else -> "Inicio"
     }
 
-    val showBack = currentRoute == Routes.HISTORIAL_COMPRA ||
-            currentRoute == Routes.HISTORIAL_VENTA ||
-            currentRoute == Routes.CUENTAS_POR_COBRAR ||
-            currentRoute == Routes.CUENTAS_POR_PAGAR ||
-            currentRoute == Routes.PRESTAMOS ||
-            currentRoute == Routes.CONSULTA_PRESTAMOS ||
-            currentRoute == Routes.VENTAS_PEDIDO ||
-            currentRoute == Routes.PREPARACION_ENTREGA_ARG ||
-            currentRoute == Routes.MEZCLAS ||
-            currentRoute == Routes.ASIGNACION_MEZCLA_PEDIDO ||
-            currentRoute == Routes.ROUTE_LIQUIDACION ||
-            currentRoute == Routes.ROUTE_OPERACION_GASTOS ||
-            currentRoute == Routes.ROUTE_UTILIDAD ||
+    val showBack =
+        currentRoute != null && currentRoute != Routes.HOME
+
+//    val showBack = currentRoute == Routes.HISTORIAL_COMPRA ||
+//            currentRoute == Routes.HISTORIAL_VENTA ||
+//            currentRoute == Routes.CUENTAS_POR_COBRAR ||
+//            currentRoute == Routes.CUENTAS_POR_PAGAR ||
+//            currentRoute == Routes.PRESTAMOS ||
+//            currentRoute == Routes.CONSULTA_PRESTAMOS ||
+//            currentRoute == Routes.VENTAS_PEDIDO ||
+//            currentRoute == Routes.PREPARACION_ENTREGA_ARG ||
+//            currentRoute == Routes.MEZCLAS ||
+//            currentRoute == Routes.ASIGNACION_MEZCLA_PEDIDO ||
+//            currentRoute == Routes.ROUTE_LIQUIDACION ||
+//            currentRoute == Routes.ROUTE_OPERACION_GASTOS ||
+//            currentRoute == Routes.ROUTE_UTILIDAD ||
 
 
 
             currentRoute?.startsWith("${Routes.PREPARACION_ENTREGA}/") == true
 
+
     Scaffold(
         topBar = {
-            AppTopBar(
-                title = title,
-                showBack = showBack,
-                onBack = { navController.popBackStack() }
-            )
+            if (currentRoute != Routes.HOME) {
+                AppTopBar(
+                    title = title,
+                    showBack = showBack,
+                    onBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
         }
     ) { innerPadding ->
 
@@ -123,7 +133,7 @@ fun AppNavGraph(
         ) {
             composable(Routes.HOME) {
                 HomeScreen(
-                    innerPadding = innerPadding,
+                    innerPadding = PaddingValues(0.dp),
                     onGoCompras = { navController.navigate(Routes.COMPRAS) },
                     onGoVentas = { navController.navigate(Routes.VENTAS) },
                     onGoVentasPedido = { navController.navigate(Routes.VENTAS_PEDIDO) },

@@ -1,6 +1,7 @@
 package com.ethandev.cafecontable.domain.repository
 
 import com.ethandev.cafecontable.domain.model.InventarioItemModel
+import com.ethandev.cafecontable.domain.model.MovimientoInventarioModel
 
 interface InventarioRepository {
     suspend fun registrarEntrada(
@@ -13,4 +14,5 @@ interface InventarioRepository {
     suspend fun listarInventario(): List<InventarioItemModel>
     suspend fun obtenerInventario(): List<InventarioItemModel>
     suspend fun obtenerExistencia(productoId: String): Double
+    suspend fun obtenerHistorial(): List<MovimientoInventarioModel>
 }

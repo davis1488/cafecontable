@@ -1,6 +1,8 @@
 package com.ethandev.cafecontable.ui.screen.mezcla
 
-import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +22,10 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,6 +34,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +45,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.filled.Edit
@@ -49,7 +58,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -61,12 +69,25 @@ import com.ethandev.cafecontable.ui.utils.formatNumberString
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
+
+private val MezclaFondo = Color(0xFFF7F5EF)
+private val MezclaCafe = Color(0xFF493628)
+private val MezclaVerde = Color(0xFF376B4B)
+private val MezclaTextoSuave = Color(0xFF786D63)
+private val MezclaCafeMedio = Color(0xFF765540)
 
 @Composable
 fun MezclasScreen(
     viewModel: MezclasViewModel
 ) {
-    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var avisoError by remember { mutableStateOf(false) }
+    val mostrarAviso: (String, Boolean) -> Unit = { texto, error ->
+        avisoError = error
+        scope.launch { snackbarHostState.showSnackbar(texto, duration = SnackbarDuration.Long) }
+    }
     val state by viewModel.state.collectAsState()
     var modoEdicionCompleta by remember {
         mutableStateOf(false)
@@ -112,73 +133,119 @@ fun MezclasScreen(
     }
 
     LaunchedEffect(state.okMsg, state.error) {
-        state.okMsg?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+        val correcto = state.okMsg
+        val error = state.error
+        if (correcto != null || error != null) {
             viewModel.limpiarMensajes()
-            items.clear()
-            nota = "MEZCLA $fechaActual"
-            viewModel.cargarHistorialMezclas()
-        }
-
-        state.error?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.limpiarMensajes()
+            if (correcto != null) {
+                if (correcto == "Mezcla registrada correctamente" ||
+                    correcto == "Mezcla actualizada correctamente" ||
+                    correcto == "Compras agregadas a la mezcla correctamente"
+                ) {
+                    items.clear()
+                    mezclaEditandoId = null
+                    modoEdicionCompleta = false
+                    nota = "MEZCLA $fechaActual"
+                }
+                avisoError = false
+                snackbarHostState.showSnackbar(correcto, duration = SnackbarDuration.Long)
+            } else if (error != null) {
+                avisoError = true
+                snackbarHostState.showSnackbar(error, duration = SnackbarDuration.Long)
+            }
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        Text(
-            text = "Mezclas",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(16.dp)
-        )
+    Box(modifier = Modifier.fillMaxSize().background(MezclaFondo)) {
 
-        TabRow(selectedTabIndex = selectedTab) {
-            Tab(
-                selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
-                text = { Text("Registrar mezcla") }
-            )
-            Tab(
-                selected = selectedTab == 1,
-                onClick = { selectedTab = 1 },
-                text = { Text("Historial / estado") }
-            )
-        }
-
-        when (selectedTab) {
-            0 -> RegistrarMezclaTab(
-                state = state,
-                items = items,
-                nota = nota,
-                mezclaEditandoId = mezclaEditandoId,
-                onNotaChange = { nota = it },
-                onSeleccionarOperacion = viewModel::seleccionarOperacionMezcla,
-                onAgregarCompra = { compra ->
-                    val yaAgregada = items.any { it.compraId == compra.compraId }
-                    if (yaAgregada) {
-                        Toast.makeText(
-                            context,
-                            "Esa compra ya fue agregada",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        items.add(viewModel.crearItemDesdeCompra(compra))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                color = MezclaCafe,
+                shape = RoundedCornerShape(22.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Surface(color = Color(0xFF6B5240), shape = RoundedCornerShape(14.dp)) {
+                        Icon(Icons.Filled.Edit, contentDescription = null,
+                            tint = Color(0xFFF4D9AF),
+                            modifier = Modifier.padding(11.dp))
                     }
-                },
-                onEliminarItem = { index ->
-                    items.removeAt(index)
-                },
-                onCantidadChange = { index, nuevaCantidad ->
-                    items[index] = items[index].copy(cantidadUsada = nuevaCantidad)
-                },
-                calcularCantidadTotal = { viewModel.calcularCantidadTotal(items) },
-                calcularCostoTotal = { viewModel.calcularCostoTotal(items) },
-                calcularCostoPromedioKg = { viewModel.calcularCostoPromedioKg(items) },
+                    Column {
+                        Text("Gestión de mezclas", color = Color.White,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold)
+                        Text("Preparación, costos y seguimiento",
+                            color = Color(0xFFEBDAC8),
+                            style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 0.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ResumenMezclas(
+                    "Total", "${state.historialMezclas.size}", Modifier.weight(1f)
+                )
+                ResumenMezclas(
+                    "Creadas", "${state.historialMezclas.count { it.estado.equals("CREADO", true) }}", Modifier.weight(1f)
+                )
+                ResumenMezclas(
+                    "Finalizadas", "${state.historialMezclas.count { it.estado.equals("ANALIZADO", true) }}", Modifier.weight(1f)
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = MezclaFondo,
+                contentColor = MezclaVerde
+            ) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("Registrar mezcla") }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text("Historial") }
+                )
+            }
+
+            when (selectedTab) {
+                0 -> RegistrarMezclaTab(
+                    state = state,
+                    items = items,
+                    nota = nota,
+                    mezclaEditandoId = mezclaEditandoId,
+                    onNotaChange = { nota = it },
+                    onSeleccionarOperacion = viewModel::seleccionarOperacionMezcla,
+                    onAgregarCompra = { compra ->
+                        val yaAgregada = items.any { it.compraId == compra.compraId }
+                        if (yaAgregada) {
+                            mostrarAviso("Esa compra ya fue agregada a la mezcla", true)
+                        } else {
+                            items.add(viewModel.crearItemDesdeCompra(compra))
+                        }
+                    },
+                    onEliminarItem = { index ->
+                        items.removeAt(index)
+                    },
+                    onCantidadChange = { index, nuevaCantidad ->
+                        items[index] = items[index].copy(cantidadUsada = nuevaCantidad)
+                    },
+                    calcularCantidadTotal = { viewModel.calcularCantidadTotal(items) },
+                    calcularCostoTotal = { viewModel.calcularCostoTotal(items) },
+                    calcularCostoPromedioKg = { viewModel.calcularCostoPromedioKg(items) },
 //                onGuardar = {
 //                    val idEditando = mezclaEditandoId
 //                    if (idEditando == null) {
@@ -196,90 +263,116 @@ fun MezclasScreen(
 //                },
 
 
-                onGuardar = {
-                    val idEditando = mezclaEditandoId
+                    onGuardar = {
+                        val idEditando = mezclaEditandoId
 
-                    when {
-                        // Registrar una mezcla nueva
-                        idEditando == null -> {
-                            viewModel.registrarMezcla(
-                                items = items.toList(),
-                                nota = nota
-                            )
-                        }
+                        when {
+                            // Registrar una mezcla nueva
+                            idEditando == null -> {
+                                viewModel.registrarMezcla(
+                                    items = items.toList(),
+                                    nota = nota
+                                )
+                            }
 
-                        // Editar compras y cantidades existentes
-                        modoEdicionCompleta -> {
-                            viewModel.guardarEdicionMezcla(
-                                mezclaId = idEditando,
-                                items = items.toList(),
-                                nota = nota
-                            )
-                        }
+                            // Editar compras y cantidades existentes
+                            modoEdicionCompleta -> {
+                                viewModel.guardarEdicionMezcla(
+                                    mezclaId = idEditando,
+                                    items = items.toList(),
+                                    nota = nota
+                                )
+                            }
 
-                        // Agregar nuevas compras a la mezcla
-                        else -> {
-                            viewModel.agregarComprasAMezcla(
-                                mezclaId = idEditando,
-                                items = items.toList(),
-                                nota = nota
-                            )
+                            // Agregar nuevas compras a la mezcla
+                            else -> {
+                                viewModel.agregarComprasAMezcla(
+                                    mezclaId = idEditando,
+                                    items = items.toList(),
+                                    nota = nota
+                                )
+                            }
                         }
+                    },
+
+                    onCancelarEdicion = {
+                        mezclaEditandoId = null
+                        items.clear()
+                        nota = "MEZCLA $fechaActual"
+                        viewModel.cargarComprasDisponibles()
                     }
-                },
+                )
 
-                onCancelarEdicion = {
-                    mezclaEditandoId = null
-                    items.clear()
-                    nota = "MEZCLA $fechaActual"
-                    viewModel.cargarComprasDisponibles()
-                }
-            )
+                1 -> HistorialMezclasTab(
+                    state = state,
 
-            1 -> HistorialMezclasTab(
-                state = state,
-
-                onEditarMezcla = { mezcla ->
-                    modoEdicionCompleta = true
-                    viewModel.cargarMezclaParaEditar(mezcla.id)
-                },
+                    onEditarMezcla = { mezcla ->
+                        modoEdicionCompleta = true
+                        viewModel.cargarMezclaParaEditar(mezcla.id)
+                    },
 
 
-                onAgregarCompras = { mezcla ->
-                    mezclaEditandoId = mezcla.id
-                    nota = mezcla.nota ?: "MEZCLA $fechaActual"
-                    selectedTab = 0
-                    items.clear()
-                    viewModel.cargarComprasDisponiblesParaAgregarAMezcla(mezcla.id)
-                },
-                onMarcarPendienteEntrega = { mezclaId, numeroSacos, kilajeEnviado ->
-                    viewModel.marcarPendienteEntrega(
-                        mezclaId = mezclaId,
-                        numeroSacosEnviados = numeroSacos,
-                        kilajeEnviado = kilajeEnviado
-                    )
-                },
-                onMarcarEntregado = { mezclaId, numeroSacos, kilajeEntregado, lugarEntrega ->
-                    viewModel.marcarEntregado(
-                        mezclaId = mezclaId,
-                        numeroSacosEntregados = numeroSacos,
-                        kilajeEntregado = kilajeEntregado,
-                        lugarEntrega = lugarEntrega
-                    )
-                },
-                onMarcarAnalizado = { mezclaId, factor ->
-                    viewModel.marcarAnalizado(
-                        mezclaId = mezclaId,
-                        factorRendimiento = factor
-                    )
-                },
+                    onAgregarCompras = { mezcla ->
+                        mezclaEditandoId = mezcla.id
+                        nota = mezcla.nota ?: "MEZCLA $fechaActual"
+                        selectedTab = 0
+                        items.clear()
+                        viewModel.cargarComprasDisponiblesParaAgregarAMezcla(mezcla.id)
+                    },
+                    onMarcarPendienteEntrega = { mezclaId, numeroSacos, kilajeEnviado ->
+                        viewModel.marcarPendienteEntrega(
+                            mezclaId = mezclaId,
+                            numeroSacosEnviados = numeroSacos,
+                            kilajeEnviado = kilajeEnviado
+                        )
+                    },
+                    onMarcarEntregado = { mezclaId, numeroSacos, kilajeEntregado, lugarEntrega ->
+                        viewModel.marcarEntregado(
+                            mezclaId = mezclaId,
+                            numeroSacosEntregados = numeroSacos,
+                            kilajeEntregado = kilajeEntregado,
+                            lugarEntrega = lugarEntrega
+                        )
+                    },
+                    onMarcarAnalizado = { mezclaId, factor ->
+                        viewModel.marcarAnalizado(
+                            mezclaId = mezclaId,
+                            factorRendimiento = factor
+                        )
+                    },
 //                onEditarMezcla = { mezcla ->
 //                    mezclaEditandoId = mezcla.id
 //                    nota = mezcla.nota ?: "MEZCLA $fechaActual"
 //                    items.clear()
 //                    selectedTab = 0
 //                },
+                )
+            }
+        }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(12.dp)
+        ) { data ->
+            Snackbar(
+                snackbarData = data,
+                shape = RoundedCornerShape(16.dp),
+                containerColor = if (avisoError) Color(0xFFFFF0E2) else Color(0xFFE6F3E9),
+                contentColor = if (avisoError) Color(0xFF92400E) else Color(0xFF205C37),
+                actionColor = MezclaCafe
             )
+        }
+    }
+}
+
+@Composable
+private fun ResumenMezclas(titulo: String, valor: String, modifier: Modifier = Modifier) {
+    Surface(modifier = modifier, color = Color.White, shape = RoundedCornerShape(14.dp)) {
+        Column(modifier = Modifier.padding(vertical = 12.dp, horizontal = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(valor, color = MezclaVerde, style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold)
+            Text(titulo, color = MezclaTextoSuave,
+                style = MaterialTheme.typography.labelSmall)
         }
     }
 }
@@ -315,7 +408,9 @@ private fun RegistrarMezclaTab(
         if (mezclaEditandoId != null) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -333,12 +428,26 @@ private fun RegistrarMezclaTab(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+
                     OutlinedButton(
                         onClick = onCancelarEdicion,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color(0xFFC62828),
+                            contentColor = Color.White
+                        ),
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = Color(0xFFC62828)
+                        ),
+                        shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text("Cancelar edición")
+                        Text(
+                            text = "Cancelar edición",
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
+
                 }
             }
 
@@ -369,7 +478,9 @@ private fun RegistrarMezclaTab(
         if (state.loadingCompras) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Row(
                     modifier = Modifier
@@ -388,7 +499,9 @@ private fun RegistrarMezclaTab(
         } else if (state.comprasDisponibles.isEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Text(
                     text = "No hay compras activas disponibles para mezcla",
@@ -405,7 +518,9 @@ private fun RegistrarMezclaTab(
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Text(
@@ -425,7 +540,9 @@ private fun RegistrarMezclaTab(
                             Button(
                                 onClick = { onAgregarCompra(compra) },
                                 enabled = !yaAgregada,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = MezclaVerde),
+                                shape = RoundedCornerShape(14.dp)
                             ) {
                                 Text(if (yaAgregada) "Ya agregada" else "Agregar a mezcla")
                             }
@@ -447,7 +564,9 @@ private fun RegistrarMezclaTab(
         if (items.isEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Text(
                     text = "Todavía no has agregado compras a la mezcla",
@@ -475,7 +594,9 @@ private fun RegistrarMezclaTab(
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Row(
@@ -508,7 +629,7 @@ private fun RegistrarMezclaTab(
                                     InfoRow("Producto", item.productoNombre)
                                     InfoRow("Compra ID", item.compraId)
                                     InfoRow("Costo unitario", "$${item.costoUnitCompra}")
-                                    InfoRow("Disponible", "${compraOriginal?.cantidadDisponible ?: 0.0} kg")
+                                    InfoRow("Disponible", compraOriginal?.let { "${it.cantidadDisponible} kg" } ?: "Compra original")
                                 }
                             }
 
@@ -560,7 +681,9 @@ private fun RegistrarMezclaTab(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 InfoRow("Cantidad total", "$cantidadTotal kg")
@@ -584,7 +707,9 @@ private fun RegistrarMezclaTab(
         Button(
             onClick = onGuardar,
             modifier = Modifier.fillMaxWidth(),
-            enabled = !state.loading && items.isNotEmpty()
+            enabled = !state.loading && items.isNotEmpty(),
+            colors = ButtonDefaults.buttonColors(containerColor = MezclaVerde),
+            shape = RoundedCornerShape(14.dp)
         ) {
             if (state.loading) {
                 CircularProgressIndicator(
@@ -609,8 +734,9 @@ private fun SectionHeader(
     Column {
         Text(
             text = titulo,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MezclaCafe
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -715,13 +841,13 @@ private fun HistorialMezclasTab(
     var mostrarDialogAnalizado by remember { mutableStateOf(false) }
 
     val tabs = listOf(
-        EstadoMezcla.CREADO,
-        EstadoMezcla.PENDIENTE_ENTREGA,
-        EstadoMezcla.ENTREGADO,
-        EstadoMezcla.ANALIZADO
+        EstadoMezcla.CREADO to "Creadas",
+        EstadoMezcla.PENDIENTE_ENTREGA to "Pendientes",
+        EstadoMezcla.ENTREGADO to "Entregadas",
+        EstadoMezcla.ANALIZADO to "Analizadas"
     )
 
-    val estadoSeleccionado = tabs[selectedTab]
+    val estadoSeleccionado = tabs[selectedTab].first
 
     val mezclasFiltradas = state.historialMezclas.filter {
         it.estado.equals(estadoSeleccionado.name, ignoreCase = true)
@@ -794,12 +920,25 @@ private fun HistorialMezclasTab(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        TabRow(selectedTabIndex = selectedTab) {
-            tabs.forEachIndexed { index, estado ->
+        ScrollableTabRow(
+            selectedTabIndex = selectedTab,
+            edgePadding = 12.dp,
+            containerColor = MezclaFondo,
+            contentColor = MezclaVerde
+        ) {
+            tabs.forEachIndexed { index, (_, titulo) ->
                 Tab(
                     selected = selectedTab == index,
                     onClick = { selectedTab = index },
-                    text = { Text(estado.name) }
+                    selectedContentColor = MezclaVerde,
+                    unselectedContentColor = MezclaTextoSuave,
+                    text = {
+                        Text(
+                            text = titulo,
+                            maxLines = 1,
+                            fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
                 )
             }
         }
@@ -844,7 +983,9 @@ private fun HistorialMezclasTab(
             itemsIndexed(mezclasFiltradas) { index, mezcla ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(
@@ -859,7 +1000,7 @@ private fun HistorialMezclasTab(
                         InfoRow("Fecha", mezcla.fechaTexto)
                         InfoRow("Cantidad total", "${mezcla.cantidadTotal} kg")
                         InfoRow("Costo total", "$${formatNumberString(mezcla.costoTotal)}")
-                        InfoRow("Costo por KG", "$${formatNumberString((mezcla.costoTotal/mezcla.cantidadTotal).toLong())}")
+                        InfoRow("Costo por KG", "$${formatNumberString((if (mezcla.cantidadTotal > 0.0) mezcla.costoTotal / mezcla.cantidadTotal else 0.0).toLong())}")
 
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -883,7 +1024,12 @@ private fun HistorialMezclasTab(
                         ) {
                             Button(
                                 onClick = { onEditarMezcla(mezcla) },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MezclaVerde,
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(14.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
@@ -927,8 +1073,8 @@ private fun EstadoMezclaChip(estado: String) {
 
     val (colorFondo, colorTexto) = when (estado.uppercase()) {
         EstadoMezcla.CREADO.toString() -> Pair(
-            Color(0xFFE3F2FD), // azul claro
-            Color(0xFF1565C0)
+            Color(0xFFE6EFE6), // verde claro
+            MezclaVerde
         )
 
         EstadoMezcla.ANALIZADO.toString() -> Pair(
@@ -941,6 +1087,7 @@ private fun EstadoMezclaChip(estado: String) {
             Color(0xFF2E7D32)
         )
 
+        EstadoMezcla.PENDIENTE_ENTREGA.toString() -> Pair(Color(0xFFFFF0D7), Color(0xFF946113))
         else -> Pair(Color.LightGray, Color.Black)
     }
 
@@ -964,40 +1111,39 @@ private fun AccionesEstadoMezcla(
     onIrEntregado: () -> Unit,
     onIrAnalizado: () -> Unit
 ) {
+    val colorBoton = when (estadoActual.uppercase()) {
+        EstadoMezcla.CREADO.name -> MezclaVerde
+        EstadoMezcla.PENDIENTE_ENTREGA.name -> MezclaCafeMedio
+        else -> MezclaCafe
+    }
     when (estadoActual.uppercase()) {
-        EstadoMezcla.CREADO.toString() -> {
-            Button(
-                onClick = onIrPendienteEntrega,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Enviar")
-            }
-        }
+        EstadoMezcla.CREADO.name -> Button(
+            onClick = onIrPendienteEntrega,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = colorBoton)
+        ) { Text("Enviar") }
 
-        EstadoMezcla.PENDIENTE_ENTREGA.toString() -> {
-            Button(
-                onClick = onIrEntregado,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Registrar entrega")
-            }
-        }
+        EstadoMezcla.PENDIENTE_ENTREGA.name -> Button(
+            onClick = onIrEntregado,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = colorBoton)
+        ) { Text("Registrar entrega") }
 
-        EstadoMezcla.ENTREGADO.toString() -> {
-            Button(
-                onClick = onIrAnalizado,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Registrar análisis")
-            }
-        }
+        EstadoMezcla.ENTREGADO.name -> Button(
+            onClick = onIrAnalizado,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = colorBoton)
+        ) { Text("Registrar análisis") }
 
-        EstadoMezcla.ANALIZADO.toString() -> {
-            Text(
-                text = "Proceso finalizado",
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
+        EstadoMezcla.ANALIZADO.name -> Text(
+            text = "Proceso finalizado",
+            color = MezclaVerde,
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }
 

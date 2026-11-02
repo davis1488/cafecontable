@@ -46,4 +46,37 @@ interface CuentaPorPagarDao {
         ORDER BY fecha DESC
     """)
     suspend fun listarAbonos(cuentaId: String): List<AbonoCuentaPorPagarEntity>
+
+
+    @Query("""
+    SELECT *
+    FROM cuenta_por_pagar
+    WHERE compraId = :compraId
+    LIMIT 1
+""")
+    suspend fun obtenerPorCompraId(
+        compraId: String
+    ): CuentaPorPagarEntity?
+
+    @Query("""
+    SELECT COUNT(*)
+    FROM abono_cuenta_por_pagar
+    WHERE cuentaId = :cuentaId
+""")
+    suspend fun contarAbonos(
+        cuentaId: String
+    ): Int
+
+    @Query("""
+    UPDATE cuenta_por_pagar
+    SET estado = 'ANULADA',
+        saldoPendiente = 0
+    WHERE id = :cuentaId
+      AND estado = 'PENDIENTE'
+""")
+    suspend fun anularCuentaPorPagar(
+        cuentaId: String
+    ): Int
+
+
 }

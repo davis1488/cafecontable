@@ -81,4 +81,7 @@ interface InventarioDao {
 
     @Update
     suspend fun actualizarMovimiento(movimiento: KardexMovimientoEntity)
+    @Query("SELECT * FROM kardex_mov ORDER BY fecha DESC")
+    suspend fun historialGeneral(): List<KardexMovimientoEntity>
+
 }
