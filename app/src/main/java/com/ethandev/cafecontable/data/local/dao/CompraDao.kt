@@ -37,12 +37,22 @@ interface CompraDao {
     """)
     suspend fun historial(): List<CompraHistorialRow>
 
+//    @Query("""
+//        UPDATE compra_cafe
+//        SET estado = 'ANULADA'
+//        WHERE id = :id
+//    """)
+//    suspend fun anularCompra(id: Int)
+
+
     @Query("""
-        UPDATE compra_cafe
-        SET estado = 'ANULADA'
-        WHERE id = :id
-    """)
-    suspend fun anularCompra(id: Int)
+    UPDATE compra_cafe
+    SET estado = 'ANULADA'
+    WHERE id = :id
+      AND estado = 'ACTIVA'
+""")
+    suspend fun anularCompra(id: Int): Int
+
 
     @Query("""
         SELECT * FROM compra_cafe
@@ -167,6 +177,27 @@ interface CompraDao {
         compraId: String,
         mezclaId: String
     ): CompraDisponibleDb?
+
+
+
+//    @Query("""
+//    SELECT COUNT(*)
+//    FROM mezcla_detalle
+//    WHERE compraId = :compraId
+//""")
+//    suspend fun contarMezclasDeCompra(
+//        compraId: Int
+//    ): Int
+
+
+    @Query("""
+    SELECT COUNT(*)
+    FROM mezcla_detalle
+    WHERE compraId = CAST(:compraId AS TEXT)
+""")
+    suspend fun contarMezclasDeCompra(
+        compraId: Int
+    ): Int
 
 
 }

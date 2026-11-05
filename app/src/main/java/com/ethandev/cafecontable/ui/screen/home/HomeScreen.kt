@@ -1,6 +1,7 @@
 package com.ethandev.cafecontable.ui.screen.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,32 +14,36 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.AutoGraph
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalCafe
-import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+
+private val CafeOscuro = Color(0xFF493628)
+private val CafeMedio = Color(0xFF69503D)
+private val VerdeCafe = Color(0xFF356B4B)
+private val FondoCafe = Color(0xFFF7F5EF)
+private val TextoCafe = Color(0xFF352A23)
+private val TextoSecundario = Color(0xFF776C62)
 
 @Composable
 fun HomeScreen(
@@ -49,288 +54,187 @@ fun HomeScreen(
     onGoInventario: () -> Unit,
     onGoMezclas: () -> Unit,
     onGoAsignacionMezclaPedido: () -> Unit,
-   // onGoHistorialCompras: () -> Unit,
     onGoHistorialVentas: () -> Unit,
     onGoCuentasPorCobrar: () -> Unit,
     onGoCuentasPorPagar: () -> Unit,
     onGoPrestamos: () -> Unit,
     onGoLiquidacion: () -> Unit,
     onGoOperacionesGastos: () -> Unit,
-    onGoUtilidad: () -> Unit
-
+    onGoUtilidad: () -> Unit,
+    onGoCierreSemanal: () -> Unit
 ) {
+    // Se conserva la misma firma de navegación que usa AppNavGraph.
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(innerPadding)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        contentPadding = PaddingValues(bottom = 24.dp),
+            .background(FondoCafe)
+            .padding(innerPadding),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item {
-            HomeHeader()
-        }
+        item { HomeHeaderModerno() }
 
+        item { TituloSeccion("Operaciones principales", "Registra y administra tu café") }
         item {
-            SectionTitle("Operaciones principales")
-        }
-
-        item {
-            HomeMenuCard(
-                title = "Registrar compra",
-                subtitle = "Ingresa compras de café e Historial",
-                icon = Icons.Filled.ShoppingCart,
-                onClick = onGoCompras
+            FilaMenu(
+                primero = MenuInicio("Compras", "Registro e historial", Icons.Filled.ShoppingCart, Color(0xFFE5F1E6), VerdeCafe, onGoCompras),
+                segundo = MenuInicio("Inventario", "Existencias y movimientos", Icons.Filled.Inventory2, Color(0xFFF3EBDC), Color(0xFF92622C), onGoInventario)
             )
         }
 
-        ///////////////////////PENDINTE VENTAS////////////////////////
+        item { TituloSeccion("Anuncios y mezclas", "Del pedido a la preparación") }
+        item {
+            FilaMenu(
+                primero = MenuInicio("Anuncios", "Pedidos de venta", Icons.Filled.ReceiptLong, Color(0xFFE7EDF7), Color(0xFF416696), onGoVentasPedido),
+                segundo = MenuInicio("Mezclas", "Preparación y edición", Icons.Filled.LocalCafe, Color(0xFFF2E8DD), CafeMedio, onGoMezclas)
+            )
+        }
+        item {
+            FilaMenu(
+                primero = MenuInicio("Asignaciones", "Mezclas a pedidos", Icons.Filled.AutoGraph, Color(0xFFECE9F5), Color(0xFF6E599A), onGoAsignacionMezclaPedido),
+                segundo = null
+            )
+        }
 
+        item { TituloSeccion("Finanzas", "Controla los resultados") }
+        item {
+            FilaMenu(
+                primero = MenuInicio("Liquidaciones", "Entregas y descuentos", Icons.Filled.AccountBalanceWallet, Color(0xFFE3F1ED), Color(0xFF30776C), onGoLiquidacion),
+                segundo = MenuInicio("Operaciones", "Operaciones y gastos", Icons.Filled.ReceiptLong, Color(0xFFF3E8E5), Color(0xFFAB6256), onGoOperacionesGastos)
+            )
+        }
+        item {
+            FilaMenu(
+                primero = MenuInicio("Utilidades", "Ganancias por operación", Icons.Filled.AttachMoney, Color(0xFFE5F1E6), VerdeCafe, onGoUtilidad),
+                segundo = MenuInicio("Análisis y cierres", "Reporte por semana o mes", Icons.Filled.AutoGraph, Color(0xFFE5F1E6), VerdeCafe, onGoCierreSemanal)
+
+            )
+        }
+
+        item { TituloSeccion("Saldos y créditos", " ") }
+
+        item {
+            FilaMenu(
+                primero = MenuInicio("Préstamos", "Saldos y movimientos", Icons.Filled.ReceiptLong, Color(0xFFE7EDF7), Color(0xFF416696), onGoPrestamos),
+                segundo = MenuInicio("Cuentas por pagar", "Obligaciones y créditos", Icons.Filled.AccountBalanceWallet, Color(0xFFF3EBDC), Color(0xFF92622C), onGoCuentasPorPagar)
+            )
+        }
 //        item {
-//            HomeMenuCard(
-//                title = "Registrar venta",
-//                subtitle = "Guarda ventas directas y descuenta inventario",
-//                icon = Icons.Filled.PointOfSale,
-//                onClick = onGoVentas
+//            FilaMenu(
+//                primero = MenuInicio("Préstamos", "Saldos y movimientos", Icons.Filled.ReceiptLong, Color(0xFFE7EDF7), Color(0xFF416696), onGoPrestamos),
+//                segundo = null
 //            )
 //        }
-
-
-        ///////////////////////Anuncios y Mezclas/////////////////////////
-
-
-        item {
-            SectionTitle("Anuncios y Entregas")
-        }
-
-        item {
-            HomeMenuCard(
-                title = "Registrar anuncio",
-                subtitle = "Crea pedidos o compromisos de venta",
-                icon = Icons.Filled.ReceiptLong,
-                onClick = onGoVentasPedido
-            )
-        }
-
-        item {
-            HomeMenuCard(
-                title = "Registrar mezclas",
-                subtitle = "Prepara mezclas para entrega o análisis",
-                icon = Icons.Filled.LocalCafe,
-                onClick = onGoMezclas
-            )
-        }
-
-        item {
-            HomeMenuCard(
-                title = "Asignar mezcla a anuncio",
-                subtitle = "Relaciona mezcla disponible con pedidos",
-                icon = Icons.Filled.AutoGraph,
-                onClick = onGoAsignacionMezclaPedido
-            )
-        }
-////////////////////////////////
-        item {
-            SectionTitle("Liquidaciones y Operaciones")
-        }
-
-        item {
-            HomeMenuCard(
-                title = "Liquidaciones",
-                subtitle = "Consulta y procesa entregas pendientes por liquidar",
-                icon = Icons.Filled.AccountBalanceWallet,
-                onClick = onGoLiquidacion
-            )
-        }
-
-        item {
-            HomeMenuCard(
-                title = "Operaciones y Gastos",
-                subtitle = "Creacion de operaciones y gastos",
-                icon = Icons.Filled.AccountBalanceWallet,
-                onClick = onGoOperacionesGastos
-            )
-        }
-
-
-        item {
-            SectionTitle("Inventarios y Utilidad")
-        }
-        item {
-            HomeMenuCard(
-                title = "Inventario",
-                subtitle = "Consulta existencias actuales y movimientos",
-                icon = Icons.Filled.Inventory2,
-                onClick = onGoInventario
-            )
-        }
-
-        item {
-            HomeMenuCard(
-                title = "Utilidades",
-                subtitle = "Calcula ganancias y resultados de operaciones",
-                icon = Icons.Filled.AttachMoney,
-                onClick = onGoUtilidad
-            )
-        }
-
-
-
-        item {
-            SectionTitle("Creditos y Movimientos")
-        }
-
-
-        ////////////////////////////////////////////////
-
-//        item {
-//            HomeMenuCard(
-//                title = "Historial de compras",
-//                subtitle = "Revisa todas las compras registradas",
-//                icon = Icons.Filled.History,
-//                onClick = onGoHistorialCompras
-//            )
-//        }
-///////////////////////////////////////PENDIENTE VENTAS
-        //item {
-//            HomeMenuCard(
-//                title = "Cuentas por COBRAR",
-//                subtitle = "Consulta saldos pendientes de clientes",
-//                icon = Icons.Filled.AccountBalanceWallet,
-//                onClick = onGoCuentasPorCobrar
-//            )
-//        }
-
-//////////////////////////////////////////////////////////////
-        item {
-            HomeMenuCard(
-                title = "Cuentas por PAGAR",
-                subtitle = "Consulta obligaciones y compras a crédito",
-                icon = Icons.Filled.AccountBalanceWallet,
-                onClick = onGoCuentasPorPagar
-            )
-        }
-
-        item {
-            HomeMenuCard(
-                title = "Préstamos",
-                subtitle = "Consulta préstamos y sus movimientos",
-                icon = Icons.Filled.ReceiptLong,
-                onClick = onGoPrestamos
-            )
-        }
+        // Se mantienen los callbacks de Ventas, Historial de Ventas y Cuentas por Cobrar
+        // en la firma para no romper AppNavGraph; no se muestran porque estaban ocultos.
     }
 }
 
-@Composable
-private fun HomeHeader() {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.LocalCafe,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-
-            Text(
-                text = "Café Contable",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-
-            Text(
-                text = "Gestiona compras, anuncios, mezclas, inventario y liquidaciones desde un solo lugar.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
-    }
-}
+private data class MenuInicio(
+    val titulo: String,
+    val subtitulo: String,
+    val icono: ImageVector,
+    val colorFondoIcono: Color,
+    val colorIcono: Color,
+    val onClick: () -> Unit
+)
 
 @Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary
-    )
-}
-
-@Composable
-private fun HomeMenuCard(
-    title: String,
-    subtitle: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit
-) {
+private fun HomeHeaderModerno() {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = CafeOscuro),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(54.dp)
+                        .background(CafeMedio, RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.LocalCafe, contentDescription = null, tint = Color(0xFFF7E3BF), modifier = Modifier.size(30.dp))
+                }
+                Column {
+                    Text("CafeContable", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Gestión inteligente de tu café", style = MaterialTheme.typography.bodySmall, color = Color(0xFFEADCCB))
                 }
             }
+            Spacer(modifier = Modifier.height(2.dp))
+            Text("Tu negocio, bajo control", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = Color.White)
+            Text(
+                "Compras, mezclas, inventario, liquidaciones y utilidades en un solo lugar.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFFF0E4D4)
+            )
+        }
+    }
+}
 
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+@Composable
+private fun TituloSeccion(titulo: String, subtitulo: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(titulo, color = TextoCafe, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(subtitulo, color = TextoSecundario, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun FilaMenu(primero: MenuInicio, segundo: MenuInicio?) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        TarjetaMenu(primero, Modifier.weight(1f))
+        if (segundo != null) {
+            TarjetaMenu(segundo, Modifier.weight(1f))
+        } else {
+            Spacer(modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun TarjetaMenu(menu: MenuInicio, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier
+            .height(158.dp)
+            .clickable(onClick = menu.onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(14.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(
+                modifier = Modifier.size(43.dp).background(menu.colorFondoIcono, RoundedCornerShape(13.dp)),
+                contentAlignment = Alignment.Center
             ) {
+                Icon(menu.icono, contentDescription = null, tint = menu.colorIcono)
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    menu.titulo,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TextoCafe,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    menu.subtitulo,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextoSecundario,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-
-            TextButton(onClick = onClick) {
-                Text("Abrir")
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                Icon(Icons.Filled.ArrowForward, contentDescription = null, tint = menu.colorIcono, modifier = Modifier.size(17.dp))
             }
         }
     }

@@ -1,395 +1,421 @@
 package com.ethandev.cafecontable.ui.screen.compras
 
-import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.ethandev.cafecontable.data.local.entity.OperacionEntity
+import com.ethandev.cafecontable.core.utils.FechaUtils
 import com.ethandev.cafecontable.domain.constants.OPERACION_NUEVA_ID
 import com.ethandev.cafecontable.domain.model.CompraCafeImput
 import com.ethandev.cafecontable.ui.utils.formatNumber
+import java.text.NumberFormat
+import java.util.Locale
 
+private val CompraCafe = Color(0xFF493628)
+private val CompraVerde = Color(0xFF376B4B)
+private val CompraFondo = Color(0xFFF7F5EF)
+private val CompraSuave = Color(0xFF665C53)
+private val CompraVerdeClaro = Color(0xFFE7EEE7)
+private val CompraBorde = Color(0xFF9B8D80)
+private val CompraRojo = Color(0xFFC62828)
+
+// Se conserva como función pública: otros archivos podrían reutilizarla.
 fun parseCantidad(input: String): Double {
     val texto = input.replace(" ", "").replace(",", ".")
     if (texto.isBlank()) return 0.0
-
     return try {
-        texto
-            .split("+")
-            .filter { it.isNotBlank() }
-            .sumOf { it.toDouble() }
-    } catch (e: Exception) {
+        texto.split("+").filter { it.isNotBlank() }.sumOf { it.toDouble() }
+    } catch (_: Exception) {
         0.0
+    }
+}
+
+private fun cantidadTexto(valor: Double): String =
+    NumberFormat.getNumberInstance(Locale("es", "CO")).apply {
+        maximumFractionDigits = 2
+    }.format(valor)
+
+private fun dineroTexto(valor: Long): String = "$ ${formatNumber(valor.toString())}"
+
+@Composable
+private fun compraColoresCampo() = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = Color.Black,
+    unfocusedTextColor = Color.Black,
+    disabledTextColor = Color.Black,
+    focusedLabelColor = CompraVerde,
+    unfocusedLabelColor = CompraCafe,
+    disabledLabelColor = CompraCafe,
+    focusedPlaceholderColor = CompraSuave,
+    unfocusedPlaceholderColor = CompraSuave,
+    focusedBorderColor = CompraVerde,
+    unfocusedBorderColor = CompraBorde,
+    focusedContainerColor = Color.White,
+    unfocusedContainerColor = Color.White,
+    cursorColor = CompraVerde
+)
+
+@Composable
+private fun SeccionCompraCompacta(
+    titulo: String,
+    contenido: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        color = Color.White,
+        shape = RoundedCornerShape(17.dp),
+        shadowElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(13.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                titulo,
+                color = CompraCafe,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium
+            )
+            contenido()
+        }
+    }
+}
+
+@Composable
+private fun DatoCompraCompacto(etiqueta: String, valor: String, destacado: Boolean = false) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            etiqueta,
+            modifier = Modifier.weight(1f),
+            color = if (destacado) CompraVerde else CompraSuave,
+            style = MaterialTheme.typography.bodySmall
+        )
+        Text(
+            valor,
+            color = if (destacado) CompraVerde else CompraCafe,
+            fontWeight = FontWeight.Bold,
+            style = if (destacado) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium
+        )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompraCafeScreen(vm: CompraCafeViewModel) {
-
-    val context = LocalContext.current
     val state by vm.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val productos = remember { listOf("Cafe", "Pasilla", "Regular") }
 
-    val productos = listOf("Cafe", "Pasilla", "Regular")
-    val unidades = listOf("KG")
-
-    var producto by remember { mutableStateOf(productos[0]) }
-    var unidad by remember { mutableStateOf(unidades[0]) }
+    var producto by remember { mutableStateOf(productos.first()) }
+    val unidad = "KG" // Actualmente es la única unidad disponible: evitamos un selector innecesario.
     var cantidadTxt by remember { mutableStateOf("") }
     var precioTxt by remember { mutableStateOf("") }
     var proveedorTxt by remember { mutableStateOf("") }
     var notaTxt by remember { mutableStateOf("") }
     var esCredito by remember { mutableStateOf(false) }
     var abonoTxt by remember { mutableStateOf("") }
-
-
-
-    var expandedProducto by remember { mutableStateOf(false) }
-    var expandedUnidad by remember { mutableStateOf(false) }
+    var productoExpandido by remember { mutableStateOf(false) }
+    var operacionExpandida by remember { mutableStateOf(false) }
+    var detallesExpandidos by remember { mutableStateOf(false) }
+    var guardadoSolicitado by remember { mutableStateOf(false) }
 
     val cantidad = parseCantidad(cantidadTxt)
-    val abono = abonoTxt.toLongOrNull() ?: 0L
     val precio = precioTxt.toLongOrNull() ?: 0L
-
-    val total = if (cantidad > 0 && precio > 0) (cantidad * precio).toLong() else 0L
+    val abono = abonoTxt.toLongOrNull() ?: 0L
+    val total = if (cantidad > 0.0 && precio > 0L) (cantidad * precio).toLong() else 0L
     val saldo = total - abono
-
-
-    var expandedOperacion by remember { mutableStateOf(false) }
-
-    val operacionesCompra = state.operacionesCompra
-   // val operacionCompraId = operacionSeleccionadaId
-
-    //al operacionCompraSeleccionada = operacionesCompra.firstOrNull { it.id == operacionCompraId }
-
-
-    //val operacionCompraId = state.operacionCompraIdSeleccionada
-    //var operacionCompraId by remember { mutableStateOf<String?>(null) }
-   // val operacionCompraSeleccionada = operacionesCompra.firstOrNull { it.id == operacionCompraId }
-    //var operacionCompraSeleccionada by remember { mutableStateOf<OperacionEntity?>(null) }
-
-    val operacionCompraId: String?
+    val operaciones = state.operacionesCompra
+    val operacionId = state.operacionCompraIdSeleccionada
+    val operacionVisible = if (operacionId == OPERACION_NUEVA_ID) "Nuevo" else
+        operaciones.firstOrNull { it.id == operacionId }?.let {
+            FechaUtils.formatearNombreOperacion(it.nombre)
+        } ?: "Nuevo"
 
     LaunchedEffect(state.error, state.okMsg) {
-        state.error?.let {
-            snackbarHostState.showSnackbar(it)
+        val error = state.error
+        val ok = state.okMsg
+        if (error != null || ok != null) {
+            if (error != null) guardadoSolicitado = false
+            if (ok != null && error == null && guardadoSolicitado) {
+                cantidadTxt = ""
+                precioTxt = ""
+                proveedorTxt = ""
+                notaTxt = ""
+                abonoTxt = ""
+                esCredito = false
+                detallesExpandidos = false
+                guardadoSolicitado = false
+            }
             vm.limpiarMensajes()
-        }
-        state.okMsg?.let {
-            snackbarHostState.showSnackbar(it)
-            vm.limpiarMensajes()
+            snackbarHostState.showSnackbar(error ?: ok.orEmpty())
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        containerColor = CompraFondo,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
-
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)
         ) {
             item {
-                Text(
-                    "Registrar compra de café",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-            }
-
-            item {
-                ExposedDropdownMenuBox(
-                    expanded = expandedProducto,
-                    onExpandedChange = { expandedProducto = !expandedProducto }
-                ) {
-                    OutlinedTextField(
-                        value = producto,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Producto") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expandedProducto)
-                        },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-                    DropdownMenu(
-                        expanded = expandedProducto,
-                        onDismissRequest = { expandedProducto = false }
+                Surface(color = CompraCafe, shape = RoundedCornerShape(17.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 11.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        productos.forEach {
-                            DropdownMenuItem(
-                                text = { Text(it) },
-                                onClick = {
-                                    producto = it
-                                    expandedProducto = false
-                                }
-                            )
+                        Icon(Icons.Filled.ShoppingCart, null, tint = Color(0xFFF4D9AF),
+                            modifier = Modifier.size(27.dp))
+                        Column {
+                            Text("Nueva compra", color = Color.White,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold)
+                            Text("Café, cantidades y costo", color = Color(0xFFEBDAC8),
+                                style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
             }
 
             item {
-                ExposedDropdownMenuBox(
-                    expanded = expandedUnidad,
-                    onExpandedChange = { expandedUnidad = !expandedUnidad }
-                ) {
-                    OutlinedTextField(
-                        value = unidad,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Unidad") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expandedUnidad)
-                        },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-                    DropdownMenu(
-                        expanded = expandedUnidad,
-                        onDismissRequest = { expandedUnidad = false }
+                SeccionCompraCompacta("Datos del café") {
+                    ExposedDropdownMenuBox(
+                        expanded = productoExpandido,
+                        onExpandedChange = { productoExpandido = !productoExpandido }
                     ) {
-                        unidades.forEach {
-                            DropdownMenuItem(
-                                text = { Text(it) },
-                                onClick = {
-                                    unidad = it
-                                    expandedUnidad = false
-                                }
-                            )
+                        OutlinedTextField(
+                            value = producto,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Producto") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(productoExpandido) },
+                            colors = compraColoresCampo(),
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            singleLine = true
+                        )
+                        ExposedDropdownMenu(
+                            expanded = productoExpandido,
+                            onDismissRequest = { productoExpandido = false }
+                        ) {
+                            productos.forEach { opcion ->
+                                DropdownMenuItem(
+                                    text = { Text(opcion) },
+                                    onClick = { producto = opcion; productoExpandido = false }
+                                )
+                            }
                         }
                     }
-                }
-            }
 
-
-            item {
-                val totalCantidad = cantidadTxt
-                    .split("+")
-                    .mapNotNull { it.trim().toLongOrNull() }
-                    .sum()
-
-                Column {
                     OutlinedTextField(
                         value = cantidadTxt,
-                        onValueChange = { input ->
-                            cantidadTxt = input.filter {
-                                it.isDigit() || it == '+'
-                            }
-                        },
+                        onValueChange = { cantidadTxt = it.filter { c -> c.isDigit() || c == '+' } },
                         label = { Text("Cantidad ($unidad)") },
-                        placeholder = { Text("Ej: 100+250+150") },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Text
-                        ),
-                        modifier = Modifier.fillMaxWidth()
+                        placeholder = { Text("100+250+150") },
+                        supportingText = { Text("Puedes sumar cantidades con +") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                        colors = compraColoresCampo(),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
                     )
 
-                    Text(
-                        text = "Total: ${formatNumber(totalCantidad.toString())} $unidad",
-                        color = MaterialTheme.colorScheme.primary
+                    Row(
+                        modifier = Modifier.fillMaxWidth().background(CompraVerdeClaro, RoundedCornerShape(11.dp))
+                            .padding(horizontal = 12.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Cantidad total", color = CompraCafe,
+                            style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text("${cantidadTexto(cantidad)} kg", color = CompraVerde,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium)
+                    }
+
+                    OutlinedTextField(
+                        value = formatNumber(precioTxt),
+                        onValueChange = { precioTxt = it.filter(Char::isDigit) },
+                        label = { Text("Precio por kg (COP)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = compraColoresCampo(),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
                     )
                 }
             }
 
-
             item {
-                OutlinedTextField(
-                    value = formatNumber(precioTxt),
-                    onValueChange = { input ->
-                        precioTxt = input.filter(Char::isDigit)
-                    },
-                    label = { Text("Precio compra unitario (COP)") },
-                    placeholder = { Text("Ej: 18000") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-
-                )
-            }
-
-            item {
-                val opcionesOperacion = listOf(
-                    OPERACION_NUEVA_ID to "Nuevo"
-                ) + operacionesCompra.map { it.id to it.nombre }
-
-                val operacionCompraId = state.operacionCompraIdSeleccionada
-
-
-                val textoOperacionSeleccionada =
-                    if (operacionCompraId == OPERACION_NUEVA_ID) {
-                        "Nuevo"
-                    } else {
-                        operacionesCompra.firstOrNull { it.id == operacionCompraId }?.nombre ?: "Nuevo"
-                    }
-
-                ExposedDropdownMenuBox(
-                    expanded = expandedOperacion,
-                    onExpandedChange = { expandedOperacion = !expandedOperacion }
-                ) {
-                    OutlinedTextField(
-                        value = textoOperacionSeleccionada,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Operación de compra") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedOperacion)
-                        },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-
-                    ExposedDropdownMenu(
-                        expanded = expandedOperacion,
-                        onDismissRequest = { expandedOperacion = false }
+                SeccionCompraCompacta("Operación y pago") {
+                    ExposedDropdownMenuBox(
+                        expanded = operacionExpandida,
+                        onExpandedChange = { operacionExpandida = !operacionExpandida }
                     ) {
-                        opcionesOperacion.forEach { (id, nombre) ->
+                        OutlinedTextField(
+                            value = operacionVisible,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Operación de compra") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(operacionExpandida) },
+                            colors = compraColoresCampo(),
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            singleLine = true
+                        )
+                        ExposedDropdownMenu(
+                            expanded = operacionExpandida,
+                            onDismissRequest = { operacionExpandida = false }
+                        ) {
                             DropdownMenuItem(
-                                text = { Text(nombre) },
+                                text = { Text("Nuevo") },
                                 onClick = {
-                                    vm.seleccionarOperacionCompra(id)
-                                    expandedOperacion = false
+                                    vm.seleccionarOperacionCompra(OPERACION_NUEVA_ID)
+                                    operacionExpandida = false
                                 }
                             )
+                            operaciones.forEach { operacion ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(FechaUtils.formatearNombreOperacion(operacion.nombre),
+                                            maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    },
+                                    onClick = {
+                                        vm.seleccionarOperacionCompra(operacion.id)
+                                        operacionExpandida = false
+                                    }
+                                )
+                            }
                         }
+                    }
+
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Compra a crédito", color = CompraCafe,
+                                fontWeight = FontWeight.SemiBold)
+                            Text(if (esCredito) "Genera una cuenta por pagar" else "Pago de contado",
+                                color = CompraSuave, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Switch(
+                            checked = esCredito,
+                            onCheckedChange = { esCredito = it },
+                            colors = SwitchDefaults.colors(checkedThumbColor = Color.White,
+                                checkedTrackColor = CompraVerde)
+                        )
+                    }
+                    if (esCredito) {
+                        OutlinedTextField(
+                            value = formatNumber(abonoTxt),
+                            onValueChange = { abonoTxt = it.filter(Char::isDigit) },
+                            label = { Text("Abono inicial (COP)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = compraColoresCampo(),
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        DatoCompraCompacto("Saldo crédito", dineroTexto(saldo.coerceAtLeast(0L)))
+                        if (abono > total && total > 0L) {
+                            Text("El abono no puede superar el valor de la compra.",
+                                color = CompraRojo, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                    TextButton(
+                        onClick = { detallesExpandidos = !detallesExpandidos },
+                        colors = ButtonDefaults.textButtonColors(contentColor = CompraCafe),
+                        contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
+                    ) {
+                        Text(if (detallesExpandidos) "Ocultar proveedor y nota" else "Agregar proveedor o nota")
+                    }
+                    if (detallesExpandidos) {
+                        OutlinedTextField(
+                            value = proveedorTxt,
+                            onValueChange = { proveedorTxt = it },
+                            label = { Text("Proveedor (opcional)") },
+                            colors = compraColoresCampo(),
+                            modifier = Modifier.fillMaxWidth(), singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = notaTxt,
+                            onValueChange = { notaTxt = it },
+                            label = { Text("Nota (opcional)") },
+                            colors = compraColoresCampo(),
+                            modifier = Modifier.fillMaxWidth(), minLines = 2
+                        )
                     }
                 }
             }
 
             item {
-                OutlinedTextField(
-                    value = proveedorTxt,
-                    onValueChange = { proveedorTxt = it },
-                    label = { Text("Proveedor (opcional)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            item {
-                OutlinedTextField(
-                    value = notaTxt,
-                    onValueChange = { notaTxt = it },
-                    label = { Text("Nota (opcional)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("¿Compra a crédito?")
-                    Switch(
-                        checked = esCredito,
-                        onCheckedChange = { esCredito = it }
-                    )
+                Surface(color = CompraVerdeClaro, shape = RoundedCornerShape(17.dp)) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(13.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("RESUMEN DE COMPRA", color = CompraVerde,
+                            fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                        DatoCompraCompacto("Cantidad", "${cantidadTexto(cantidad)} kg")
+                        DatoCompraCompacto("Precio unitario", dineroTexto(precio))
+                        HorizontalDivider(color = Color(0xFFC8DEC9))
+                        DatoCompraCompacto("Total", dineroTexto(total), destacado = true)
+                        if (esCredito) DatoCompraCompacto("Pendiente", dineroTexto(saldo.coerceAtLeast(0L)))
+                    }
                 }
-            }
-
-            if (esCredito) {
-                item {
-                    OutlinedTextField(
-                        value = formatNumber(abonoTxt),
-                        onValueChange = { input ->
-                            abonoTxt = input.filter(Char::isDigit)
-                        },
-                        label = { Text("Abono al crédito (COP)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                item {
-                    Text(
-                        text = "Saldo pendiente: $saldo COP",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-
-            item {
-                Text(
-                    "Total: $total COP",
-                    style = MaterialTheme.typography.titleMedium
-                )
             }
 
             item {
                 Button(
                     onClick = {
-                        val operacionSeleccionadaId = state.operacionCompraIdSeleccionada
-
-                        if (operacionSeleccionadaId.isNullOrBlank()) {
-                            Toast.makeText(
-                                context,
-                                "Debes seleccionar una operación",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@Button
+                        val seleccionado = state.operacionCompraIdSeleccionada
+                        val mensaje = when {
+                            seleccionado.isNullOrBlank() -> "Debes seleccionar una operación"
+                            cantidad <= 0.0 -> "La cantidad debe ser mayor a cero"
+                            precio <= 0L -> "El precio debe ser mayor a cero"
+                            esCredito && abono > total -> "El abono supera el total de la compra"
+                            else -> null
                         }
-
-                        if (cantidad <= 0) {
-                            Toast.makeText(
-                                context,
-                                "La cantidad debe ser mayor a 0",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@Button
-                        }
-
-                        if (precio <= 0) {
-                            Toast.makeText(
-                                context,
-                                "El precio debe ser mayor a 0",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            return@Button
-                        }
-
-                        vm.guardar(
-                            CompraCafeImput(
-                                productoNombre = producto,
-                                unidad = unidad,
-                                cantidad = cantidad,
-                                precioUnitCompra = precio,
-                                proveedor = proveedorTxt.ifBlank { null },
-                                esCredito = esCredito,
-                                nota = notaTxt.ifBlank { null },
-                                abono = abono,
-                                operacionCompraId = operacionSeleccionadaId
+                        if (mensaje != null) {
+                            // Mostramos la validación sin depender de Toast.
+                            scope.launch { snackbarHostState.showSnackbar(mensaje) }
+                        } else {
+                            guardadoSolicitado = true
+                            vm.guardar(
+                                CompraCafeImput(
+                                    productoNombre = producto,
+                                    unidad = unidad,
+                                    cantidad = cantidad,
+                                    precioUnitCompra = precio,
+                                    proveedor = proveedorTxt.ifBlank { null },
+                                    esCredito = esCredito,
+                                    nota = notaTxt.ifBlank { null },
+                                    abono = if (esCredito) abono else 0L,
+                                    operacionCompraId = seleccionado!!
+                                )
                             )
-                        )
-
-                        cantidadTxt = ""
-                        precioTxt = ""
-                        proveedorTxt = ""
-                        notaTxt = ""
-                        esCredito = false
-                        abonoTxt = ""
-                        expandedOperacion = false
+                        }
                     },
                     enabled = !state.loading,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().height(49.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = CompraVerde),
+                    shape = RoundedCornerShape(13.dp)
                 ) {
-                    Text(if (state.loading) "Guardando..." else "Guardar compra")
+                    if (state.loading) {
+                        CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (state.loading) "Guardando..." else "Guardar compra",
+                        fontWeight = FontWeight.SemiBold)
                 }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }

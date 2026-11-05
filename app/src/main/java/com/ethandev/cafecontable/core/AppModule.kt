@@ -65,6 +65,7 @@ import com.ethandev.cafecontable.domain.usecase.MarcarVentaPedidoComoEntregadoUs
 import com.ethandev.cafecontable.domain.usecase.ObtenerCompraPorIdUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerExistenciaUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialComprasUseCase
+import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialInventarioUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialLiquidacionesUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialMezclasUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialVentasUseCase
@@ -173,12 +174,20 @@ object AppModule {
         return RegistrarVentaCafeUseCase(repo)
     }
 
-    fun provideHistorialCompraUseCase(context: Context): ObtenerHistorialComprasUseCase {
-        val repo = HistorialCompraRepositoryImpl(
-            provideDatabase(context).compraDao(),
-            provideDatabase(context).inventarioDao()
+//    fun provideHistorialCompraUseCase(context: Context): ObtenerHistorialComprasUseCase {
+//        val repo = HistorialCompraRepositoryImpl(
+//            provideDatabase(context).compraDao(),
+//            provideDatabase(context).inventarioDao()
+//        )
+//        return ObtenerHistorialComprasUseCase(repo)
+//    }
+
+    fun provideHistorialCompraUseCase(
+        context: Context
+    ): ObtenerHistorialComprasUseCase {
+        return ObtenerHistorialComprasUseCase(
+            provideHistorialCompraRepository(context)
         )
-        return ObtenerHistorialComprasUseCase(repo)
     }
 
     fun provideHistorialVentaUseCase(context: Context): ObtenerHistorialVentasUseCase {
@@ -296,11 +305,24 @@ object AppModule {
         )
     }
 
-    fun provideHistorialCompraRepository(context: Context): HistorialCompraRepository {
+//    fun provideHistorialCompraRepository(context: Context): HistorialCompraRepository {
+//        val db = provideDatabase(context)
+//        return HistorialCompraRepositoryImpl(
+//            compraDao = db.compraDao(),
+//            inventarioDao = db.inventarioDao()
+//        )
+//    }
+
+    fun provideHistorialCompraRepository(
+        context: Context
+    ): HistorialCompraRepository {
         val db = provideDatabase(context)
+
         return HistorialCompraRepositoryImpl(
             compraDao = db.compraDao(),
-            inventarioDao = db.inventarioDao()
+            inventarioDao = db.inventarioDao(),
+            cuentaPorPagarDao = db.cuentaPorPagarDao(),
+            db = db
         )
     }
 
@@ -326,9 +348,20 @@ object AppModule {
         return ObtenerExistenciaUseCase(repository)
     }
 
+//    fun provideInventarioViewModel(context: Context): InventarioViewModel {
+//        return InventarioViewModel(
+//            obtenerInventarioUseCase = provideObtenerInventarioUseCase(context)
+//        )
+//    }
+
     fun provideInventarioViewModel(context: Context): InventarioViewModel {
         return InventarioViewModel(
-            obtenerInventarioUseCase = provideObtenerInventarioUseCase(context)
+            obtenerInventarioUseCase = provideObtenerInventarioUseCase(context),
+            obtenerHistorialInventarioUseCase =
+            ObtenerHistorialInventarioUseCase(
+                provideInventarioRepository(context)
+            ),
+            mezclaDao = provideDatabase(context).mezclaDao()
         )
     }
 

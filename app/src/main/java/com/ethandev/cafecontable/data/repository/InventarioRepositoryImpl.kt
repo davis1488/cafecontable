@@ -2,6 +2,7 @@ package com.ethandev.cafecontable.data.repository
 
 import com.ethandev.cafecontable.data.local.dao.InventarioDao
 import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
+import com.ethandev.cafecontable.domain.model.MovimientoInventarioModel
 import com.ethandev.cafecontable.domain.model.InventarioItemModel
 import com.ethandev.cafecontable.domain.model.InventarioPorProducto
 import com.ethandev.cafecontable.domain.repository.InventarioRepository
@@ -54,4 +55,18 @@ class InventarioRepositoryImpl(
     override suspend fun obtenerExistencia(productoId: String): Double {
         return dao.existencia(productoId)
     }
+    override suspend fun obtenerHistorial(): List<MovimientoInventarioModel> =
+        dao.historialGeneral().map { mov ->
+            MovimientoInventarioModel(
+                id = mov.id,
+                fecha = mov.fecha,
+                productoId = mov.productoId,
+                tipo = mov.tipo,
+                cantidad = mov.cantidad,
+                costoUnit = mov.costoUnit,
+                docTipo = mov.docTipo,
+                docId = mov.docId,
+                nota = mov.nota
+            )
+        }
 }

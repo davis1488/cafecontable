@@ -2,6 +2,7 @@ package com.ethandev.cafecontable.ui.screen.mezcla
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ethandev.cafecontable.core.utils.FechaUtils
 import com.ethandev.cafecontable.data.local.dao.CompraDao
 import com.ethandev.cafecontable.data.local.entity.CompraDisponibleDb
 import com.ethandev.cafecontable.data.local.entity.OperacionEntity
@@ -470,7 +471,7 @@ class MezclasViewModel(
                 val operacionMezclaIdFinal = resolverOperacionUseCase(
                     operacionIdSeleccionada = _state.value.operacionMezclaIdSeleccionada,
                     tipo = TipoOperacion.MEZCLA,
-                    nombreAutomatico = "MEZCLA ${System.currentTimeMillis()}",
+                    nombreAutomatico = FechaUtils.generarNombreOperacion("MEZCLA"),
                     descripcionAutomatica = "Generada automáticamente desde mezclas"
                 )
 

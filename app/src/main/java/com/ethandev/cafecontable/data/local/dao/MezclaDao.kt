@@ -9,8 +9,35 @@ import com.ethandev.cafecontable.data.local.entity.MezclaDisponibleDb
 import com.ethandev.cafecontable.data.local.entity.MezclaEntity
 import com.ethandev.cafecontable.data.local.entity.MezclaHistorialDb
 
+/** Saldo por mezcla para inventario propio. Las asignaciones no pertenecen al saldo propio. */
+data class MezclaSaldoInventarioDb(
+    val mezclaId: String,
+    val nota: String?,
+    val estado: String,
+    val cantidadTotal: Double,
+    val kilajeEntregado: Double?,
+    val cantidadAsignada: Double
+)
+
 @Dao
 interface MezclaDao {
+
+    @Query("""
+        SELECT m.id AS mezclaId,
+               m.nota AS nota,
+               m.estado AS estado,
+               m.cantidadTotal AS cantidadTotal,
+               m.kilajeEntregado AS kilajeEntregado,
+               COALESCE((
+                   SELECT SUM(a.cantidadAsignada)
+                   FROM asignacion_mezcla_pedido a
+                   WHERE a.mezclaId = m.id
+               ), 0) AS cantidadAsignada
+        FROM mezcla m
+        ORDER BY m.fecha DESC
+    """)
+    suspend fun saldosParaInventario(): List<MezclaSaldoInventarioDb>
+
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertMezcla(mezcla: MezclaEntity)
@@ -200,17 +227,42 @@ interface MezclaDao {
     @Query("""
         SELECT COALESCE(SUM(
             md.cantidadUsada * (
-                SELECT COALESCE(SUM(go.valor), 0) * 1.0 / c.cantidad
+                SELECT COALESCE(SUM(go.valor), 0) * 1.0
                 FROM gasto_operacion go
                 WHERE go.operacionId = c.operacionCompraId
-                AND go.estado = 'ACTIVO'
-            )
+                  AND go.estado = 'ACTIVO'
+            ) / NULLIF((
+                SELECT SUM(c2.cantidad)
+                FROM compra_cafe c2
+                WHERE c2.operacionCompraId = c.operacionCompraId
+            ), 0)
         ), 0)
         FROM mezcla_detalle md
         INNER JOIN compra_cafe c ON c.id = md.compraId
         WHERE md.mezclaId = :mezclaId
     """)
     suspend fun totalGastosCompraProrrateadosPorMezcla(
+        mezclaId: String
+    ): Double
+
+    // Distribuye los gastos de una operación de mezcla entre TODAS las mezclas
+    // asociadas a esa operación, evitando imputarlos varias veces.
+    @Query("""
+        SELECT COALESCE(
+            m.cantidadTotal * (
+                SELECT COALESCE(SUM(go.valor), 0) * 1.0
+                FROM gasto_operacion go
+                WHERE go.operacionId = m.operacionMezclaId
+                  AND go.estado = 'ACTIVO'
+            ) / NULLIF((
+                SELECT SUM(m2.cantidadTotal)
+                FROM mezcla m2
+                WHERE m2.operacionMezclaId = m.operacionMezclaId
+            ), 0), 0)
+        FROM mezcla m
+        WHERE m.id = :mezclaId
+    """)
+    suspend fun totalGastosOperacionMezclaProrrateados(
         mezclaId: String
     ): Double
 

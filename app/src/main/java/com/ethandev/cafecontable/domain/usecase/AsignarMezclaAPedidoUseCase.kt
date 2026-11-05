@@ -28,6 +28,15 @@ class AsignarMezclaAPedidoUseCase(
         val mezcla = mezclaDao.getById(input.mezclaId)
             ?: throw IllegalArgumentException("No se encontró la mezcla")
 
+        // Regla comercial: el café debe estar físicamente entregado
+        // antes de que pueda salir del inventario propio por asignación.
+        require(
+            mezcla.estado.equals(EstadoMezcla.ENTREGADO.name, ignoreCase = true) ||
+                    mezcla.estado.equals(EstadoMezcla.ANALIZADO.name, ignoreCase = true)
+        ) {
+            "Solo se pueden asignar mezclas entregadas o analizadas"
+        }
+
 //        require(mezcla.cantidadDisponible >= input.cantidadAsignada) {
 //            "La mezcla no tiene saldo suficiente"
 //        }

@@ -2,10 +2,23 @@ package com.ethandev.cafecontable.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Colores principales de CafeContable
+val CafePrincipal = Color(0xFF493628)
+val CafeMedio = Color(0xFF78604C)
+val VerdeCafe = Color(0xFF376B4B)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Fondos y superficies
+val FondoCafe = Color(0xFFF7F5EF)
+val SuperficieCafe = Color(0xFFFFFFFF)
+val VerdeSuave = Color(0xFFE7EEE7)
+
+// Textos con buen contraste
+val TextoPrincipal = Color(0xFF29231E)
+val TextoSecundario = Color(0xFF665C53)
+
+// Bordes y controles
+val BordeCafe = Color(0xFF9B8D80)
+
+// Estados
+val RojoError = Color(0xFFC62828)
+val DoradoCafe = Color(0xFFF4D9AF)
