@@ -1,6 +1,8 @@
 package com.ethandev.cafecontable.ui.screen.ventaspedido
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +21,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.ethandev.cafecontable.domain.constants.EstadoAnuncio
 import com.ethandev.cafecontable.domain.model.VentaPedido
 import com.ethandev.cafecontable.domain.repository.dto.VentaPedidoInput
@@ -64,7 +69,15 @@ fun VentasPedidoScreen(
     var notaTxt by remember { mutableStateOf("") }
     var guardandoAnuncio by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { vm.cargarVentas() }
+    // Refrescar al entrar o volver desde Asignaciones, sin reiniciar la app.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, vm) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) vm.cargarVentas()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     LaunchedEffect(state.error, state.okMsg) {
         val error = state.error
@@ -97,7 +110,7 @@ fun VentasPedidoScreen(
         snackbarHost = {
             SnackbarHost(snackbarHostState) { data ->
                 Snackbar(
-                    snackbarData  = data,
+                    snackbarData = data,
                     modifier = Modifier.padding(12.dp),
                     shape = RoundedCornerShape(16.dp),
                     containerColor = if (mensajeError) Color(0xFF8C4430) else Verde,
@@ -114,57 +127,60 @@ fun VentasPedidoScreen(
                 .padding(innerPadding)
                 .background(Fondo)
         ) {
-            Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    color = Cafe
-                ) {
-                    Row(
-                        modifier = Modifier.padding(18.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+            // Cabecera compacta: el historial prioriza el espacio para los anuncios.
+            Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) {
+                if (tab == 0) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        color = Cafe
                     ) {
-                        Surface(color = Color(0xFF6B5240), shape = RoundedCornerShape(13.dp)) {
-                            Icon(
-                                Icons.Filled.ReceiptLong,
-                                contentDescription = null,
-                                tint = Dorado,
-                                modifier = Modifier.padding(11.dp).size(26.dp)
-                            )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(Icons.Filled.ReceiptLong, null, tint = Dorado, modifier = Modifier.size(24.dp))
+                            Column {
+                                Text("Anuncios de venta", color = Color.White,
+                                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                Text("Pedidos, mezclas y entregas", color = Color(0xFFEBDAC8),
+                                    style = MaterialTheme.typography.labelSmall)
+                            }
                         }
-                        Column {
-                            Text("Anuncios de venta", color = Color.White,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold)
-                            Text("Pedidos, mezclas y entregas", color = Color(0xFFEBDAC8),
-                                style = MaterialTheme.typography.bodySmall)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+                // Solo dos cifras principales para que el historial tenga mas espacio.
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ResumenAnuncio("Anuncios", state.items.size.toString(), Modifier.weight(1f))
+                    ResumenAnuncio("Por asignar", state.items.count {
+                        (it.cantidadPactada - it.cantidadAsignada) > 0.000001
+                    }.toString(), Modifier.weight(1f))
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(12.dp)).padding(3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    listOf("Nuevo anuncio", "Historial").forEachIndexed { index, label ->
+                        val seleccionado = tab == index
+                        Surface(
+                            onClick = { tab = index },
+                            modifier = Modifier.weight(1f),
+                            color = if (seleccionado) Verde else Color.Transparent,
+                            shape = RoundedCornerShape(9.dp)
+                        ) {
+                            Text(label,
+                                modifier = Modifier.padding(vertical = 9.dp),
+                                color = if (seleccionado) Color.White else Cafe,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
-                Spacer(Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ResumenAnuncio("Total", state.items.size.toString(), Modifier.weight(1f))
-                    ResumenAnuncio("Pendientes", state.items.count {
-                        EstadoAnuncio.from(it.estado) == EstadoAnuncio.CREADO ||
-                                EstadoAnuncio.from(it.estado) == EstadoAnuncio.ENTREGA_PARCIAL
-                    }.toString(), Modifier.weight(1f))
-                    ResumenAnuncio("Entregados", state.items.count {
-                        EstadoAnuncio.from(it.estado) == EstadoAnuncio.ENTREGA_TOTAL
-                    }.toString(), Modifier.weight(1f))
-                }
-                Spacer(Modifier.height(12.dp))
-                TabRow(
-                    selectedTabIndex = tab,
-                    containerColor = Color.White,
-                    contentColor = Verde,
-                    divider = {}
-                ) {
-                    Tab(selected = tab == 0, onClick = { tab = 0 },
-                        text = { Text("Nuevo anuncio", fontWeight = FontWeight.SemiBold) })
-                    Tab(selected = tab == 1, onClick = { tab = 1 },
-                        text = { Text("Historial", fontWeight = FontWeight.SemiBold) })
-                }
+                Spacer(Modifier.height(6.dp))
             }
             when (tab) {
                 0 -> LazyColumn(
@@ -260,13 +276,15 @@ fun VentasPedidoScreen(
 
 @Composable
 private fun ResumenAnuncio(titulo: String, valor: String, modifier: Modifier = Modifier) {
-    Surface(modifier = modifier, color = Color.White,
-        shape = RoundedCornerShape(14.dp)) {
-        Column(Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(valor, color = Verde, style = MaterialTheme.typography.titleLarge,
+    Surface(modifier = modifier, color = Color.White, shape = RoundedCornerShape(12.dp)) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(titulo, color = Suave, style = MaterialTheme.typography.labelMedium)
+            Text(valor, color = Verde, style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold)
-            Text(titulo, color = Suave, style = MaterialTheme.typography.labelSmall)
         }
     }
 }
@@ -283,58 +301,48 @@ private fun HistorialAnuncios(
         else items.filter { EstadoAnuncio.from(it.estado) == filtro.estado }
     }
     Column(Modifier.fillMaxSize()) {
-        ScrollableTabRow(
-            selectedTabIndex = filtro.ordinal,
-            edgePadding = 16.dp,
-            containerColor = Fondo,
-            contentColor = Verde,
-            divider = {}
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             FiltroAnuncio.entries.forEach { actual ->
-                Tab(
+                FilterChip(
                     selected = filtro == actual,
                     onClick = { filtro = actual },
-                    text = { Text(actual.titulo) }
+                    label = { Text(actual.titulo, maxLines = 1) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Verde,
+                        selectedLabelColor = Color.White,
+                        containerColor = Color.White,
+                        labelColor = Cafe
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = filtro == actual,
+                        borderColor = Color(0xFFD5C5B5),
+                        selectedBorderColor = Verde
+                    )
                 )
             }
-        }
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Historial de anuncios", color = Cafe,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.titleMedium)
-            Text("${filtrados.size} registros", color = Verde,
-                style = MaterialTheme.typography.labelMedium)
         }
         if (loading && items.isEmpty()) {
             LinearProgressIndicator(Modifier.fillMaxWidth())
         } else if (filtrados.isEmpty()) {
-            Surface(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                color = Color.White,
-                shape = RoundedCornerShape(18.dp)
-            ) {
-                Column(
-                    Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(Icons.Filled.History, contentDescription = null,
-                        tint = Verde, modifier = Modifier.size(32.dp))
+            Surface(modifier = Modifier.fillMaxWidth().padding(16.dp),
+                color = Color.White, shape = RoundedCornerShape(18.dp)) {
+                Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Filled.History, null, tint = Verde, modifier = Modifier.size(28.dp))
                     Text("No hay anuncios para este filtro", color = Cafe,
                         fontWeight = FontWeight.SemiBold)
-                    Text("Prueba otro estado o registra un anuncio nuevo.",
-                        color = Suave, style = MaterialTheme.typography.bodySmall)
                 }
             }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(9.dp)
             ) {
                 items(filtrados, key = { it.id }) { anuncio ->
                     TarjetaAnuncio(anuncio, onIrAsignacionMezcla)
@@ -350,13 +358,15 @@ private fun TarjetaAnuncio(
     onIrAsignacionMezcla: (String) -> Unit
 ) {
     val estado = EstadoAnuncio.from(item.estado)
-    val entregado = item.cantidadAsignada
-    val pendiente = (item.cantidadPactada - entregado).coerceAtLeast(0.0)
+    val asignado = item.cantidadAsignada
+    val pendiente = (item.cantidadPactada - asignado).coerceAtLeast(0.0)
+    // Se pueden asignar varias mezclas mientras haya un saldo pendiente.
+    val permiteAsignar = pendiente > 0.000001 && estado != EstadoAnuncio.ENTREGA_TOTAL
     val progreso = if (item.cantidadPactada > 0) {
-        (entregado / item.cantidadPactada).toFloat().coerceIn(0f, 1f)
+        (asignado / item.cantidadPactada).toFloat().coerceIn(0f, 1f)
     } else 0f
     val fecha = remember(item.fecha) {
-        SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale.getDefault()).format(Date(item.fecha))
+        SimpleDateFormat("dd/MM/yyyy · HH:mm", Locale("es", "CO")).format(Date(item.fecha))
     }
     val colorEstado = when (estado) {
         EstadoAnuncio.CREADO -> Color(0xFF93631B)
@@ -370,91 +380,76 @@ private fun TarjetaAnuncio(
         EstadoAnuncio.ENTREGA_TOTAL -> Color(0xFFE6EFE6)
         else -> Color(0xFFECE8DF)
     }
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.White,
-        shape = RoundedCornerShape(20.dp),
-        shadowElevation = 2.dp
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Surface(modifier = Modifier.fillMaxWidth(), color = Color.White,
+        shape = RoundedCornerShape(17.dp), shadowElevation = 1.dp) {
+        Column(Modifier.padding(13.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Surface(color = Color(0xFFE6EFE6), shape = RoundedCornerShape(12.dp)) {
-                    Icon(Icons.Filled.ShoppingCart, contentDescription = null,
-                        tint = Verde, modifier = Modifier.padding(10.dp).size(22.dp))
-                }
+                Icon(Icons.Filled.ShoppingCart, null, tint = Verde, modifier = Modifier.size(22.dp))
                 Column(Modifier.weight(1f)) {
                     Text(item.cliente, color = Cafe, fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(fecha, color = Suave,
-                        style = MaterialTheme.typography.bodySmall)
+                    Text(fecha, color = Suave, style = MaterialTheme.typography.labelSmall)
                 }
                 Surface(color = fondoEstado, shape = RoundedCornerShape(50.dp)) {
-                    Text(
-                        when (estado) {
-                            EstadoAnuncio.CREADO -> "CREADO"
-                            EstadoAnuncio.ENTREGA_PARCIAL -> "PARCIAL"
-                            EstadoAnuncio.ENTREGA_TOTAL -> "ENTREGADO"
-                            else -> item.estado
-                        },
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        color = colorEstado,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.labelSmall
-                    )
+                    Text(when (estado) {
+                        EstadoAnuncio.CREADO -> "CREADO"
+                        EstadoAnuncio.ENTREGA_PARCIAL -> "PARCIAL"
+                        EstadoAnuncio.ENTREGA_TOTAL -> "ASIGNADO"
+                        else -> item.estado
+                    }, modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                        color = colorEstado, fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelSmall)
                 }
             }
-            HorizontalDivider(color = Color(0xFFECE8DF))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text("Pactado", color = Suave, style = MaterialTheme.typography.labelMedium)
+                    Text("Pactado", color = Suave, style = MaterialTheme.typography.labelSmall)
                     Text("${kilos(item.cantidadPactada)} ${item.unidad}", color = Cafe,
                         fontWeight = FontWeight.SemiBold)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("Asignado a mezclas", color = Suave,
-                        style = MaterialTheme.typography.labelMedium)
-                    Text("${kilos(entregado)} ${item.unidad}", color = Cafe,
+                    Text("Asignado", color = Suave, style = MaterialTheme.typography.labelSmall)
+                    Text("${kilos(asignado)} ${item.unidad}", color = Cafe,
                         fontWeight = FontWeight.SemiBold)
                 }
             }
-            LinearProgressIndicator(
-                progress = { progreso },
-                modifier = Modifier.fillMaxWidth().height(7.dp),
-                color = Verde,
-                trackColor = Color(0xFFEAF2E9)
-            )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Pendiente por asignar", color = Suave,
+            LinearProgressIndicator(progress = { progreso },
+                modifier = Modifier.fillMaxWidth().height(5.dp), color = Verde,
+                trackColor = Color(0xFFEAF2E9))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically) {
+                Text("Por asignar: ${kilos(pendiente)} ${item.unidad}", color = Suave,
                     style = MaterialTheme.typography.bodySmall)
-                Text("${kilos(pendiente)} ${item.unidad}", color = Verde,
-                    fontWeight = FontWeight.Bold)
+                Text(pesos(item.totalVenta), color = Verde, fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyMedium)
             }
-            Surface(color = Color(0xFFEAF2E9), shape = RoundedCornerShape(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Total pactado", color = Verde,
-                        style = MaterialTheme.typography.labelMedium)
-                    Text(pesos(item.totalVenta), color = Verde, fontWeight = FontWeight.Bold)
+            // Datos secundarios bajo demanda para ahorrar espacio.
+            var verDetalle by remember(item.id) { mutableStateOf(false) }
+            TextButton(onClick = { verDetalle = !verDetalle },
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
+                colors = ButtonDefaults.textButtonColors(contentColor = Cafe)) {
+                Text(if (verDetalle) "Ocultar detalles" else "Ver detalles",
+                    style = MaterialTheme.typography.labelMedium)
+            }
+            if (verDetalle) {
+                HorizontalDivider(color = Color(0xFFECE8DF))
+                Text("Precio unitario: ${pesos(item.precioUnitVenta)}", color = Suave,
+                    style = MaterialTheme.typography.bodySmall)
+                if (!item.nota.isNullOrBlank()) {
+                    Text("Nota: ${item.nota}", color = Suave,
+                        style = MaterialTheme.typography.bodySmall)
                 }
             }
-            Text("Precio unitario: ${pesos(item.precioUnitVenta)}", color = Suave,
-                style = MaterialTheme.typography.bodySmall)
-            if (!item.nota.isNullOrBlank()) {
-                Text("Nota: ${item.nota}", color = Suave,
-                    style = MaterialTheme.typography.bodySmall)
-            }
-            Button(
-                onClick = { onIrAsignacionMezcla(item.id) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Verde),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Asignar mezcla")
+            if (permiteAsignar) {
+                Button(onClick = { onIrAsignacionMezcla(item.id) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Verde),
+                    shape = RoundedCornerShape(11.dp),
+                    contentPadding = PaddingValues(vertical = 10.dp)) {
+                    Text(if (asignado > 0.0) "Completar asignación" else "Asignar mezcla")
+                }
             }
         }
     }

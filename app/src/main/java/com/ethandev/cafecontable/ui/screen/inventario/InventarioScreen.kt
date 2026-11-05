@@ -30,6 +30,7 @@ private fun n(x: Double) = NumberFormat.getNumberInstance(Locale("es", "CO"))
 @Composable
 fun InventarioScreen(vm: InventarioViewModel) {
     val state by vm.state.collectAsState()
+    val mezclas by vm.mezclas.collectAsState()
     var pestaña by remember { mutableIntStateOf(0) }
     var filtro by remember { mutableStateOf("Todos") }
     LaunchedEffect(Unit) { vm.cargarInventario() }
@@ -45,6 +46,12 @@ fun InventarioScreen(vm: InventarioViewModel) {
             else -> true
         }
     }
+    val materiaPrima = state.items.sumOf { if (it.unidad.equals("KG", true)) it.existencia else 0.0 }
+    val bodegaMezclas = mezclas.sumOf { it.bodega }
+    val transitoMezclas = mezclas.sumOf { it.transito }
+    val depositoMezclas = mezclas.sumOf { it.deposito }
+    val diferencia = mezclas.sumOf { it.sinConciliar }
+    val inventarioPropio = materiaPrima + bodegaMezclas + transitoMezclas + depositoMezclas + diferencia
     val nombres = state.items.associate { it.productoId to (it.nombre to it.unidad) }
 
     Column(Modifier.fillMaxSize().background(Fondo)) {
@@ -64,7 +71,7 @@ fun InventarioScreen(vm: InventarioViewModel) {
                             Text("Control de inventario", color = Color.White,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold)
-                            Text("Existencias y movimientos de Kardex", color = Color(0xFFEBDAC8),
+                            Text("Materia prima, mezclas propias y depósito", color = Color(0xFFEBDAC8),
                                 style = MaterialTheme.typography.bodySmall)
                         }
                         IconButton(onClick = { vm.cargarInventario() }) {
@@ -82,12 +89,34 @@ fun InventarioScreen(vm: InventarioViewModel) {
                 }
             } }
             item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Resumen("Entradas", "${n(entradas)}", Modifier.weight(1f))
-                    Resumen("Salidas", "${n(salidas)}", Modifier.weight(1f))
-                    Resumen("Saldo", "${n(entradas - salidas)}", Modifier.weight(1f))
+                Surface(color = Color(0xFFE7EEE7), shape = RoundedCornerShape(18.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                        Text("Inventario propio total (KG)", color = Cafe,
+                            fontWeight = FontWeight.SemiBold)
+                        Text("${n(inventarioPropio)} kg", color = Verde,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold)
+                        Text("Excluye las cantidades ya asignadas a anuncios.",
+                            color = Color(0xFF29231E), style = MaterialTheme.typography.bodySmall)
+                    }
                 }
-                Text("Totales de movimientos de Kardex; compara cantidades solo entre productos con la misma unidad.",
+            }
+            item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Resumen("Sin mezclar", "${n(materiaPrima)} kg", Modifier.weight(1f))
+                    Resumen("Mezclas bodega", "${n(bodegaMezclas)} kg", Modifier.weight(1f))
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Resumen("En tránsito", "${n(transitoMezclas)} kg", Modifier.weight(1f))
+                    Resumen("En depósito", "${n(depositoMezclas)} kg", Modifier.weight(1f))
+                }
+                if (diferencia > 0.001) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("${n(diferencia)} kg por conciliar: diferencia entre cantidad preparada y entregada. No se ha eliminado del saldo propio.",
+                        color = Color(0xFF9A5D22), style = MaterialTheme.typography.bodySmall)
+                }
+                Text("Resumen en kg: los otros productos/unidades permanecen en el detalle de existencias.",
                     color = Secundario, style = MaterialTheme.typography.labelSmall)
             }
             item {
@@ -100,6 +129,39 @@ fun InventarioScreen(vm: InventarioViewModel) {
                 }
             }
             if (pestaña == 0) {
+                item {
+                    Text("Mezclas propias sin anunciar", color = Cafe,
+                        fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                }
+                val pendientes = mezclas.filter { it.propio > 0.001 }
+                if (!state.loading && pendientes.isEmpty()) item {
+                    Text("No hay saldo pendiente en mezclas.", color = Secundario)
+                }
+                items(pendientes, key = { "mezcla_${it.id}" }) { m ->
+                    Card(colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(18.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(m.nota?.takeIf { it.isNotBlank() } ?: "Mezcla ${m.id.take(8)}",
+                                color = Cafe, fontWeight = FontWeight.Bold)
+                            Text("Estado: ${m.estado}", color = Color(0xFF29231E))
+                            Text("Preparado: ${n(m.total)} kg · Anunciado: ${n(m.asignado)} kg",
+                                color = Color(0xFF29231E))
+                            Text("Saldo propio: ${n(m.propio)} kg",
+                                color = Verde, fontWeight = FontWeight.Bold)
+                            if (m.deposito > 0) Text("En depósito: ${n(m.deposito)} kg",
+                                color = Color(0xFF9A5D22), fontWeight = FontWeight.SemiBold)
+                            if (m.bodega > 0) Text("En bodega: ${n(m.bodega)} kg", color = Cafe)
+                            if (m.transito > 0) Text("En tránsito: ${n(m.transito)} kg", color = Cafe)
+                            if (m.sinConciliar > 0) Text("Por conciliar: ${n(m.sinConciliar)} kg",
+                                color = Color(0xFF9A5D22))
+                        }
+                    }
+                }
+                item {
+                    Text("Materia prima en Kardex", color = Cafe,
+                        fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                }
                 if (!state.loading && state.items.isEmpty()) item {
                     Text("No hay productos registrados. Puedes consultar el historial en la otra pestaña.",
                         color = Secundario)

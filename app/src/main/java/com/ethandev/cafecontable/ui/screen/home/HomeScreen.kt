@@ -60,7 +60,8 @@ fun HomeScreen(
     onGoPrestamos: () -> Unit,
     onGoLiquidacion: () -> Unit,
     onGoOperacionesGastos: () -> Unit,
-    onGoUtilidad: () -> Unit
+    onGoUtilidad: () -> Unit,
+    onGoCierreSemanal: () -> Unit
 ) {
     // Se conserva la misma firma de navegación que usa AppNavGraph.
     LazyColumn(
@@ -105,15 +106,25 @@ fun HomeScreen(
         item {
             FilaMenu(
                 primero = MenuInicio("Utilidades", "Ganancias por operación", Icons.Filled.AttachMoney, Color(0xFFE5F1E6), VerdeCafe, onGoUtilidad),
-                segundo = MenuInicio("Cuentas por pagar", "Obligaciones y créditos", Icons.Filled.AccountBalanceWallet, Color(0xFFF3EBDC), Color(0xFF92622C), onGoCuentasPorPagar)
+                segundo = MenuInicio("Análisis y cierres", "Reporte por semana o mes", Icons.Filled.AutoGraph, Color(0xFFE5F1E6), VerdeCafe, onGoCierreSemanal)
+
             )
         }
+
+        item { TituloSeccion("Saldos y créditos", " ") }
+
         item {
             FilaMenu(
                 primero = MenuInicio("Préstamos", "Saldos y movimientos", Icons.Filled.ReceiptLong, Color(0xFFE7EDF7), Color(0xFF416696), onGoPrestamos),
-                segundo = null
+                segundo = MenuInicio("Cuentas por pagar", "Obligaciones y créditos", Icons.Filled.AccountBalanceWallet, Color(0xFFF3EBDC), Color(0xFF92622C), onGoCuentasPorPagar)
             )
         }
+//        item {
+//            FilaMenu(
+//                primero = MenuInicio("Préstamos", "Saldos y movimientos", Icons.Filled.ReceiptLong, Color(0xFFE7EDF7), Color(0xFF416696), onGoPrestamos),
+//                segundo = null
+//            )
+//        }
         // Se mantienen los callbacks de Ventas, Historial de Ventas y Cuentas por Cobrar
         // en la firma para no romper AppNavGraph; no se muestran porque estaban ocultos.
     }

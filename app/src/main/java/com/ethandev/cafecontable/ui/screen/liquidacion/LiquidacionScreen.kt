@@ -11,6 +11,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -41,7 +46,20 @@ fun LiquidacionScreen(viewModel: LiquidacionViewModel) {
     val snackbarHostState = remember { SnackbarHostState() }
     var pestaña by remember { mutableIntStateOf(0) }
 
-    // El ViewModel carga los datos en init; evitamos duplicar la consulta al abrir.
+    // El lifecycleOwner puede ser el NavBackStackEntry proporcionado por Navigation Compose.
+    // Se actualiza al entrar/regresar a Liquidaciones, sin reiniciar la app.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.cargarTodo()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    // Mensajes de éxito/error tras guardar una liquidación.
     LaunchedEffect(state.okMsg, state.error) {
         val mensaje = state.error ?: state.okMsg
         if (mensaje != null) {
@@ -78,8 +96,28 @@ fun LiquidacionScreen(viewModel: LiquidacionViewModel) {
                     Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text("Liquidaciones", style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("Control de entregas, ajustes y pagos",
-                            style = MaterialTheme.typography.bodyMedium, color = Dorado)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "Control de entregas, ajustes y pagos",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Dorado,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(
+                                onClick = { viewModel.cargarTodo() },
+                                enabled = !state.loading
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Refresh,
+                                    contentDescription = "Actualizar liquidaciones",
+                                    tint = Color.White
+                                )
+                            }
+                        }
                     }
                 }
                 Spacer(Modifier.height(12.dp))

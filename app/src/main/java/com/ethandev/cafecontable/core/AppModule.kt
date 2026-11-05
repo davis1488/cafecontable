@@ -360,7 +360,8 @@ object AppModule {
             obtenerHistorialInventarioUseCase =
             ObtenerHistorialInventarioUseCase(
                 provideInventarioRepository(context)
-            )
+            ),
+            mezclaDao = provideDatabase(context).mezclaDao()
         )
     }
 

@@ -7,6 +7,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.ethandev.cafecontable.core.AppModule
+import com.ethandev.cafecontable.ui.screen.cierre.CierreSemanalScreen
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -86,31 +89,13 @@ fun AppNavGraph(
         Routes.PRESTAMOS -> "Prestamos"
         Routes.CONSULTA_PRESTAMOS -> "Consulta Prestamos"
         Routes.ROUTE_LIQUIDACION -> "Liquidacion"
+        "cierre_semanal" -> "Análisis y cierres"
         Routes.ROUTE_OPERACION_GASTOS -> "operaciones y gastos"
         else -> "Inicio"
     }
 
-    val showBack =
-        currentRoute != null && currentRoute != Routes.HOME
-
-//    val showBack = currentRoute == Routes.HISTORIAL_COMPRA ||
-//            currentRoute == Routes.HISTORIAL_VENTA ||
-//            currentRoute == Routes.CUENTAS_POR_COBRAR ||
-//            currentRoute == Routes.CUENTAS_POR_PAGAR ||
-//            currentRoute == Routes.PRESTAMOS ||
-//            currentRoute == Routes.CONSULTA_PRESTAMOS ||
-//            currentRoute == Routes.VENTAS_PEDIDO ||
-//            currentRoute == Routes.PREPARACION_ENTREGA_ARG ||
-//            currentRoute == Routes.MEZCLAS ||
-//            currentRoute == Routes.ASIGNACION_MEZCLA_PEDIDO ||
-//            currentRoute == Routes.ROUTE_LIQUIDACION ||
-//            currentRoute == Routes.ROUTE_OPERACION_GASTOS ||
-//            currentRoute == Routes.ROUTE_UTILIDAD ||
-
-
-
-            currentRoute?.startsWith("${Routes.PREPARACION_ENTREGA}/") == true
-
+    // Mostrar la flecha de regreso en todas las rutas excepto Inicio.
+    val showBack = currentRoute != null && currentRoute != Routes.HOME
 
     Scaffold(
         topBar = {
@@ -138,16 +123,17 @@ fun AppNavGraph(
                     onGoVentas = { navController.navigate(Routes.VENTAS) },
                     onGoVentasPedido = { navController.navigate(Routes.VENTAS_PEDIDO) },
                     onGoInventario = { navController.navigate(Routes.INVENTARIO) },
-                   //onGoHistorialCompras = { navController.navigate(Routes.HISTORIAL_COMPRA) },
+                    //onGoHistorialCompras = { navController.navigate(Routes.HISTORIAL_COMPRA) },
                     onGoHistorialVentas = { navController.navigate(Routes.HISTORIAL_VENTA) },
                     onGoCuentasPorCobrar = { navController.navigate(Routes.CUENTAS_POR_COBRAR) },
-                   onGoCuentasPorPagar = { navController.navigate(Routes.CUENTAS_POR_PAGAR) },
+                    onGoCuentasPorPagar = { navController.navigate(Routes.CUENTAS_POR_PAGAR) },
                     onGoPrestamos = { navController.navigate(Routes.PRESTAMOS) },
                     onGoMezclas  = { navController.navigate(Routes.MEZCLAS) },
                     onGoAsignacionMezclaPedido  = { navController.navigate(Routes.ASIGNACION_MEZCLA_PEDIDO) },
                     onGoLiquidacion  = { navController.navigate(Routes.ROUTE_LIQUIDACION) },
                     onGoOperacionesGastos  = { navController.navigate(Routes.ROUTE_OPERACION_GASTOS) },
                     onGoUtilidad  = { navController.navigate(Routes.ROUTE_UTILIDAD) },
+                    onGoCierreSemanal = { navController.navigate("cierre_semanal") },
 
 
 
@@ -254,8 +240,8 @@ fun AppNavGraph(
                 val ventaId = backStackEntry.arguments?.getString("ventaId") ?: ""
 
                 AsignacionMezclaPedidoScreen(
-                   // ventaId = ventaId
-                   asignacionMezclaPedidoVm
+                    // ventaId = ventaId
+                    asignacionMezclaPedidoVm
                 )
             }
 
@@ -269,6 +255,10 @@ fun AppNavGraph(
 
             }
 
+
+            composable("cierre_semanal") {
+                CierreSemanalScreen(database = AppModule.provideDatabase(LocalContext.current))
+            }
 
             composable(Routes.ROUTE_UTILIDAD) {
                 UtilidadScreen(utilidadVm)
