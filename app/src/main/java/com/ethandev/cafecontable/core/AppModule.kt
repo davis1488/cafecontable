@@ -354,16 +354,21 @@ object AppModule {
 //        )
 //    }
 
+
+
     fun provideInventarioViewModel(context: Context): InventarioViewModel {
+        val db = provideDatabase(context)
+
         return InventarioViewModel(
             obtenerInventarioUseCase = provideObtenerInventarioUseCase(context),
             obtenerHistorialInventarioUseCase =
             ObtenerHistorialInventarioUseCase(
-                provideInventarioRepository(context)
+                repository = provideInventarioRepository(context)
             ),
-            mezclaDao = provideDatabase(context).mezclaDao()
+            mezclaDao = db.mezclaDao()
         )
     }
+
 
 
     fun provideVentaPedidoRepository(context: Context): VentaPedidoRepository {
@@ -493,7 +498,8 @@ object AppModule {
             agregarComprasAMezclaUseCase =  provideAgregarComprasAMezclaUseCase(context),
             resolverOperacionUseCase = provideResolverOperacionUseCase(context),
             editarMezclaUseCase = EditarMezclaUseCase(db),
-            mezclaDao = db.mezclaDao()
+            mezclaDao = db.mezclaDao(),
+            mezclaDespachoDao = db.mezclaDespachoDao()
 
         )
     }
@@ -666,7 +672,8 @@ object AppModule {
         return UtilidadOperacionRepositoryImpl(
             utilidadDao = db.utilidadOperacionDao(),
             gastoDao = db.gastoOperacionDao(),
-            mezclaDao = db.mezclaDao()
+            mezclaDao = db.mezclaDao(),
+            despachoDao = db.mezclaDespachoDao()
         )
     }
 
@@ -709,7 +716,8 @@ object AppModule {
             listarPendientesUseCase = provideListarUtilidadesPendientesUseCase(context),
             listarHistorialUseCase = provideListarHistorialUtilidadesUseCase(context),
             calcularUtilidadUseCase = provideCalcularUtilidadUseCase(context),
-            obtenerResumenUseCase = provideObtenerResumenUtilidadUseCase(context)
+            obtenerResumenUseCase = provideObtenerResumenUtilidadUseCase(context),
+            utilidadRepository = provideUtilidadOperacionRepository(context)
         )
     }
 

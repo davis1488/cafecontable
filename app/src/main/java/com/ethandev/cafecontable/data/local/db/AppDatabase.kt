@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ethandev.cafecontable.data.local.Converters
 import com.ethandev.cafecontable.data.local.dao.*
 import com.ethandev.cafecontable.data.local.entity.*
@@ -30,9 +32,10 @@ import com.ethandev.cafecontable.data.local.entity.*
         LiquidacionEntregaEntity::class,
         OperacionEntity::class,
         GastoOperacionEntity::class,
-        UtilidadOperacionEntity::class
+        UtilidadOperacionEntity::class,
+        MezclaDespachoEntity::class
     ],
-    version = 31,
+    version = 32,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -54,8 +57,21 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun operacionDao(): OperacionDao
     abstract fun gastoOperacionDao(): GastoOperacionDao
     abstract fun utilidadOperacionDao(): UtilidadOperacionDao
+    abstract fun mezclaDespachoDao(): MezclaDespachoDao
 
     companion object {
+        val MIGRATION_31_32 = object : Migration(31, 32) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `mezcla_despacho` (
+                    `mezclaId` TEXT NOT NULL,
+                    `operacionDespachoId` TEXT NOT NULL,
+                    `kgVinculados` REAL NOT NULL,
+                    `fechaVinculacion` INTEGER NOT NULL,
+                    PRIMARY KEY(`mezclaId`, `operacionDespachoId`)
+                )""".trimIndent())
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -66,7 +82,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "cafe_contable_db"
                 )
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_31_32)
                     .build()
 
                 INSTANCE = instance

@@ -12,6 +12,7 @@ interface UtilidadOperacionRepository {
     )
 
     suspend fun obtenerResumen(): ResumenUtilidadModel
+    suspend fun recalcularUtilidad(liquidacionId: String)
 }
 
 data class ResumenUtilidadModel(

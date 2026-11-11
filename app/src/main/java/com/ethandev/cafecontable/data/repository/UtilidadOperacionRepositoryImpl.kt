@@ -2,8 +2,10 @@ package com.ethandev.cafecontable.data.repository
 
 import com.ethandev.cafecontable.data.local.dao.GastoOperacionDao
 import com.ethandev.cafecontable.data.local.dao.MezclaDao
+import com.ethandev.cafecontable.data.local.dao.MezclaDespachoDao
 import com.ethandev.cafecontable.data.local.dao.UtilidadOperacionDao
 import com.ethandev.cafecontable.data.local.entity.UtilidadOperacionEntity
+import com.ethandev.cafecontable.domain.constants.TipoGastoOperacion
 import com.ethandev.cafecontable.domain.model.UtilidadOperacionModel
 import com.ethandev.cafecontable.domain.model.UtilidadPendienteModel
 import com.ethandev.cafecontable.domain.repository.ResumenUtilidadModel
@@ -11,107 +13,97 @@ import com.ethandev.cafecontable.domain.repository.UtilidadOperacionRepository
 import java.util.UUID
 import kotlin.math.roundToLong
 
-/**
- * Imputa los gastos de compra y mezcla proporcionalmente a los kg liquidados.
- *
- * IMPORTANTE: operacionEntregaId llega como NULL desde UtilidadOperacionDao.listarPendientes().
- * No se imputa un gasto de entrega a una liquidación sin una relación verificable.
- */
 class UtilidadOperacionRepositoryImpl(
     private val utilidadDao: UtilidadOperacionDao,
     private val gastoDao: GastoOperacionDao,
-    private val mezclaDao: MezclaDao
+    private val mezclaDao: MezclaDao,
+    private val despachoDao: MezclaDespachoDao
+
 ) : UtilidadOperacionRepository {
 
-    override suspend fun listarPendientes(): List<UtilidadPendienteModel> {
-        return utilidadDao.listarPendientes().map { item ->
-            val mezcla = mezclaDao.getById(item.mezclaId)
-                ?: error("No se encontró la mezcla ${item.mezclaId}")
-            require(mezcla.cantidadTotal > 0.0) {
-                "La mezcla ${item.mezclaId} no tiene una cantidad total válida"
-            }
-
-            val proporción = (item.cantidadKg / mezcla.cantidadTotal)
-            require(proporción > 0.0 && proporción <= 1.0 + 1e-8) {
-                "La cantidad liquidada supera la cantidad de la mezcla"
-            }
-            val fracción = proporción.coerceAtMost(1.0)
-
-            // La consulta SQL distribuye los gastos de las operaciones de COMPRA
-            // entre las compras utilizadas en esta mezcla.
-            val gastoCompraMezcla = mezclaDao
-                .totalGastosCompraProrrateadosPorMezcla(item.mezclaId)
-
-            val gastoMezclaCompleta = mezclaDao
-                .totalGastosOperacionMezclaProrrateados(item.mezclaId)
-
-            // No se puede inferir la operación de entrega a partir del ID de
-            // liquidación o mezcla: solo se imputa cuando hay un ID explícito.
-            val gastoEntrega = item.operacionEntregaId?.let { operacionId ->
-                gastoDao.totalPorOperacion(operacionId)
-            } ?: 0L
-
-            val gastosCompra = (gastoCompraMezcla * fracción).roundToLong()
-            val gastosMezcla = (gastoMezclaCompleta * fracción).roundToLong()
-
-            item.copy(
-                gastosCompra = gastosCompra,
-                gastosMezcla = gastosMezcla,
-                gastosEntrega = gastoEntrega,
-                totalGastos = gastosCompra + gastosMezcla + gastoEntrega
-            )
+    private suspend fun gastosParaLiquidacion(mezclaId: String, kgLiquidado: Double): Triple<Long, Long, Long> {
+        val mezcla = mezclaDao.getById(mezclaId) ?: error("Mezcla no encontrada")
+        val totalKg = mezcla.cantidadTotal
+        require(totalKg > 0.0 && kgLiquidado > 0.0 && kgLiquidado <= totalKg + 0.000001) {
+            "Cantidad liquidada inválida para el prorrateo"
         }
+        val fraccion = kgLiquidado / totalKg
+        val compra = (mezclaDao.totalGastosCompraProrrateadosPorMezcla(mezclaId) * fraccion).roundToLong()
+        val mezclaG = (mezclaDao.totalGastosOperacionMezclaProrrateados(mezclaId) * fraccion).roundToLong()
+        val despacho = (despachoDao.gastosDespachoPorMezcla(mezclaId) * fraccion).roundToLong()
+        return Triple(compra, mezclaG, despacho)
     }
 
-    override suspend fun listarHistorial(): List<UtilidadOperacionModel> =
-        utilidadDao.listarHistorial()
+    override suspend fun listarPendientes(): List<UtilidadPendienteModel> =
+        utilidadDao.listarPendientes().map { item ->
+            val (gc, gm, gd) = gastosParaLiquidacion(item.mezclaId, item.cantidadKg)
+            item.copy(gastosCompra = gc, gastosMezcla = gm, gastosEntrega = gd,
+                totalGastos = gc + gm + gd)
+        }
+
+    override suspend fun listarHistorial(): List<UtilidadOperacionModel> {
+        return utilidadDao.listarHistorial()
+    }
 
     override suspend fun calcularYGuardarUtilidad(
         pendiente: UtilidadPendienteModel,
         nota: String?
     ) {
-        // Reconstruir desde la BD evita confiar en importes precalculados
-        // desactualizados o en los IDs NULL que genera el DAO inicial.
-        val actualizado = listarPendientes()
-            .firstOrNull { it.liquidacionId == pendiente.liquidacionId }
-            ?: error("La liquidación ya fue calculada o no está disponible")
 
-        val costoCafe = (actualizado.cantidadKg * actualizado.costoPromedioKg).roundToLong()
-        val gastosCompra = actualizado.gastosCompra
-        val gastosMezcla = actualizado.gastosMezcla
-        val gastosEntrega = actualizado.gastosEntrega
+        val costoCafe = (pendiente.cantidadKg * pendiente.costoPromedioKg).roundToLong()
+        val (gastosCompra, gastosMezcla, gastosEntrega) =
+            gastosParaLiquidacion(pendiente.mezclaId, pendiente.cantidadKg)
         val otrosGastos = 0L
-        val totalGastos = gastosCompra + gastosMezcla + gastosEntrega + otrosGastos
-        val utilidadBruta = actualizado.valorVentaNeto - costoCafe
-        val utilidadNeta = utilidadBruta - totalGastos
-        val margen = if (actualizado.valorVentaNeto > 0L) {
-            utilidadNeta.toDouble() / actualizado.valorVentaNeto.toDouble() * 100.0
-        } else 0.0
+        val totalGastos = gastosCompra + gastosMezcla + gastosEntrega
 
-        utilidadDao.insertar(
-            UtilidadOperacionEntity(
-                id = UUID.randomUUID().toString(),
-                fecha = System.currentTimeMillis(),
-                liquidacionId = actualizado.liquidacionId,
-                mezclaId = actualizado.mezclaId,
-                pedidoId = actualizado.pedidoId,
-                cantidadKg = actualizado.cantidadKg,
-                valorVentaBruto = actualizado.valorVentaBruto,
-                ajusteFactor = actualizado.ajusteFactor,
-                descuentos = actualizado.descuentos,
-                valorVentaNeto = actualizado.valorVentaNeto,
-                costoCafe = costoCafe,
-                gastosCompra = gastosCompra,
-                gastosMezcla = gastosMezcla,
-                gastosEntrega = gastosEntrega,
-                otrosGastos = otrosGastos,
-                totalGastos = totalGastos,
-                utilidadBruta = utilidadBruta,
-                utilidadNeta = utilidadNeta,
-                margenPorcentaje = margen,
-                nota = nota
-            )
+        val utilidadBruta = pendiente.valorVentaNeto - costoCafe
+        val utilidadNeta = utilidadBruta - totalGastos
+
+        val margen = if (pendiente.valorVentaNeto > 0) {
+            (utilidadNeta.toDouble() / pendiente.valorVentaNeto.toDouble()) * 100.0
+        } else {
+            0.0
+        }
+
+        val entity = UtilidadOperacionEntity(
+            id = UUID.randomUUID().toString(),
+            fecha = System.currentTimeMillis(),
+            liquidacionId = pendiente.liquidacionId,
+            mezclaId = pendiente.mezclaId,
+            pedidoId = pendiente.pedidoId,
+            cantidadKg = pendiente.cantidadKg,
+            valorVentaBruto = pendiente.valorVentaBruto,
+            ajusteFactor = pendiente.ajusteFactor,
+            descuentos = pendiente.descuentos,
+            valorVentaNeto = pendiente.valorVentaNeto,
+            costoCafe = costoCafe,
+            gastosCompra = gastosCompra,
+            gastosMezcla = gastosMezcla,
+            gastosEntrega = gastosEntrega,
+            otrosGastos = otrosGastos,
+            totalGastos = totalGastos,
+            utilidadBruta = utilidadBruta,
+            utilidadNeta = utilidadNeta,
+            margenPorcentaje = margen,
+            nota = nota
         )
+
+        utilidadDao.insertar(entity)
+    }
+
+    override suspend fun recalcularUtilidad(liquidacionId: String) {
+        val previo = utilidadDao.porLiquidacion(liquidacionId)
+            ?: error("No existe una utilidad guardada para esa liquidación")
+        val (gc, gm, gd) = gastosParaLiquidacion(previo.mezclaId, previo.cantidadKg)
+        val gastos = gc + gm + gd + previo.otrosGastos
+        val bruta = previo.valorVentaNeto - previo.costoCafe
+        val neta = bruta - gastos
+        val margen = if (previo.valorVentaNeto > 0L) neta * 100.0 / previo.valorVentaNeto else 0.0
+        utilidadDao.actualizar(previo.copy(
+            gastosCompra = gc, gastosMezcla = gm, gastosEntrega = gd,
+            totalGastos = gastos, utilidadBruta = bruta,
+            utilidadNeta = neta, margenPorcentaje = margen
+        ))
     }
 
     override suspend fun obtenerResumen(): ResumenUtilidadModel {
@@ -119,9 +111,13 @@ class UtilidadOperacionRepositoryImpl(
         val costoCafe = utilidadDao.totalCostoCafe()
         val gastos = utilidadDao.totalGastos()
         val utilidad = utilidadDao.totalUtilidadNeta()
-        val margen = if (ventas > 0L) {
-            utilidad.toDouble() / ventas.toDouble() * 100.0
-        } else 0.0
+
+        val margen = if (ventas > 0) {
+            (utilidad.toDouble() / ventas.toDouble()) * 100.0
+        } else {
+            0.0
+        }
+
         return ResumenUtilidadModel(
             ventasNetas = ventas,
             costoCafe = costoCafe,

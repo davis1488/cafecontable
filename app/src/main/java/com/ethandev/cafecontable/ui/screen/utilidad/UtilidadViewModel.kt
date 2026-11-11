@@ -6,6 +6,7 @@ import com.ethandev.cafecontable.domain.model.UtilidadOperacionModel
 import com.ethandev.cafecontable.domain.model.UtilidadPendienteModel
 import com.ethandev.cafecontable.domain.repository.ResumenUtilidadModel
 import com.ethandev.cafecontable.domain.usecase.CalcularUtilidadUseCase
+import com.ethandev.cafecontable.domain.repository.UtilidadOperacionRepository
 import com.ethandev.cafecontable.domain.usecase.ListarHistorialUtilidadesUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarUtilidadesPendientesUseCase
 import com.ethandev.cafecontable.domain.usecase.ObtenerResumenUtilidadUseCase
@@ -27,7 +28,8 @@ class UtilidadViewModel(
     private val listarPendientesUseCase: ListarUtilidadesPendientesUseCase,
     private val listarHistorialUseCase: ListarHistorialUtilidadesUseCase,
     private val calcularUtilidadUseCase: CalcularUtilidadUseCase,
-    private val obtenerResumenUseCase: ObtenerResumenUtilidadUseCase
+    private val obtenerResumenUseCase: ObtenerResumenUtilidadUseCase,
+    private val utilidadRepository: UtilidadOperacionRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(UtilidadUiState())
@@ -90,6 +92,20 @@ class UtilidadViewModel(
                     )
                 }
             }
+        }
+    }
+
+    /** Solo se ejecuta por acción explícita del usuario, conservando ID y fecha de utilidad. */
+    fun recalcularUtilidad(liquidacionId: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(cargando = true, error = null, mensaje = null) }
+            runCatching { utilidadRepository.recalcularUtilidad(liquidacionId) }
+                .onSuccess {
+                    cargarTodo()
+                    _state.update { it.copy(mensaje = "Utilidad recalculada. Revisa el cierre semanal.") }
+                }.onFailure { e ->
+                    _state.update { it.copy(cargando = false, error = e.message ?: "Error recalculando utilidad") }
+                }
         }
     }
 
