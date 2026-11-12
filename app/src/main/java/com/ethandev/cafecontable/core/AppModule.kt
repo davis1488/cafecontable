@@ -3,6 +3,7 @@ package com.ethandev.cafecontable.core
 import android.content.Context
 import androidx.room.Room
 import com.ethandev.cafecontable.data.local.db.AppDatabase
+import com.ethandev.cafecontable.data.local.session.SessionManager
 import com.ethandev.cafecontable.data.repository.ProductoRepositoryImpl
 import com.ethandev.cafecontable.domain.usecase.CrearProductoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarProductosUseCase
@@ -15,6 +16,7 @@ import com.ethandev.cafecontable.data.repository.HistorialCompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialVentaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.InventarioRepositoryImpl
 import com.ethandev.cafecontable.data.repository.LiquidacionRepositoryImpl
+import com.ethandev.cafecontable.data.repository.LoginRepositoryImpl
 import com.ethandev.cafecontable.data.repository.MezclaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.OperacionRepositoryImpl
 import com.ethandev.cafecontable.data.repository.PreparacionEntregaRepositoryImpl
@@ -41,9 +43,11 @@ import com.ethandev.cafecontable.domain.usecase.AnularCompraUseCase
 import com.ethandev.cafecontable.domain.usecase.AsignarMezclaAPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.BuscarPrestamosUseCase
 import com.ethandev.cafecontable.domain.usecase.CalcularUtilidadUseCase
+import com.ethandev.cafecontable.domain.usecase.CerrarSesionUseCase
 import com.ethandev.cafecontable.domain.usecase.CrearOperacionUseCase
 import com.ethandev.cafecontable.domain.usecase.EditarMezclaUseCase
 import com.ethandev.cafecontable.domain.usecase.FinalizarVentaPedidoUseCase
+import com.ethandev.cafecontable.domain.usecase.IniciarSesionUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentaPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentasPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosPrestamoUseCase
@@ -92,6 +96,7 @@ import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
 import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
 import com.ethandev.cafecontable.ui.screen.liquidacion.LiquidacionViewModel
+import com.ethandev.cafecontable.ui.screen.login.LoginViewModel
 import com.ethandev.cafecontable.ui.screen.mezcla.MezclasViewModel
 import com.ethandev.cafecontable.ui.screen.operacion.OperacionViewModel
 import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntregaViewModel
@@ -720,6 +725,45 @@ object AppModule {
             utilidadRepository = provideUtilidadOperacionRepository(context)
         )
     }
+
+
+
+    fun provideLoginViewModel(
+        context: Context
+    ): LoginViewModel {
+
+        val repository = LoginRepositoryImpl()
+
+        val iniciarSesionUseCase =
+            IniciarSesionUseCase(repository)
+
+        val sessionManager = SessionManager(
+            context.applicationContext
+        )
+
+        return LoginViewModel(
+            iniciarSesionUseCase = iniciarSesionUseCase,
+            sessionManager = sessionManager,
+            cerrarSesionUseCase =
+            CerrarSesionUseCase(sessionManager)
+        )
+    }
+
+
+    fun provideCerrarSesionUseCase(
+        context: Context
+    ): CerrarSesionUseCase {
+
+        val sessionManager = SessionManager(
+            context.applicationContext
+        )
+
+        return CerrarSesionUseCase(
+            sessionManager = sessionManager
+        )
+    }
+
+
 
     ////////////////// utilidad/////////////////////////
 }

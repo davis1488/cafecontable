@@ -4,10 +4,21 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-04-15T01:15:33.846337Z">
+        <DropdownSelection timestamp="2026-11-11T17:24:44.178824100Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=1b7632607d7a" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=SCAIDAN7HU955D4D" />
+            </handle>
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="probarConexionConBackend()">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-11-11T18:38:46.343966800Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=SCAIDAN7HU955D4D" />
             </handle>
           </Target>
         </DropdownSelection>
