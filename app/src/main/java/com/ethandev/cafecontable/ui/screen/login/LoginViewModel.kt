@@ -4,6 +4,7 @@ package com.ethandev.cafecontable.ui.screen.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ethandev.cafecontable.data.local.session.SessionManager
+import com.ethandev.cafecontable.data.remote.AuthTokenManager
 import com.ethandev.cafecontable.data.remote.LoginResponseDto
 import com.ethandev.cafecontable.domain.usecase.CerrarSesionUseCase
 import com.ethandev.cafecontable.domain.usecase.IniciarSesionUseCase
@@ -52,6 +53,10 @@ class LoginViewModel(
                             rol = usuario.rol
                         )
 
+                        sessionManager.habilitarAccesoOffline()
+
+                        AuthTokenManager.guardarToken(usuario.accessToken)
+
                         _uiState.value = LoginUiState(
                             usuario = usuario
                         )
@@ -81,6 +86,10 @@ class LoginViewModel(
         viewModelScope.launch {
             try {
                 cerrarSesionUseCase()
+
+                AuthTokenManager.limpiarToken()
+
+                sessionManager.cerrarSesion()
 
                 _uiState.value = LoginUiState()
 

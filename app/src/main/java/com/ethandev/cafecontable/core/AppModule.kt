@@ -1,9 +1,9 @@
 package com.ethandev.cafecontable.core
 
 import android.content.Context
-import androidx.room.Room
 import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.session.SessionManager
+import com.ethandev.cafecontable.data.remote.RetrofitClient
 import com.ethandev.cafecontable.data.repository.ProductoRepositoryImpl
 import com.ethandev.cafecontable.domain.usecase.CrearProductoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarProductosUseCase
@@ -90,6 +90,7 @@ import com.ethandev.cafecontable.domain.usecase.RegistrarPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.ResolverOperacionUseCase
+import com.ethandev.cafecontable.domain.usecase.SincronizarComprasPendientes
 import com.ethandev.cafecontable.domain.usecase.operacion.CerrarOperacionUseCase
 import com.ethandev.cafecontable.ui.screen.asignacionmezcla.AsignacionMezclaPedidoViewModel
 import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
@@ -106,17 +107,24 @@ import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoViewModel
 
 object AppModule {
 
-    private var db: AppDatabase? = null
+//    private var db: AppDatabase? = null
+
+//    fun provideDatabase(context: Context): AppDatabase {
+//        return db ?: Room.databaseBuilder(
+//            context.applicationContext,
+//            AppDatabase::class.java,
+//            "cafe_contable_db"
+//        ).fallbackToDestructiveMigration()
+//            .build()
+//            .also { db = it }
+//    }
 
     fun provideDatabase(context: Context): AppDatabase {
-        return db ?: Room.databaseBuilder(
-            context.applicationContext,
-            AppDatabase::class.java,
-            "cafe_contable_db"
-        ).fallbackToDestructiveMigration()
-            .build()
-            .also { db = it }
+        return AppDatabase.getDatabase(
+            context.applicationContext
+        )
     }
+
 
     fun provideProductoRepository(context: Context): ProductoRepository {
         val database = provideDatabase(context)
@@ -128,9 +136,23 @@ object AppModule {
         return CrearProductoUseCase(repo) to ListarProductosUseCase(repo)
     }
 
-    fun provideCompraRepository(context: android.content.Context): CompraRepository {
+//    fun provideCompraRepository(context: android.content.Context): CompraRepository {
+//        val database = provideDatabase(context)
+//        return CompraRepositoryImpl(database)
+//    }
+
+    fun provideCompraRepository(context: Context): CompraRepository {
+
         val database = provideDatabase(context)
-        return CompraRepositoryImpl(database)
+
+        val sessionManager = SessionManager(
+            context.applicationContext
+        )
+
+        return CompraRepositoryImpl(
+            db = database,
+            sessionManager = sessionManager
+        )
     }
 
     fun provideCompraUseCase(context: android.content.Context): RegistrarCompraCafeUseCase {
@@ -763,6 +785,19 @@ object AppModule {
         )
     }
 
+
+
+
+    fun provideSincronizarComprasPendientes(
+        context: Context
+    ): SincronizarComprasPendientes {
+
+        return SincronizarComprasPendientes(
+            db = provideDatabase(context),
+            sessionManager = SessionManager(context.applicationContext),
+            api = RetrofitClient.api
+        )
+    }
 
 
     ////////////////// utilidad/////////////////////////

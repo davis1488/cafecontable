@@ -14,10 +14,12 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ethandev.cafecontable.core.AppModule
 import com.ethandev.cafecontable.core.utils.FechaUtils
 import com.ethandev.cafecontable.domain.constants.OPERACION_NUEVA_ID
 import com.ethandev.cafecontable.domain.model.CompraCafeImput
@@ -118,6 +120,17 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
     val state by vm.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    val context = LocalContext.current.applicationContext
+
+    val sincronizador = remember(context) {
+        AppModule.provideSincronizarComprasPendientes(context)
+    }
+
+    var sincronizando by remember {
+        mutableStateOf(false)
+    }
+
     val productos = remember { listOf("Cafe", "Pasilla", "Regular") }
 
     var producto by remember { mutableStateOf(productos.first()) }
@@ -311,7 +324,10 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
                         }
                         Switch(
                             checked = esCredito,
-                            onCheckedChange = { esCredito = it },
+                            onCheckedChange = {
+                                esCredito = it
+                                if (it) detallesExpandidos = true
+                            },
                             colors = SwitchDefaults.colors(checkedThumbColor = Color.White,
                                 checkedTrackColor = CompraVerde)
                         )
@@ -343,9 +359,26 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
                         OutlinedTextField(
                             value = proveedorTxt,
                             onValueChange = { proveedorTxt = it },
-                            label = { Text("Proveedor (opcional)") },
+                            label = {
+                                Text(
+                                    if (esCredito)
+                                        "Proveedor *"
+                                    else
+                                        "Proveedor (opcional)"
+                                )
+                            },
+                            isError = esCredito && proveedorTxt.isBlank(),
+                            supportingText = {
+                                if (esCredito && proveedorTxt.isBlank()) {
+                                    Text(
+                                        text = "Campo obligatorio para compras a crédito",
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            },
                             colors = compraColoresCampo(),
-                            modifier = Modifier.fillMaxWidth(), singleLine = true
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
                         )
                         OutlinedTextField(
                             value = notaTxt,
@@ -382,6 +415,7 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
                             cantidad <= 0.0 -> "La cantidad debe ser mayor a cero"
                             precio <= 0L -> "El precio debe ser mayor a cero"
                             esCredito && abono > total -> "El abono supera el total de la compra"
+                            esCredito && proveedorTxt.isBlank() -> "Debes ingresar el proveedor para compras a crédito"
                             else -> null
                         }
                         if (mensaje != null) {
@@ -417,6 +451,67 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
                         fontWeight = FontWeight.SemiBold)
                 }
             }
+
+
+            item {
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            sincronizando = true
+
+                            try {
+                                val resultado = sincronizador()
+
+                                val mensaje = """
+                        Sincronizadas: ${resultado.sincronizadas}
+                        Pendientes: ${resultado.pendientes}
+                        Conflictos: ${resultado.conflictos}
+                    """.trimIndent()
+
+                                snackbarHostState.showSnackbar(mensaje)
+
+                            } catch (e: kotlinx.coroutines.CancellationException) {
+                                throw e
+
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar(
+                                    "No se pudo sincronizar: ${e.message}"
+                                )
+
+                            } finally {
+                                sincronizando = false
+                            }
+                        }
+                    },
+                    enabled = !sincronizando && !state.loading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(49.dp),
+                    shape = RoundedCornerShape(13.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = CompraVerde
+                    )
+                ) {
+                    if (sincronizando) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = CompraVerde
+                        )
+
+                        Spacer(Modifier.width(8.dp))
+                    }
+
+                    Text(
+                        text = if (sincronizando)
+                            "Sincronizando..."
+                        else
+                            "Sincronizar compras",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
         }
     }
 }
