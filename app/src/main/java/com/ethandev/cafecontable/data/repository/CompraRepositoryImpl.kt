@@ -7,16 +7,30 @@ import com.ethandev.cafecontable.data.local.entity.AbonoCuentaPorPagarEntity
 import com.ethandev.cafecontable.data.local.entity.CompraCafeEntity
 import com.ethandev.cafecontable.data.local.entity.CuentaPorPagarEntity
 import com.ethandev.cafecontable.data.local.entity.KardexMovimientoEntity
+import com.ethandev.cafecontable.data.local.entity.OperacionPendienteSyncEntity
 import com.ethandev.cafecontable.data.local.entity.ProductoEntity
+import com.ethandev.cafecontable.data.local.session.SessionManager
 import com.ethandev.cafecontable.domain.model.CompraCafeImput
 import com.ethandev.cafecontable.domain.repository.CompraRepository
+import com.google.gson.Gson
+import kotlinx.coroutines.flow.first
 import java.util.UUID
 
 class CompraRepositoryImpl(
-    private val db: AppDatabase
+    private val db: AppDatabase,
+    private val sessionManager: SessionManager
+
 ) : CompraRepository {
 
     override suspend fun registrarCompra(input: CompraCafeImput) {
+
+        val sesion = sessionManager.usuarioSesion.first()
+            ?: throw IllegalStateException(
+                "Debes iniciar sesión para registrar compras"
+            )
+
+        val operacionSyncId = UUID.randomUUID().toString()
+
         db.withTransaction {
             val productoDao = db.productoDao()
             val inventarioDao = db.inventarioDao()
@@ -47,8 +61,24 @@ class CompraRepositoryImpl(
                 nuevo.id
             }
 
+
             val operacionCompraId = input.operacionCompraId?.trim()
-                ?: throw IllegalStateException("Debe seleccionar una operación activa")
+                ?.takeIf { it.isNotBlank() }
+                ?: throw IllegalStateException(
+                    "Debe seleccionar una operación activa"
+                )
+
+            val operacion = db.operacionDao()
+                .obtenerPorId(operacionCompraId)
+                ?: throw IllegalStateException(
+                    "La operación seleccionada no existe"
+                )
+
+            if (operacion.tipo != "COMPRA") {
+                throw IllegalStateException(
+                    "La operación debe ser de tipo COMPRA"
+                )
+            }
 
             val compraId = compraDao.insert(
                 CompraCafeEntity(
@@ -113,6 +143,48 @@ class CompraRepositoryImpl(
                 }
 
             }
+
+
+
+            val payload = Gson().toJson(
+                mapOf(
+                    "operacionSyncId" to operacionSyncId,
+                    "compraLocalId" to compraId,
+
+                    // Datos del producto
+                    "productoNombre" to nombreProducto,
+                    "unidad" to unidadProducto,
+
+                    // Datos de la compra
+                    "cantidad" to input.cantidad,
+                    "precioUnitCompra" to input.precioUnitCompra,
+                    "proveedor" to proveedor,
+                    "esCredito" to input.esCredito,
+                    "nota" to nota,
+                    "abono" to abono,
+
+                    // Datos reales de la operación
+                    "operacionCompraId" to operacion.id,
+                    "operacionNombre" to operacion.nombre,
+                    "operacionTipo" to operacion.tipo,
+                    "operacionDescripcion" to operacion.descripcion,
+                    "operacionFecha" to operacion.fecha,
+                    "operacionEstado" to operacion.estado.name
+                )
+            )
+
+
+            db.operacionPendienteSyncDao().insertar(
+                OperacionPendienteSyncEntity(
+                    id = operacionSyncId,
+                    empresaId = sesion.empresaId,
+                    usuarioId = sesion.usuarioId,
+                    tipoOperacion = "COMPRA",
+                    referenciaLocal = compraId,
+                    payloadJson = payload,
+                    estado = "PENDIENTE"
+                )
+            )
         }
     }
 }

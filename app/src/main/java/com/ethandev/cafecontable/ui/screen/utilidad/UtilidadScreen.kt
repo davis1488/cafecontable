@@ -163,7 +163,7 @@ fun UtilidadScreen(viewModel: UtilidadViewModel) {
                         if (state.historial.isEmpty()) {
                             item { EstadoVacioUtilidad("Todavía no hay utilidades registradas.") }
                         } else {
-                            items(state.historial) { item -> HistorialUtilidadCardModern(item) }
+                            items(state.historial) { item -> HistorialUtilidadCardModern(item, onRecalcular = { viewModel.recalcularUtilidad(item.liquidacionId) }) }
                         }
                     }
                     2 -> {
@@ -287,7 +287,21 @@ private fun PendienteUtilidadCardModern(
 }
 
 @Composable
-private fun HistorialUtilidadCardModern(item: UtilidadOperacionModel) {
+private fun HistorialUtilidadCardModern(item: UtilidadOperacionModel, onRecalcular: () -> Unit) {
+    var confirmarRecalculo by remember { mutableStateOf(false) }
+    if (confirmarRecalculo) {
+        AlertDialog(
+            onDismissRequest = { confirmarRecalculo = false },
+            title = { Text("Recalcular utilidad") },
+            text = { Text("Se actualizarán los gastos asociados a esta liquidación con los vínculos actuales de compra, mezcla y despacho. Se conservan la venta neta, costo, identificador, fecha y nota. ¿Continuar?") },
+            confirmButton = {
+                Button(onClick = { confirmarRecalculo = false; onRecalcular() },
+                    colors = ButtonDefaults.buttonColors(containerColor = VerdeUtilidad)) { Text("Recalcular") }
+            },
+            dismissButton = { TextButton(onClick = { confirmarRecalculo = false }) { Text("Cancelar") } }
+        )
+    }
+
     var expandido by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -325,6 +339,9 @@ private fun HistorialUtilidadCardModern(item: UtilidadOperacionModel) {
                 Text(if (expandido) "Ocultar detalles" else "Ver detalles", color = VerdeUtilidad)
             }
             if (expandido) {
+                TextButton(onClick = { confirmarRecalculo = true }) {
+                    Text("Recalcular gastos de esta liquidación", color = VerdeUtilidad)
+                }
                 FilaUtilidad("Utilidad bruta", dineroUtilidad(item.utilidadBruta))
                 if (!item.nota.isNullOrBlank()) {
                     Text("Nota: ${item.nota}", color = SecundarioUtilidad)

@@ -2,7 +2,6 @@ package com.ethandev.cafecontable.ui.screen.mezcla
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ethandev.cafecontable.core.utils.FechaUtils
 import com.ethandev.cafecontable.data.local.dao.CompraDao
 import com.ethandev.cafecontable.data.local.entity.CompraDisponibleDb
 import com.ethandev.cafecontable.data.local.entity.OperacionEntity
@@ -22,6 +21,8 @@ import com.ethandev.cafecontable.domain.usecase.RegistrarMezclaUseCase
 import com.ethandev.cafecontable.domain.usecase.ResolverOperacionUseCase
 import com.ethandev.cafecontable.domain.usecase.EditarMezclaUseCase
 import com.ethandev.cafecontable.data.local.dao.MezclaDao
+import com.ethandev.cafecontable.data.local.dao.MezclaDespachoDao
+import com.ethandev.cafecontable.data.local.entity.MezclaDespachoEntity
 import com.ethandev.cafecontable.domain.model.EditarMezclaInput
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,7 +61,9 @@ data class MezclasState(
     val editandoMezcla: Boolean = false,
     val loadingEdicion: Boolean = false,
     val itemsEdicion: List<MezclaFormItem> = emptyList(),
-    val notaEdicion: String = ""
+    val notaEdicion: String = "",
+    val operacionesDespacho: List<OperacionEntity> = emptyList(),
+    val despachosVinculados: Map<String, Set<String>> = emptyMap()
 )
 
 class MezclasViewModel(
@@ -74,7 +77,8 @@ class MezclasViewModel(
     private val agregarComprasAMezclaUseCase: AgregarComprasAMezclaUseCase,
     private val resolverOperacionUseCase: ResolverOperacionUseCase,
     private val editarMezclaUseCase: EditarMezclaUseCase,
-    private val mezclaDao: MezclaDao
+    private val mezclaDao: MezclaDao,
+    private val mezclaDespachoDao: MezclaDespachoDao
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MezclasState())
@@ -84,6 +88,47 @@ class MezclasViewModel(
         cargarOperacionesMezcla()
         cargarComprasDisponibles()
         cargarHistorialMezclas()
+        cargarOperacionesDespacho()
+    }
+
+    fun cargarOperacionesDespacho() {
+        viewModelScope.launch {
+            runCatching { listarOperacionesPorTipoUseCase(TipoOperacion.DESPACHO) }
+                .onSuccess { lista -> _state.update { it.copy(operacionesDespacho = lista) } }
+                .onFailure { e -> _state.update { it.copy(error = e.message ?: "No se pudieron listar despachos") } }
+        }
+    }
+
+    fun vincularDespacho(mezclaId: String, operacionId: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(loading = true, error = null, okMsg = null) }
+            runCatching {
+                val mezcla = mezclaDao.getById(mezclaId)
+                    ?: error("La mezcla no existe")
+                require(mezcla.estado != "CREADO") { "Primero registra el envío de la mezcla" }
+                val operacion = listarOperacionesPorTipoUseCase(TipoOperacion.DESPACHO)
+                    .firstOrNull { it.id == operacionId }
+                    ?: error("Selecciona una operación de DESPACHO válida")
+                require(mezclaDespachoDao.existe(mezclaId, operacion.id) == 0) {
+                    "El despacho ya está vinculado a esta mezcla"
+                }
+                val kg = (mezcla.kilajeEnviado ?: mezcla.cantidadTotal)
+                require(kg.isFinite() && kg > 0) { "El envío debe tener kilogramos válidos" }
+                mezclaDespachoDao.insertar(
+                    MezclaDespachoEntity(mezclaId, operacion.id, kg, System.currentTimeMillis())
+                )
+                val existentes = mezclaDespachoDao.listarPorMezcla(mezclaId)
+                existentes.map { it.operacionDespachoId }.toSet()
+            }.onSuccess { ids ->
+                _state.update { actual -> actual.copy(
+                    loading = false,
+                    okMsg = "Despacho vinculado. Recalcula las utilidades guardadas para reflejarlo.",
+                    despachosVinculados = actual.despachosVinculados + (mezclaId to ids)
+                ) }
+            }.onFailure { e ->
+                _state.update { it.copy(loading = false, error = e.message ?: "Error vinculando despacho") }
+            }
+        }
     }
 
     fun limpiarMensajes() {
@@ -471,7 +516,7 @@ class MezclasViewModel(
                 val operacionMezclaIdFinal = resolverOperacionUseCase(
                     operacionIdSeleccionada = _state.value.operacionMezclaIdSeleccionada,
                     tipo = TipoOperacion.MEZCLA,
-                    nombreAutomatico = FechaUtils.generarNombreOperacion("MEZCLA"),
+                    nombreAutomatico = "MEZCLA ${System.currentTimeMillis()}",
                     descripcionAutomatica = "Generada automáticamente desde mezclas"
                 )
 

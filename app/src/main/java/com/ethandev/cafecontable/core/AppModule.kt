@@ -1,8 +1,9 @@
 package com.ethandev.cafecontable.core
 
 import android.content.Context
-import androidx.room.Room
 import com.ethandev.cafecontable.data.local.db.AppDatabase
+import com.ethandev.cafecontable.data.local.session.SessionManager
+import com.ethandev.cafecontable.data.remote.RetrofitClient
 import com.ethandev.cafecontable.data.repository.ProductoRepositoryImpl
 import com.ethandev.cafecontable.domain.usecase.CrearProductoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarProductosUseCase
@@ -15,6 +16,7 @@ import com.ethandev.cafecontable.data.repository.HistorialCompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialVentaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.InventarioRepositoryImpl
 import com.ethandev.cafecontable.data.repository.LiquidacionRepositoryImpl
+import com.ethandev.cafecontable.data.repository.LoginRepositoryImpl
 import com.ethandev.cafecontable.data.repository.MezclaRepositoryImpl
 import com.ethandev.cafecontable.data.repository.OperacionRepositoryImpl
 import com.ethandev.cafecontable.data.repository.PreparacionEntregaRepositoryImpl
@@ -41,9 +43,11 @@ import com.ethandev.cafecontable.domain.usecase.AnularCompraUseCase
 import com.ethandev.cafecontable.domain.usecase.AsignarMezclaAPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.BuscarPrestamosUseCase
 import com.ethandev.cafecontable.domain.usecase.CalcularUtilidadUseCase
+import com.ethandev.cafecontable.domain.usecase.CerrarSesionUseCase
 import com.ethandev.cafecontable.domain.usecase.CrearOperacionUseCase
 import com.ethandev.cafecontable.domain.usecase.EditarMezclaUseCase
 import com.ethandev.cafecontable.domain.usecase.FinalizarVentaPedidoUseCase
+import com.ethandev.cafecontable.domain.usecase.IniciarSesionUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentaPorPagarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosCuentasPorCobrarUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarAbonosPrestamoUseCase
@@ -86,12 +90,14 @@ import com.ethandev.cafecontable.domain.usecase.RegistrarPrestamoUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaCafeUseCase
 import com.ethandev.cafecontable.domain.usecase.RegistrarVentaPedidoUseCase
 import com.ethandev.cafecontable.domain.usecase.ResolverOperacionUseCase
+import com.ethandev.cafecontable.domain.usecase.SincronizarComprasPendientes
 import com.ethandev.cafecontable.domain.usecase.operacion.CerrarOperacionUseCase
 import com.ethandev.cafecontable.ui.screen.asignacionmezcla.AsignacionMezclaPedidoViewModel
 import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
 import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
 import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
 import com.ethandev.cafecontable.ui.screen.liquidacion.LiquidacionViewModel
+import com.ethandev.cafecontable.ui.screen.login.LoginViewModel
 import com.ethandev.cafecontable.ui.screen.mezcla.MezclasViewModel
 import com.ethandev.cafecontable.ui.screen.operacion.OperacionViewModel
 import com.ethandev.cafecontable.ui.screen.preparacionentrega.PreparacionEntregaViewModel
@@ -101,17 +107,24 @@ import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoViewModel
 
 object AppModule {
 
-    private var db: AppDatabase? = null
+//    private var db: AppDatabase? = null
+
+//    fun provideDatabase(context: Context): AppDatabase {
+//        return db ?: Room.databaseBuilder(
+//            context.applicationContext,
+//            AppDatabase::class.java,
+//            "cafe_contable_db"
+//        ).fallbackToDestructiveMigration()
+//            .build()
+//            .also { db = it }
+//    }
 
     fun provideDatabase(context: Context): AppDatabase {
-        return db ?: Room.databaseBuilder(
-            context.applicationContext,
-            AppDatabase::class.java,
-            "cafe_contable_db"
-        ).fallbackToDestructiveMigration()
-            .build()
-            .also { db = it }
+        return AppDatabase.getDatabase(
+            context.applicationContext
+        )
     }
+
 
     fun provideProductoRepository(context: Context): ProductoRepository {
         val database = provideDatabase(context)
@@ -123,9 +136,23 @@ object AppModule {
         return CrearProductoUseCase(repo) to ListarProductosUseCase(repo)
     }
 
-    fun provideCompraRepository(context: android.content.Context): CompraRepository {
+//    fun provideCompraRepository(context: android.content.Context): CompraRepository {
+//        val database = provideDatabase(context)
+//        return CompraRepositoryImpl(database)
+//    }
+
+    fun provideCompraRepository(context: Context): CompraRepository {
+
         val database = provideDatabase(context)
-        return CompraRepositoryImpl(database)
+
+        val sessionManager = SessionManager(
+            context.applicationContext
+        )
+
+        return CompraRepositoryImpl(
+            db = database,
+            sessionManager = sessionManager
+        )
     }
 
     fun provideCompraUseCase(context: android.content.Context): RegistrarCompraCafeUseCase {
@@ -354,16 +381,21 @@ object AppModule {
 //        )
 //    }
 
+
+
     fun provideInventarioViewModel(context: Context): InventarioViewModel {
+        val db = provideDatabase(context)
+
         return InventarioViewModel(
             obtenerInventarioUseCase = provideObtenerInventarioUseCase(context),
             obtenerHistorialInventarioUseCase =
             ObtenerHistorialInventarioUseCase(
-                provideInventarioRepository(context)
+                repository = provideInventarioRepository(context)
             ),
-            mezclaDao = provideDatabase(context).mezclaDao()
+            mezclaDao = db.mezclaDao()
         )
     }
+
 
 
     fun provideVentaPedidoRepository(context: Context): VentaPedidoRepository {
@@ -493,7 +525,8 @@ object AppModule {
             agregarComprasAMezclaUseCase =  provideAgregarComprasAMezclaUseCase(context),
             resolverOperacionUseCase = provideResolverOperacionUseCase(context),
             editarMezclaUseCase = EditarMezclaUseCase(db),
-            mezclaDao = db.mezclaDao()
+            mezclaDao = db.mezclaDao(),
+            mezclaDespachoDao = db.mezclaDespachoDao()
 
         )
     }
@@ -666,7 +699,8 @@ object AppModule {
         return UtilidadOperacionRepositoryImpl(
             utilidadDao = db.utilidadOperacionDao(),
             gastoDao = db.gastoOperacionDao(),
-            mezclaDao = db.mezclaDao()
+            mezclaDao = db.mezclaDao(),
+            despachoDao = db.mezclaDespachoDao()
         )
     }
 
@@ -709,9 +743,62 @@ object AppModule {
             listarPendientesUseCase = provideListarUtilidadesPendientesUseCase(context),
             listarHistorialUseCase = provideListarHistorialUtilidadesUseCase(context),
             calcularUtilidadUseCase = provideCalcularUtilidadUseCase(context),
-            obtenerResumenUseCase = provideObtenerResumenUtilidadUseCase(context)
+            obtenerResumenUseCase = provideObtenerResumenUtilidadUseCase(context),
+            utilidadRepository = provideUtilidadOperacionRepository(context)
         )
     }
+
+
+
+    fun provideLoginViewModel(
+        context: Context
+    ): LoginViewModel {
+
+        val repository = LoginRepositoryImpl()
+
+        val iniciarSesionUseCase =
+            IniciarSesionUseCase(repository)
+
+        val sessionManager = SessionManager(
+            context.applicationContext
+        )
+
+        return LoginViewModel(
+            iniciarSesionUseCase = iniciarSesionUseCase,
+            sessionManager = sessionManager,
+            cerrarSesionUseCase =
+            CerrarSesionUseCase(sessionManager)
+        )
+    }
+
+
+    fun provideCerrarSesionUseCase(
+        context: Context
+    ): CerrarSesionUseCase {
+
+        val sessionManager = SessionManager(
+            context.applicationContext
+        )
+
+        return CerrarSesionUseCase(
+            sessionManager = sessionManager
+        )
+    }
+
+
+
+
+    fun provideSincronizarComprasPendientes(
+        context: Context
+    ): SincronizarComprasPendientes {
+
+        return SincronizarComprasPendientes(
+            db = provideDatabase(context),
+            sessionManager = SessionManager(context.applicationContext),
+            api = RetrofitClient.api
+        )
+    }
+
 
     ////////////////// utilidad/////////////////////////
 }

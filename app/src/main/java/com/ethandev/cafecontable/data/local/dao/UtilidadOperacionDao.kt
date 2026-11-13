@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.ethandev.cafecontable.data.local.entity.UtilidadOperacionEntity
 import com.ethandev.cafecontable.domain.model.UtilidadOperacionModel
 import com.ethandev.cafecontable.domain.model.UtilidadPendienteModel
@@ -13,6 +14,13 @@ interface UtilidadOperacionDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertar(entity: UtilidadOperacionEntity)
+
+    @Query("SELECT * FROM utilidad_operacion WHERE liquidacionId = :liquidacionId LIMIT 1")
+    suspend fun porLiquidacion(liquidacionId: String): UtilidadOperacionEntity?
+
+    @Update
+    suspend fun actualizar(entity: UtilidadOperacionEntity)
+
 
 //    @Query("""
 //        SELECT

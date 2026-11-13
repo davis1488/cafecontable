@@ -7,6 +7,7 @@ data class CompraHistorialRow(
     val unidad: String,
     val cantidad: Double,
     val precioUnitCompra: Long,
+  //  val total: Long,
     val proveedor: String?,
     val esCredito: Boolean,
     val nota: String?,

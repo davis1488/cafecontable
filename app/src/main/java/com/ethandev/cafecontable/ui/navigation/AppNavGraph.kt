@@ -67,7 +67,8 @@ fun AppNavGraph(
     asignacionMezclaPedidoVm : AsignacionMezclaPedidoViewModel,
     liquidacionVm : LiquidacionViewModel,
     operacionesgastosVm: OperacionViewModel,
-    utilidadVm: UtilidadViewModel
+    utilidadVm: UtilidadViewModel,
+    onCerrarSesion: () -> Unit
 
 
 ) {
@@ -99,15 +100,12 @@ fun AppNavGraph(
 
     Scaffold(
         topBar = {
-            if (currentRoute != Routes.HOME) {
-                AppTopBar(
-                    title = title,
-                    showBack = showBack,
-                    onBack = {
-                        navController.popBackStack()
-                    }
-                )
-            }
+            AppTopBar(
+                title = title,
+                showBack = showBack,
+                onBack = { navController.popBackStack() },
+                onCerrarSesion = onCerrarSesion
+            )
         }
     ) { innerPadding ->
 

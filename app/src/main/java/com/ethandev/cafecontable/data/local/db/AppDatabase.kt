@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ethandev.cafecontable.data.local.Converters
 import com.ethandev.cafecontable.data.local.dao.*
 import com.ethandev.cafecontable.data.local.entity.*
@@ -30,9 +32,11 @@ import com.ethandev.cafecontable.data.local.entity.*
         LiquidacionEntregaEntity::class,
         OperacionEntity::class,
         GastoOperacionEntity::class,
-        UtilidadOperacionEntity::class
+        UtilidadOperacionEntity::class,
+        MezclaDespachoEntity::class,
+        OperacionPendienteSyncEntity::class
     ],
-    version = 31,
+    version = 33,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -54,8 +58,41 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun operacionDao(): OperacionDao
     abstract fun gastoOperacionDao(): GastoOperacionDao
     abstract fun utilidadOperacionDao(): UtilidadOperacionDao
+    abstract fun mezclaDespachoDao(): MezclaDespachoDao
+    abstract fun operacionPendienteSyncDao(): OperacionPendienteSyncDao
 
     companion object {
+
+        val MIGRATION_32_33 = object : Migration(32, 33) {
+
+            override fun migrate(db: SupportSQLiteDatabase) {
+
+                db.execSQL("""
+            CREATE TABLE IF NOT EXISTS
+            `operaciones_pendientes_sync` (
+                `id` TEXT NOT NULL,
+                `empresaId` TEXT NOT NULL,
+                `usuarioId` TEXT NOT NULL,
+                `tipoOperacion` TEXT NOT NULL,
+                `referenciaLocal` TEXT NOT NULL,
+                `payloadJson` TEXT NOT NULL,
+                `estado` TEXT NOT NULL,
+                `fechaCreacion` INTEGER NOT NULL,
+                `intentos` INTEGER NOT NULL,
+                `ultimoError` TEXT,
+                PRIMARY KEY(`id`)
+            )
+        """.trimIndent())
+
+                db.execSQL("""
+            CREATE INDEX IF NOT EXISTS
+            `index_operaciones_pendientes_sync_empresaId_estado`
+            ON `operaciones_pendientes_sync`
+            (`empresaId`, `estado`)
+        """.trimIndent())
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -66,7 +103,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "cafe_contable_db"
                 )
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_32_33)
                     .build()
 
                 INSTANCE = instance
