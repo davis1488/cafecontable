@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ethandev.cafecontable.core.AppModule
 import com.ethandev.cafecontable.core.utils.FechaUtils
+import com.ethandev.cafecontable.data.worker.ProgramadorSyncCompras
 import com.ethandev.cafecontable.domain.constants.OPERACION_NUEVA_ID
 import com.ethandev.cafecontable.domain.model.CompraCafeImput
 import com.ethandev.cafecontable.ui.utils.formatNumber
@@ -172,6 +173,7 @@ fun CompraCafeScreen(vm: CompraCafeViewModel) {
                 esCredito = false
                 detallesExpandidos = false
                 guardadoSolicitado = false
+                ProgramadorSyncCompras.sincronizarAhora(context)
             }
             vm.limpiarMensajes()
             snackbarHostState.showSnackbar(error ?: ok.orEmpty())
