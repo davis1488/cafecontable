@@ -37,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.first
+import com.ethandev.cafecontable.data.worker.ProgramadorSyncCompras
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -134,6 +135,7 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(false)
                 }
 
+
                 LaunchedEffect(Unit) {
                     try {
                         val usuario = sessionManager.usuarioSesion.first()
@@ -141,10 +143,22 @@ class MainActivity : ComponentActivity() {
                         val token = AuthTokenManager.obtenerToken()
                             ?: AuthTokenManager.restaurarToken()
 
-                        sesionIniciada =
+                        val sesionOnlineValida =
                             usuario != null &&
                                     !token.isNullOrBlank() &&
                                     AuthTokenManager.tokenVigente(token)
+
+                        // Si no hay JWT vigente, intentar recuperar
+                        // la autorización offline guardada.
+                        val sesionOfflineValida =
+                            if (!sesionOnlineValida) {
+                                sessionManager.obtenerSesionOfflineValida() != null
+                            } else {
+                                false
+                            }
+
+                        sesionIniciada =
+                            sesionOnlineValida || sesionOfflineValida
 
                     } catch (e: Exception) {
                         sesionIniciada = false
@@ -152,6 +166,18 @@ class MainActivity : ComponentActivity() {
                         verificandoSesion = false
                     }
                 }
+
+
+                LaunchedEffect(verificandoSesion, sesionIniciada) {
+                    if (!verificandoSesion) {
+                        if (sesionIniciada) {
+                            ProgramadorSyncCompras.iniciar(applicationContext)
+                        } else {
+                            ProgramadorSyncCompras.detener(applicationContext)
+                        }
+                    }
+                }
+
 
                 when {
                     verificandoSesion -> {

@@ -35,7 +35,7 @@ class SessionManager(
             longPreferencesKey("offline_hasta")
 
         private const val DURACION_OFFLINE_MS =
-            24 * 60 * 60 * 1000L
+            7L * 24 * 60 * 60 * 1000L
     }
 
     val usuarioSesion: Flow<UsuarioSesion?> =
