@@ -24,8 +24,12 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalCafe
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Login
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -45,6 +49,11 @@ private val FondoCafe = Color(0xFFF7F5EF)
 private val TextoCafe = Color(0xFF352A23)
 private val TextoSecundario = Color(0xFF776C62)
 
+/** El estado debe provenir de una comprobación real de API y JWT. */
+enum class EstadoConexionHome {
+    VERIFICANDO, ONLINE, SIN_SERVIDOR, REQUIERE_LOGIN
+}
+
 @Composable
 fun HomeScreen(
     innerPadding: PaddingValues,
@@ -61,7 +70,11 @@ fun HomeScreen(
     onGoLiquidacion: () -> Unit,
     onGoOperacionesGastos: () -> Unit,
     onGoUtilidad: () -> Unit,
-    onGoCierreSemanal: () -> Unit
+    onGoCierreSemanal: () -> Unit,
+    estadoConexion: EstadoConexionHome = EstadoConexionHome.VERIFICANDO,
+    comprasPendientes: Int? = null,
+    onComprobarConexion: (() -> Unit)? = null,
+    onRenovarSesion: (() -> Unit)? = null
 ) {
     // Se conserva la misma firma de navegación que usa AppNavGraph.
     LazyColumn(
@@ -73,6 +86,15 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item { HomeHeaderModerno() }
+
+        item {
+            EstadoConexionCard(
+                estado = estadoConexion,
+                comprasPendientes = comprasPendientes,
+                onComprobarConexion = onComprobarConexion,
+                onRenovarSesion = onRenovarSesion
+            )
+        }
 
         item { TituloSeccion("Operaciones principales", "Registra y administra tu café") }
         item {
@@ -138,6 +160,104 @@ private data class MenuInicio(
     val colorIcono: Color,
     val onClick: () -> Unit
 )
+
+@Composable
+private fun EstadoConexionCard(
+    estado: EstadoConexionHome,
+    comprasPendientes: Int?,
+    onComprobarConexion: (() -> Unit)?,
+    onRenovarSesion: (() -> Unit)?
+) {
+    val (titulo, descripcion, color) = when (estado) {
+        EstadoConexionHome.ONLINE -> Triple(
+            "Conectado al servidor", "Sesión online vigente. Sincronización disponible.", VerdeCafe
+        )
+        EstadoConexionHome.SIN_SERVIDOR -> Triple(
+            "Modo offline", "Servidor no disponible. Puedes registrar compras localmente.",
+            Color(0xFFB93832)
+        )
+        EstadoConexionHome.REQUIERE_LOGIN -> Triple(
+            "Renovar sesión", "Puedes trabajar offline; inicia sesión para sincronizar.",
+            Color(0xFF996700)
+        )
+        EstadoConexionHome.VERIFICANDO -> Triple(
+            "Conexión sin verificar", "Comprobando el servidor y la autenticación.",
+            TextoSecundario
+        )
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .background(color, RoundedCornerShape(50))
+                )
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(titulo, color = color, fontWeight = FontWeight.Bold)
+                    Text(
+                        descripcion,
+                        color = TextoSecundario,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                val requiereLogin = estado == EstadoConexionHome.REQUIERE_LOGIN
+                val accion = if (requiereLogin) onRenovarSesion else onComprobarConexion
+
+                if (estado == EstadoConexionHome.VERIFICANDO) {
+                    Box(
+                        modifier = Modifier.size(40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            color = TextoSecundario,
+                            strokeWidth = 2.dp
+                        )
+                    }
+                } else {
+                    IconButton(
+                        onClick = { accion?.invoke() },
+                        enabled = accion != null,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (requiereLogin) Icons.Filled.Login
+                            else Icons.Filled.Refresh,
+                            contentDescription = if (requiereLogin)
+                                "Renovar sesión online"
+                            else "Comprobar conexión",
+                            tint = if (accion != null) color else TextoSecundario,
+                            modifier = Modifier.size(23.dp)
+                        )
+                    }
+                }
+            }
+
+            if (comprasPendientes != null) {
+                Text(
+                    "Compras pendientes: $comprasPendientes",
+                    color = TextoCafe,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun HomeHeaderModerno() {

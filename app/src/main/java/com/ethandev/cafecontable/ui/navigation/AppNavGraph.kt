@@ -6,6 +6,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+import com.ethandev.cafecontable.data.local.session.SessionManager
+import com.ethandev.cafecontable.data.remote.AuthTokenManager
+import com.ethandev.cafecontable.data.remote.RetrofitClient
+import com.ethandev.cafecontable.ui.screen.home.EstadoConexionHome
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.ethandev.cafecontable.core.AppModule
@@ -50,6 +61,9 @@ import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeScreen
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeViewModel
 import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoScreen
 import com.ethandev.cafecontable.ui.screen.ventaspedido.VentasPedidoViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 @Composable
 fun AppNavGraph(
@@ -68,13 +82,113 @@ fun AppNavGraph(
     liquidacionVm : LiquidacionViewModel,
     operacionesgastosVm: OperacionViewModel,
     utilidadVm: UtilidadViewModel,
-    onCerrarSesion: () -> Unit
+    onCerrarSesion: () -> Unit,
+    onRenovarSesion: () -> Unit
 
 
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val sessionManager = remember(context) { SessionManager(context.applicationContext) }
+    var estadoConexion by remember { mutableStateOf(EstadoConexionHome.VERIFICANDO) }
+    var comprasPendientes by remember { mutableStateOf<Int?>(null) }
+    var pendientesAnteriores by remember {mutableStateOf<Int?>(null)}
+
+    LaunchedEffect(sessionManager) {
+
+        sessionManager.usuarioSesion.collectLatest { sesion ->
+
+            if (sesion == null) {
+                comprasPendientes = null
+            } else {
+
+                AppModule.provideDatabase(
+                    context.applicationContext
+                )
+                    .operacionPendienteSyncDao()
+                    .observarOperaciones(sesion.empresaId)
+                    .map { operaciones ->
+                        operaciones.count {
+                            it.usuarioId == sesion.usuarioId &&
+                                    it.tipoOperacion == "COMPRA" &&
+                                    it.estado == "PENDIENTE"
+                        }
+                    }
+                    .distinctUntilChanged()
+                    .collect { cantidad ->
+                        comprasPendientes = cantidad
+                    }
+            }
+        }
+    }
+
+
+
+
+    suspend fun comprobarEstado() {
+        estadoConexion = EstadoConexionHome.VERIFICANDO
+        // Room sigue disponible aunque la API esté apagada.
+
+//        val sesion = try { sessionManager.usuarioSesion.first() } catch (_: Exception) { null }
+//        comprasPendientes = if (sesion == null) null else try {
+//            AppModule.provideDatabase(context.applicationContext)
+//                .operacionPendienteSyncDao()
+//                .obtenerPendientes(sesion.empresaId)
+//                .count { it.usuarioId == sesion.usuarioId && it.tipoOperacion == "COMPRA" }
+//        } catch (_: Exception) { null }
+
+        try {
+            AuthTokenManager.inicializar(context.applicationContext)
+            val token = AuthTokenManager.obtenerToken()
+                ?: AuthTokenManager.restaurarToken()
+            if (token.isNullOrBlank() || !AuthTokenManager.tokenVigente(token)) {
+                estadoConexion = EstadoConexionHome.REQUIERE_LOGIN
+                return
+            }
+            // Solicitud REAL: Wi-Fi por sí solo no significa servidor disponible.
+            val respuesta = RetrofitClient.api.obtenerCompras()
+            estadoConexion = when {
+                respuesta.isSuccessful -> EstadoConexionHome.ONLINE
+                respuesta.code() == 401 || respuesta.code() == 403 -> EstadoConexionHome.REQUIERE_LOGIN
+                else -> EstadoConexionHome.SIN_SERVIDOR
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            estadoConexion = EstadoConexionHome.SIN_SERVIDOR
+        }
+    }
+
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == Routes.HOME) comprobarEstado()
+    }
+
+
+    LaunchedEffect(comprasPendientes, currentRoute) {
+
+        if (currentRoute != Routes.HOME) {
+            return@LaunchedEffect
+        }
+
+        val anteriores = pendientesAnteriores
+        val actuales = comprasPendientes
+
+        // Guardar el último número observado
+        pendientesAnteriores = actuales
+
+        // Solo comprobar cuando disminuyan los pendientes.
+        // Esto indica que alguna operación salió del estado PENDIENTE.
+        if (
+            anteriores != null &&
+            actuales != null &&
+            actuales < anteriores
+        ) {
+            comprobarEstado()
+        }
+    }
 
     val title = when (currentRoute) {
         Routes.COMPRAS -> "Compras"
@@ -117,6 +231,9 @@ fun AppNavGraph(
             composable(Routes.HOME) {
                 HomeScreen(
                     innerPadding = PaddingValues(0.dp),
+                    estadoConexion = estadoConexion,
+                    comprasPendientes = comprasPendientes,
+                    onComprobarConexion = { scope.launch { comprobarEstado() } },
                     onGoCompras = { navController.navigate(Routes.COMPRAS) },
                     onGoVentas = { navController.navigate(Routes.VENTAS) },
                     onGoVentasPedido = { navController.navigate(Routes.VENTAS_PEDIDO) },
@@ -132,10 +249,7 @@ fun AppNavGraph(
                     onGoOperacionesGastos  = { navController.navigate(Routes.ROUTE_OPERACION_GASTOS) },
                     onGoUtilidad  = { navController.navigate(Routes.ROUTE_UTILIDAD) },
                     onGoCierreSemanal = { navController.navigate("cierre_semanal") },
-
-
-
-
+                    onRenovarSesion = onRenovarSesion,
                     )
             }
 

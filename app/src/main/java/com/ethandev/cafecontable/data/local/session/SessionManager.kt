@@ -114,9 +114,34 @@ class SessionManager(
         return usuario
     }
 
+//prueba
+    suspend fun simularVencimientoOfflineParaPrueba() {
+
+        // Permitir esta operación únicamente en compilaciones
+        // Android marcadas como depurables.
+        val esDebuggable =
+            (context.applicationInfo.flags and
+                    android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+
+        check(esDebuggable) {
+            "Esta prueba solo está permitida en modo Debug"
+        }
+
+        context.sessionDataStore.edit { preferences ->
+            preferences[OFFLINE_HASTA] =
+                System.currentTimeMillis() - 60_000L
+        }
+    }
+///////////
+
     suspend fun cerrarSesion() {
         context.sessionDataStore.edit { preferences ->
             preferences.clear()
         }
     }
+
+
+
+
+
 }
