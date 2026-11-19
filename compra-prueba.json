@@ -1,0 +1,19 @@
+
+{
+  "operacionSyncId": "e8f97a21-3a60-4e6d-98ac-c27a1c9b6054",
+  "compraLocalId": "999001",
+  "productoNombre": "Cafe Pergamino Seco",
+  "unidad": "KG",
+  "cantidad": 100,
+  "precioUnitCompra": 20000,
+  "proveedor": "Proveedor Prueba",
+  "esCredito": false,
+  "nota": "Prueba de concurrencia P18",
+  "abono": 0,
+  "operacionCompraId": "a7c96320-f256-4d6e-a9cc-5abeb2440197",
+  "operacionNombre": "COMPRA PRUEBA P18",
+  "operacionTipo": "COMPRA",
+  "operacionDescripcion": "Prueba de idempotencia con dos solicitudes simultaneas",
+  "operacionFecha": 1794916800000,
+  "operacionEstado": "ACTIVA"
+}
