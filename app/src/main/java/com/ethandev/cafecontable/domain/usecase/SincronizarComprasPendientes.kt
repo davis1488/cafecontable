@@ -16,7 +16,8 @@ import java.io.IOException
 data class ResultadoSyncCompras(
     val sincronizadas: Int = 0,
     val conflictos: Int = 0,
-    val pendientes: Int = 0
+    val pendientes: Int = 0,
+    val requiereReintento: Boolean = false
 )
 
 class SincronizarComprasPendientes(
@@ -46,6 +47,7 @@ class SincronizarComprasPendientes(
         var sincronizadas = 0
         var conflictos = 0
         var sinEnviar = 0
+        var requiereReintento = false
 
         for (pendiente in pendientes) {
             if (pendiente.empresaId != sesion.empresaId ||
@@ -195,12 +197,25 @@ class SincronizarComprasPendientes(
                         )
                         conflictos++
                     }
-                    else -> {
+                    respuesta.code() == 408 ||
+                            respuesta.code() == 429 ||
+                            respuesta.code() in 500..599 -> {
+                        // Fallo temporal: parar este lote y pedir reintento.
                         dao.actualizarEstado(
                             pendiente.id, "PENDIENTE",
-                            "Error HTTP ${respuesta.code()}"
+                            "Servidor temporalmente no disponible: HTTP ${respuesta.code()}"
                         )
                         sinEnviar++
+                        requiereReintento = true
+                        break
+                    }
+                    else -> {
+                        // Otros HTTP requieren análisis, no reintentos sin límite.
+                        dao.actualizarEstado(
+                            pendiente.id, "REQUIERE_REVISION",
+                            "Respuesta HTTP no prevista: ${respuesta.code()}"
+                        )
+                        conflictos++
                     }
                 }
             } catch (e: CancellationException) {
@@ -210,6 +225,8 @@ class SincronizarComprasPendientes(
                     pendiente.id, "PENDIENTE", "Sin conexion con el servidor"
                 )
                 sinEnviar++
+                requiereReintento = true
+                break
             } catch (e: Exception) {
                 dao.actualizarEstado(
                     pendiente.id, "PENDIENTE",
@@ -222,7 +239,8 @@ class SincronizarComprasPendientes(
         ResultadoSyncCompras(
             sincronizadas = sincronizadas,
             conflictos = conflictos,
-            pendientes = sinEnviar
+            pendientes = sinEnviar,
+            requiereReintento = requiereReintento
         )
     }
 }

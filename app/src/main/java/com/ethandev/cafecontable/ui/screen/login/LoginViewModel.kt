@@ -10,6 +10,7 @@ import com.ethandev.cafecontable.domain.usecase.CerrarSesionUseCase
 import com.ethandev.cafecontable.domain.usecase.IniciarSesionUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 data class LoginUiState(
@@ -29,13 +30,34 @@ class LoginViewModel(
 
     val uiState: StateFlow<LoginUiState> = _uiState
 
-    fun iniciarSesion(correo: String, password: String) {
+    fun prepararRenovacion() {
+        if (!_uiState.value.cargando) {
+            _uiState.value = LoginUiState()
+        }
+    }
+
+    fun iniciarSesion(
+        correo: String,
+        password: String,
+        soloRenovacion: Boolean = false
+    ) {
 
         if (_uiState.value.cargando) return
 
         viewModelScope.launch {
 
             _uiState.value = LoginUiState(cargando = true)
+
+            val sesionAnterior = if (soloRenovacion) {
+                sessionManager.usuarioSesion.first()
+            } else null
+
+            if (soloRenovacion && sesionAnterior == null) {
+                _uiState.value = LoginUiState(
+                    error = "No hay sesión local para renovar"
+                )
+                return@launch
+            }
 
             val resultado = iniciarSesionUseCase(
                 correo = correo,
@@ -46,6 +68,18 @@ class LoginViewModel(
                 onSuccess = { usuario ->
 
                     try {
+                        // La renovación no puede cambiar de usuario ni de empresa.
+                        // Las compras pendientes pertenecen a la sesión local actual.
+                        if (soloRenovacion && sesionAnterior != null &&
+                            (usuario.usuarioId != sesionAnterior.usuarioId ||
+                                    usuario.empresaId != sesionAnterior.empresaId)
+                        ) {
+                            _uiState.value = LoginUiState(
+                                error = "Debes ingresar con el mismo usuario y empresa"
+                            )
+                            return@fold
+                        }
+
                         sessionManager.guardarUsuario(
                             usuarioId = usuario.usuarioId,
                             empresaId = usuario.empresaId,
@@ -86,10 +120,6 @@ class LoginViewModel(
         viewModelScope.launch {
             try {
                 cerrarSesionUseCase()
-
-                AuthTokenManager.limpiarToken()
-
-                sessionManager.cerrarSesion()
 
                 _uiState.value = LoginUiState()
 

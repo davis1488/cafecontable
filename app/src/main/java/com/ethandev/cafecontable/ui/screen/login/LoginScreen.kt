@@ -20,7 +20,9 @@ import com.ethandev.cafecontable.ui.screen.login.LoginViewModel
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    modoRenovacion: Boolean = false,
+    onCancelar: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -55,7 +57,7 @@ fun LoginScreen(
             )
 
             Text(
-                text = "Iniciar sesión",
+                text = if (modoRenovacion) "Renovar sesión online" else "Iniciar sesión",
                 style = MaterialTheme.typography.titleMedium
             )
 
@@ -119,7 +121,8 @@ fun LoginScreen(
                 onClick = {
                     viewModel.iniciarSesion(
                         correo = correo,
-                        password = password
+                        password = password,
+                        soloRenovacion = modoRenovacion
                     )
                 },
                 enabled = !uiState.cargando &&
@@ -136,7 +139,16 @@ fun LoginScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Ingresar")
+                    Text(if (modoRenovacion) "Renovar sesión" else "Ingresar")
+                }
+            }
+
+            if (modoRenovacion) {
+                TextButton(
+                    onClick = onCancelar,
+                    enabled = !uiState.cargando
+                ) {
+                    Text("Continuar trabajando offline")
                 }
             }
         }

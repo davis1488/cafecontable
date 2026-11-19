@@ -68,5 +68,18 @@ interface OperacionPendienteSyncDao {
         payloadJson: String
     )
 
+    @Query("""
+    SELECT COUNT(*)
+    FROM operaciones_pendientes_sync
+    WHERE empresaId = :empresaId
+      AND usuarioId = :usuarioId
+      AND tipoOperacion = 'COMPRA'
+      AND estado = 'PENDIENTE'
+""")
+    fun observarCantidadPendientes(
+        empresaId: String,
+        usuarioId: String
+    ): Flow<Int>
+
 
 }

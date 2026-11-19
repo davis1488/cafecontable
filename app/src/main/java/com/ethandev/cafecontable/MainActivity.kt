@@ -2,6 +2,8 @@
 package com.ethandev.cafecontable
 
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -14,6 +16,7 @@ import androidx.compose.runtime.setValue
 import com.ethandev.cafecontable.core.AppModule
 import com.ethandev.cafecontable.data.local.session.SessionManager
 import com.ethandev.cafecontable.data.remote.AuthTokenManager
+import com.ethandev.cafecontable.data.remote.RetrofitClient
 import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
 import com.ethandev.cafecontable.domain.usecase.ActualizarCompraUseCase
 import com.ethandev.cafecontable.domain.usecase.AnularCompraUseCase
@@ -30,14 +33,25 @@ import com.ethandev.cafecontable.ui.screen.login.LoginScreen
 import com.ethandev.cafecontable.ui.screen.prestamos.PrestamosViewModel
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeViewModel
 import com.ethandev.cafecontable.ui.theme.CafecontableTheme
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.first
 import com.ethandev.cafecontable.data.worker.ProgramadorSyncCompras
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -134,6 +148,12 @@ class MainActivity : ComponentActivity() {
                 var sesionIniciada by remember {
                     mutableStateOf(false)
                 }
+//prueba
+                var ejecutarPruebaVencimiento by remember {
+                    mutableStateOf(false)
+                }
+//
+                var renovandoSesion by remember { mutableStateOf(false) }
 
 
                 LaunchedEffect(Unit) {
@@ -143,22 +163,40 @@ class MainActivity : ComponentActivity() {
                         val token = AuthTokenManager.obtenerToken()
                             ?: AuthTokenManager.restaurarToken()
 
-                        val sesionOnlineValida =
+                        // P19: la autorización offline debe verificarse SIEMPRE.
+                        val sesionOfflineValida =
+                            sessionManager.obtenerSesionOfflineValida() != null
+
+                        // JWT local vigente no equivale a autenticación online.
+                        val jwtVigenteLocal =
                             usuario != null &&
                                     !token.isNullOrBlank() &&
                                     AuthTokenManager.tokenVigente(token)
 
-                        // Si no hay JWT vigente, intentar recuperar
-                        // la autorización offline guardada.
-                        val sesionOfflineValida =
-                            if (!sesionOnlineValida) {
-                                sessionManager.obtenerSesionOfflineValida() != null
+                        // Si el plazo offline expiró, exigir una comprobación real
+                        // contra una ruta de la API protegida por JWT.
+                        val sesionOnlineConfirmada =
+                            if (!sesionOfflineValida && jwtVigenteLocal) {
+                                try {
+                                    RetrofitClient.api.obtenerCompras().isSuccessful
+                                } catch (e: Exception) {
+                                    Log.w("P19", "No fue posible confirmar la sesión online", e)
+                                    false
+                                }
                             } else {
                                 false
                             }
 
+                        Log.d(
+                            "P19",
+                            "JWT local vigente: $jwtVigenteLocal | " +
+                                    "Offline vigente: $sesionOfflineValida | " +
+                                    "Online confirmado: $sesionOnlineConfirmada"
+                        )
+
                         sesionIniciada =
-                            sesionOnlineValida || sesionOfflineValida
+                            usuario != null &&
+                                    (sesionOfflineValida || sesionOnlineConfirmada)
 
                     } catch (e: Exception) {
                         sesionIniciada = false
@@ -179,6 +217,37 @@ class MainActivity : ComponentActivity() {
                 }
 
 
+                // P19: ejecuta el vencimiento de prueba al pulsar el botón.
+                // No cierra sesión ni modifica las compras de Room.
+                LaunchedEffect(ejecutarPruebaVencimiento) {
+                    if (ejecutarPruebaVencimiento) {
+                        try {
+                            Log.d("P19", "Ejecutando vencimiento de autorización offline")
+                            sessionManager.simularVencimientoOfflineParaPrueba()
+
+                            val sesionValida =
+                                sessionManager.obtenerSesionOfflineValida()
+                            Log.d("P19", "Sesión offline válida: ${sesionValida != null}")
+
+                            val mensaje = if (sesionValida == null) {
+                                "P19: autorización offline vencida"
+                            } else {
+                                "P19: la autorización sigue vigente"
+                            }
+                            Toast.makeText(applicationContext, mensaje, Toast.LENGTH_LONG).show()
+                        } catch (e: Exception) {
+                            Log.e("P19", "Error durante la prueba de vencimiento", e)
+                            Toast.makeText(
+                                applicationContext,
+                                "P19: error al ejecutar la prueba; revisa Logcat",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        } finally {
+                            ejecutarPruebaVencimiento = false
+                        }
+                    }
+                }
+
                 when {
                     verificandoSesion -> {
                         Box(
@@ -198,30 +267,93 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    else -> {
-                        AppNavGraph(
-                            compraVm = compraVm,
-                            ventaVm = ventaVm,
-                            ventasPedidoVm = ventasPedidoVm,
-                            preparacionEntregaVm = preparacionEntregaVm,
-                            inventarioVm = inventarioVm,
-                            historialComprasVm = historialComprasVm,
-                            historialVentasVm = historialVentasVm,
-                            cuentasPorCobrarVm = cuentasPorCobrarVm,
-                            cuentasPorPagarVm = cuentasPorPagarVm,
-                            prestamosVm = prestamosVm,
-                            mezclaVm = mezclaVm,
-                            asignacionMezclaPedidoVm = asignacionMezclaPedidoVm,
-                            liquidacionVm = liquidacionVm,
-                            operacionesgastosVm = operacionesgastosVm,
-                            utilidadVm = utilidadVm,
-                            onCerrarSesion = {
-                                loginVm.cerrarSesion {
-                                    AuthTokenManager.limpiarToken()
-                                    sesionIniciada = false
-                                }
+                    renovandoSesion -> {
+                        LoginScreen(
+                            viewModel = loginVm,
+                            modoRenovacion = true,
+                            onCancelar = { renovandoSesion = false },
+                            onLoginSuccess = {
+                                renovandoSesion = false
+                                ProgramadorSyncCompras.sincronizarAhora(applicationContext)
                             }
                         )
+                    }
+
+
+                    else -> {
+                        Column(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+
+                            // Botón temporal de P19, separado de la barra de estado.
+                            if (
+                                (applicationInfo.flags and
+                                        android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+                            ) {
+                                val interaccionP19 = remember { MutableInteractionSource() }
+                                val presionadoP19 by interaccionP19.collectIsPressedAsState()
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .statusBarsPadding()
+                                        .padding(top = 12.dp, bottom = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            Log.d(
+                                                "P19",
+                                                "Botón presionado: iniciando prueba de vencimiento"
+                                            )
+                                            ejecutarPruebaVencimiento = true
+                                        },
+                                        interactionSource = interaccionP19,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (presionadoP19) {
+                                                Color(0xFF3E2723) // Marrón oscuro al presionar
+                                            } else {
+                                                Color(0xFF795548) // Marrón normal
+                                            },
+                                            contentColor = Color.White
+                                        )
+                                    ) {
+                                        Text("P19: Vencer autorización offline")
+                                    }
+                                }
+                            }
+                            Box(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                AppNavGraph(
+                                    compraVm = compraVm,
+                                    ventaVm = ventaVm,
+                                    ventasPedidoVm = ventasPedidoVm,
+                                    preparacionEntregaVm = preparacionEntregaVm,
+                                    inventarioVm = inventarioVm,
+                                    historialComprasVm = historialComprasVm,
+                                    historialVentasVm = historialVentasVm,
+                                    cuentasPorCobrarVm = cuentasPorCobrarVm,
+                                    cuentasPorPagarVm = cuentasPorPagarVm,
+                                    prestamosVm = prestamosVm,
+                                    mezclaVm = mezclaVm,
+                                    asignacionMezclaPedidoVm = asignacionMezclaPedidoVm,
+                                    liquidacionVm = liquidacionVm,
+                                    operacionesgastosVm = operacionesgastosVm,
+                                    utilidadVm = utilidadVm,
+                                    onRenovarSesion = {
+                                        loginVm.prepararRenovacion()
+                                        renovandoSesion = true
+                                    },
+                                    onCerrarSesion = {
+                                        loginVm.cerrarSesion {
+                                            AuthTokenManager.limpiarToken()
+                                            sesionIniciada = false
+                                        }
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }
