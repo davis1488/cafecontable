@@ -24,6 +24,18 @@ object SesionOnlineManager {
             context.applicationContext
         )
 
+
+        if (AuthTokenManager.existeLoginIncompleto()) {
+            Log.w(
+                "CafeContableSeguridad",
+                "P20.12: login incompleto; " +
+                        "se bloquea la obtención y renovación del JWT"
+            )
+
+            return@withLock null
+        }
+
+
         // 1. Revisar si existe una renovación pendiente.
         val pendiente =
             AuthTokenManager.obtenerRenovacionPendiente()

@@ -197,6 +197,20 @@ class MainActivity : ComponentActivity() {
 
                 LaunchedEffect(Unit) {
                     try {
+
+
+                        if (AuthTokenManager.existeLoginIncompleto()) {
+                            Log.w(
+                                "CafeContableSeguridad",
+                                "P20.12: login incompleto detectado; " +
+                                        "se bloquea la restauración automática"
+                            )
+
+                            sesionIniciada = false
+                            return@LaunchedEffect
+                        }
+
+
                         val usuario = sessionManager.usuarioSesion.first()
 
                         val token = AuthTokenManager.obtenerToken()

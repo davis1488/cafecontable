@@ -54,9 +54,48 @@ class LoginViewModel(
                 // No permitir cambiar de usuario/empresa conservando datos offline.
                 val sesionAnterior = sessionManager.usuarioSesion.first()
 
+
+                val empresaVinculada =
+                    sessionManager.obtenerEmpresaVinculada()
+
+
+
+                val loginIncompleto =
+                    AuthTokenManager.existeLoginIncompleto()
+
+                if (loginIncompleto && soloRenovacion) {
+                    _uiState.value = LoginUiState(
+                        error = "La sesión anterior quedó incompleta. " +
+                                "Inicia sesión nuevamente con tus credenciales."
+                    )
+                    return@launch
+                }
+
+                if (loginIncompleto) {
+                    android.util.Log.w(
+                        "CafeContableSeguridad",
+                        "P20.12: recuperación de login incompleto " +
+                                "mediante autenticación online"
+                    )
+                }
+
+
+
+
                 if (soloRenovacion && sesionAnterior == null) {
                     _uiState.value = LoginUiState(
                         error = "No hay sesión local para renovar"
+                    )
+                    return@launch
+                }
+
+                if (AuthTokenManager.existeLoginIncompleto() &&
+                    sesionAnterior == null
+                ) {
+                    _uiState.value = LoginUiState(
+                        error = "Se detectó un inicio de sesión interrumpido " +
+                                "sin identidad local confirmada. " +
+                                "Se requiere recuperación segura antes de continuar."
                     )
                     return@launch
                 }
@@ -95,11 +134,29 @@ class LoginViewModel(
                             "CafeContableSeguridad",
                             "LOGIN: Iniciando preparacion del dispositivo"
                         )
+
+                        // P20.12: impedir iniciar sesión en otra empresa
+                        // cuando existen datos locales vinculados.
+                        if (empresaVinculada != null &&
+                            !empresaVinculada.equals(
+                                usuario.empresaId,
+                                ignoreCase = true
+                            )
+                        ) {
+                            _uiState.value = LoginUiState(
+                                error = "Este dispositivo está vinculado a otra empresa. " +
+                                        "No se permite cambiar de empresa conservando datos locales."
+                            )
+                            return@fold
+                        }
+
+
                         // Primero registrar/vincular con el servidor. No activar acceso
                         // local si falla el desafío o la firma ECDSA.
                         dispositivoRepository.prepararDispositivo(
                             accessToken = usuario.accessToken,
                             usuarioId = usuario.usuarioId,
+                            empresaId = usuario.empresaId,
                             refreshToken = refreshToken
                         )
 
@@ -111,13 +168,19 @@ class LoginViewModel(
 
                         // Credenciales y sesión local solo después de vincular.
                         // Si falla la persistencia, no confirmar login.
-                        try {
 
+                        try {
+                            // P20.12: registrar que comienza la persistencia.
+                            AuthTokenManager.marcarLoginEnProceso()
+
+                            // Guardar JWT y refresh token juntos.
                             AuthTokenManager.guardarCredencialesAtomicas(
                                 nuevoAccessToken = usuario.accessToken,
                                 nuevoRefreshToken = refreshToken
                             )
 
+                            // Guardar identidad y autorización offline
+                            // de siete días en una transacción DataStore.
                             sessionManager.guardarSesionAutorizada(
                                 usuarioId = usuario.usuarioId,
                                 empresaId = usuario.empresaId,
@@ -125,24 +188,27 @@ class LoginViewModel(
                                 rol = usuario.rol
                             )
 
+                            // Confirmar únicamente después de guardar ambos.
+                            AuthTokenManager.confirmarLoginCompletado()
+
                         } catch (e: CancellationException) {
                             throw e
 
                         } catch (e: Exception) {
                             android.util.Log.e(
                                 "CafeContableSeguridad",
-                                "Error al persistir las credenciales del login",
+                                "Error durante la persistencia del login",
                                 e
                             )
 
-                            // No ejecutar cerrarSesionUseCase()
-                            // porque podría revocar una sesión válida.
-
+                            // Conservar la marca si hubo una escritura
+                            // incompleta. No ejecutar logout remoto.
                             throw IllegalStateException(
-                                "No se pudo guardar la sesión local",
+                                "No se pudo completar el inicio de sesión",
                                 e
                             )
                         }
+
 
 
                         _uiState.value = LoginUiState(usuario = usuario)

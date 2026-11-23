@@ -31,11 +31,11 @@ class SessionManager(
         private val NOMBRE = stringPreferencesKey("nombre")
         private val ROL = stringPreferencesKey("rol")
 
-        private val OFFLINE_HASTA =
-            longPreferencesKey("offline_hasta")
+        private val OFFLINE_HASTA = longPreferencesKey("offline_hasta")
 
-        private const val DURACION_OFFLINE_MS =
-            7L * 24 * 60 * 60 * 1000L
+        private const val DURACION_OFFLINE_MS = 7L * 24 * 60 * 60 * 1000L
+
+        private val EMPRESA_VINCULADA = stringPreferencesKey("empresa_vinculada")
     }
 
     val usuarioSesion: Flow<UsuarioSesion?> =
@@ -134,9 +134,20 @@ class SessionManager(
     }
 ///////////
 
+
     suspend fun cerrarSesion() {
         context.sessionDataStore.edit { preferences ->
-            preferences.clear()
+
+            // Eliminar la sesión activa.
+            preferences.remove(USUARIO_ID)
+            preferences.remove(EMPRESA_ID)
+            preferences.remove(NOMBRE)
+            preferences.remove(ROL)
+            preferences.remove(OFFLINE_HASTA)
+
+            // NO eliminar EMPRESA_VINCULADA.
+            // Los datos de Room continúan asociados
+            // a esta empresa después del logout.
         }
     }
 
@@ -160,6 +171,16 @@ class SessionManager(
 
         // Una sola transacción de DataStore.
         context.sessionDataStore.edit { preferences ->
+
+            val empresaVinculada = preferences[EMPRESA_VINCULADA]
+
+            check(
+                empresaVinculada == null ||
+                        empresaVinculada.equals(empresaId, ignoreCase = true)
+            ) {
+                "Los datos locales pertenecen a otra empresa"
+            }
+
             preferences[USUARIO_ID] = usuarioId
             preferences[EMPRESA_ID] = empresaId
             preferences[NOMBRE] = nombre
@@ -168,6 +189,34 @@ class SessionManager(
         }
     }
 
+
+    suspend fun obtenerEmpresaVinculada(): String? {
+        val preferences = context.sessionDataStore.data.first()
+        return preferences[EMPRESA_VINCULADA]
+    }
+
+    suspend fun vincularEmpresaSiNoExiste(
+        empresaId: String
+    ) {
+        require(empresaId.isNotBlank())
+
+        context.sessionDataStore.edit { preferences ->
+            val empresaActual = preferences[EMPRESA_VINCULADA]
+
+            if (empresaActual == null) {
+                preferences[EMPRESA_VINCULADA] = empresaId
+            } else {
+                check(
+                    empresaActual.equals(
+                        empresaId,
+                        ignoreCase = true
+                    )
+                ) {
+                    "Este dispositivo está vinculado a otra empresa"
+                }
+            }
+        }
+    }
 
 
 

@@ -25,8 +25,8 @@ object AuthTokenManager {
     private const val REFRESH_TOKEN = "refresh_token_cifrado"
     private const val DISPOSITIVO_ID = "dispositivo_id_cifrado"
     private const val RENOVACION_PENDIENTE = "renovacion_pendiente_cifrada"
-    private const val LOGOUTS_PENDIENTES =
-        "logouts_pendientes_cifrados"
+    private const val LOGOUTS_PENDIENTES = "logouts_pendientes_cifrados"
+    private const val LOGIN_EN_PROCESO = "login_en_proceso"
 
     @Volatile
     private var accessToken: String? = null
@@ -612,6 +612,83 @@ object AuthTokenManager {
             false
         }
     }
+
+
+    @Synchronized
+    fun marcarLoginEnProceso() {
+        check(::appContext.isInitialized) {
+            "AuthTokenManager no está inicializado"
+        }
+
+        check(
+            preferences().edit()
+                .putBoolean(LOGIN_EN_PROCESO, true)
+                .commit()
+        ) {
+            "No se pudo registrar el inicio del login"
+        }
+    }
+
+    @Synchronized
+    fun confirmarLoginCompletado() {
+        check(::appContext.isInitialized)
+
+        check(
+            preferences().edit()
+                .remove(LOGIN_EN_PROCESO)
+                .commit()
+        ) {
+            "No se pudo confirmar el login"
+        }
+    }
+
+    @Synchronized
+    fun existeLoginIncompleto(): Boolean {
+        if (!::appContext.isInitialized) return false
+
+        return preferences().getBoolean(
+            LOGIN_EN_PROCESO,
+            false
+        )
+    }
+
+    fun tokenCorrespondeAUsuario(
+        token: String,
+        usuarioId: String
+    ): Boolean {
+        return try {
+            if (!tokenVigente(token)) return false
+
+            val partes = token.split(".")
+            if (partes.size != 3) return false
+
+            val payload = String(
+                Base64.decode(
+                    partes[1],
+                    Base64.URL_SAFE or
+                            Base64.NO_WRAP or
+                            Base64.NO_PADDING
+                ),
+                Charsets.UTF_8
+            )
+
+            val json = JSONObject(payload)
+
+            val claimUsuario =
+                "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+
+            json.optString(claimUsuario)
+                .equals(usuarioId, ignoreCase = true)
+
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+
+
+
+
 
 
 

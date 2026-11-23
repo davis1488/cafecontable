@@ -11,6 +11,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.IOException
 import com.ethandev.cafecontable.data.remote.auth.CoordinadorSesion
+import com.ethandev.cafecontable.data.remote.auth.AuthTokenManager
+import com.ethandev.cafecontable.data.local.session.SessionManager
+import kotlinx.coroutines.flow.first
 
 class SincronizarComprasWorker(
     appContext: Context,
@@ -26,6 +29,46 @@ class SincronizarComprasWorker(
 
     override suspend fun doWork(): Result = try {
         CoordinadorSesion.mutex.withLock {
+
+
+
+            AuthTokenManager.inicializar(applicationContext)
+
+        // P20.12: impedir sincronización cuando
+        // existe un login sin confirmar.
+            if (AuthTokenManager.existeLoginIncompleto()) {
+                Log.w(
+                    TAG,
+                    "Login incompleto detectado; " +
+                            "compras pendientes conservadas"
+                )
+
+                return@withLock Result.success()
+            }
+
+            val sessionManager = SessionManager(applicationContext)
+
+            val usuario = sessionManager.usuarioSesion.first()
+            val empresaVinculada =
+                sessionManager.obtenerEmpresaVinculada()
+
+            if (usuario == null ||
+                (empresaVinculada != null &&
+                        !empresaVinculada.equals(
+                            usuario.empresaId,
+                            ignoreCase = true
+                        ))
+            ) {
+                Log.w(
+                    TAG,
+                    "Identidad local inconsistente; " +
+                            "compras pendientes conservadas"
+                )
+
+                return@withLock Result.success()
+            }
+
+
             // Primero se obtiene o renueva el JWT. Este método también intenta
             // recuperar una renovación pendiente, si existe.
             val token = SesionOnlineManager.obtenerJwtVigente(

@@ -2,6 +2,7 @@
 package com.ethandev.cafecontable.data.repository
 
 import android.content.Context
+import android.util.Base64
 import com.ethandev.cafecontable.data.remote.dispositivo.DispositivoApi
 import com.ethandev.cafecontable.data.remote.dispositivo.RefreshFirmadoRequestDto
 import com.ethandev.cafecontable.data.remote.dispositivo.RenovacionPendienteDto
@@ -14,12 +15,14 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.IOException
 import com.ethandev.cafecontable.data.remote.auth.AuthTokenManager
+import com.ethandev.cafecontable.data.remote.auth.AuthTokenManager.tokenVigente
 
 import com.ethandev.cafecontable.data.remote.auth.LoginResponseDto
 import com.ethandev.cafecontable.data.remote.auth.SesionOnlineManager
 import com.ethandev.cafecontable.data.remote.dispositivo.CerrarSesionFirmadoRequestDto
 import com.ethandev.cafecontable.data.remote.dispositivo.CerrarSesionRequestDto
 import com.ethandev.cafecontable.data.remote.dispositivo.LogoutPendienteDto
+import org.json.JSONObject
 
 class DispositivoRepositoryImpl(
     private val api: DispositivoApi,
@@ -237,11 +240,26 @@ class DispositivoRepositoryImpl(
         resultado
     }
 
+
+
+
     suspend fun prepararDispositivo(
         accessToken: String,
         usuarioId: String,
+        empresaId: String,
         refreshToken: String
     ): String {
+
+
+        require(
+            AuthTokenManager.tokenCorrespondeASesion(
+                token = accessToken,
+                usuarioId = usuarioId,
+                empresaId = empresaId
+            )
+        ) {
+            "El JWT no corresponde al usuario o empresa autenticados"
+        }
 
         require(accessToken.isNotBlank()) {
             "Access token requerido"
