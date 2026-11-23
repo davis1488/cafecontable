@@ -2,7 +2,7 @@
 package com.ethandev.cafecontable.domain.usecase
 
 import com.ethandev.cafecontable.domain.repository.LoginRepository
-import com.ethandev.cafecontable.data.remote.LoginResponseDto
+import com.ethandev.cafecontable.data.remote.auth.LoginResponseDto
 
 class IniciarSesionUseCase(
     private val repository: LoginRepository

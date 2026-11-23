@@ -2,9 +2,9 @@ package com.ethandev.cafecontable.domain.usecase
 
 import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.session.SessionManager
-import com.ethandev.cafecontable.data.remote.AuthTokenManager
-import com.ethandev.cafecontable.data.remote.CafeContableApi
-import com.ethandev.cafecontable.data.remote.dto.SincronizarCompraRequest
+import com.ethandev.cafecontable.data.remote.auth.AuthTokenManager
+import com.ethandev.cafecontable.data.remote.core.CafeContableApi
+import com.ethandev.cafecontable.data.remote.compra.SincronizarCompraRequest
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import kotlinx.coroutines.CancellationException
@@ -43,7 +43,11 @@ class SincronizarComprasPendientes(
         }
 
         val dao = db.operacionPendienteSyncDao()
-        val pendientes = dao.obtenerPendientes(sesion.empresaId)
+
+        val pendientes = dao.obtenerPendientes(
+            empresaId = sesion.empresaId,
+            usuarioId = sesion.usuarioId
+        )
         var sincronizadas = 0
         var conflictos = 0
         var sinEnviar = 0

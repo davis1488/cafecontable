@@ -22,8 +22,10 @@
 
 
 
-package com.ethandev.cafecontable.data.remote
+package com.ethandev.cafecontable.data.remote.core
 
+import com.ethandev.cafecontable.data.remote.auth.AuthTokenManager
+import com.ethandev.cafecontable.data.remote.dispositivo.DispositivoApi
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -43,8 +45,19 @@ object RetrofitClient {
             val requestBuilder =
                 originalRequest.newBuilder()
 
-            if (!token.isNullOrBlank() &&
-                originalRequest.url().encodedPath() != "/api/auth/login"
+
+            val ruta = originalRequest.url().encodedPath()
+
+            val requiereTokenAutomatico =
+                ruta != "/api/auth/login" &&
+                        ruta != "/api/auth/refresh" &&
+                        ruta != "/api/auth/refresh-firmado" &&
+                        ruta != "/api/auth/refresh-firmado/recuperar"
+
+            if (
+                !token.isNullOrBlank() &&
+                requiereTokenAutomatico &&
+                originalRequest.header("Authorization") == null
             ) {
                 requestBuilder.header(
                     "Authorization",
@@ -68,5 +81,11 @@ object RetrofitClient {
     val api: CafeContableApi by lazy {
         retrofit.create(CafeContableApi::class.java)
     }
+
+
+    val dispositivoApi: DispositivoApi by lazy {
+        retrofit.create(DispositivoApi::class.java)
+    }
+
 }
 

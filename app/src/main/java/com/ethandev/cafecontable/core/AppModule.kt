@@ -3,7 +3,7 @@ package com.ethandev.cafecontable.core
 import android.content.Context
 import com.ethandev.cafecontable.data.local.db.AppDatabase
 import com.ethandev.cafecontable.data.local.session.SessionManager
-import com.ethandev.cafecontable.data.remote.RetrofitClient
+import com.ethandev.cafecontable.data.remote.core.RetrofitClient
 import com.ethandev.cafecontable.data.repository.ProductoRepositoryImpl
 import com.ethandev.cafecontable.domain.usecase.CrearProductoUseCase
 import com.ethandev.cafecontable.domain.usecase.ListarProductosUseCase
@@ -11,6 +11,7 @@ import com.ethandev.cafecontable.domain.repository.ProductoRepository
 import com.ethandev.cafecontable.data.repository.CompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.CuentaPorCobrarRepositoryImpl
 import com.ethandev.cafecontable.data.repository.CuentaPorPagarRepositoryImpl
+import com.ethandev.cafecontable.data.repository.DispositivoRepositoryImpl
 import com.ethandev.cafecontable.data.repository.GastoOperacionRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialCompraRepositoryImpl
 import com.ethandev.cafecontable.data.repository.HistorialVentaRepositoryImpl
@@ -24,6 +25,7 @@ import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
 import com.ethandev.cafecontable.data.repository.UtilidadOperacionRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaPedidoRepositoryImpl
 import com.ethandev.cafecontable.data.repository.VentaRepositoryImpl
+import com.ethandev.cafecontable.data.security.DispositivoKeyStoreManager
 import com.ethandev.cafecontable.domain.repository.CompraRepository
 import com.ethandev.cafecontable.domain.repository.GastoOperacionRepository
 import com.ethandev.cafecontable.domain.repository.HistorialCompraRepository
@@ -767,25 +769,25 @@ object AppModule {
             iniciarSesionUseCase = iniciarSesionUseCase,
             sessionManager = sessionManager,
             cerrarSesionUseCase =
-            CerrarSesionUseCase(sessionManager)
+            provideCerrarSesionUseCase(context),
+            dispositivoRepository = provideDispositivoRepository()
         )
     }
+
 
 
     fun provideCerrarSesionUseCase(
         context: Context
     ): CerrarSesionUseCase {
 
-        val sessionManager = SessionManager(
-            context.applicationContext
-        )
+        val appContext = context.applicationContext
 
         return CerrarSesionUseCase(
-            sessionManager = sessionManager
+            sessionManager = SessionManager(appContext),
+            dispositivoRepository = provideDispositivoRepository(),
+            context = appContext
         )
     }
-
-
 
 
     fun provideSincronizarComprasPendientes(
@@ -800,5 +802,14 @@ object AppModule {
     }
 
 
-    ////////////////// utilidad/////////////////////////
+
+    fun provideDispositivoRepository(): DispositivoRepositoryImpl {
+        return DispositivoRepositoryImpl(
+            api = RetrofitClient.dispositivoApi,
+            keyStore = DispositivoKeyStoreManager()
+        )
+    }
+
+
+    /////////////////////utilidad/////////////////////////
 }

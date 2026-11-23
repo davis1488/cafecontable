@@ -1,5 +1,5 @@
 
-package com.ethandev.cafecontable.data.remote.dto
+package com.ethandev.cafecontable.data.remote.compra
 
 data class SincronizarCompraResponse(
     val operacionSyncId: String,
