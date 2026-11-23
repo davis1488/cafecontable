@@ -141,6 +141,36 @@ class SessionManager(
     }
 
 
+    suspend fun guardarSesionAutorizada(
+        usuarioId: String,
+        empresaId: String,
+        nombre: String,
+        rol: String
+    ) {
+        require(usuarioId.isNotBlank()) {
+            "usuarioId es obligatorio"
+        }
+
+        require(empresaId.isNotBlank()) {
+            "empresaId es obligatorio"
+        }
+
+        val offlineHasta =
+            System.currentTimeMillis() + DURACION_OFFLINE_MS
+
+        // Una sola transacción de DataStore.
+        context.sessionDataStore.edit { preferences ->
+            preferences[USUARIO_ID] = usuarioId
+            preferences[EMPRESA_ID] = empresaId
+            preferences[NOMBRE] = nombre
+            preferences[ROL] = rol
+            preferences[OFFLINE_HASTA] = offlineHasta
+        }
+    }
+
+
+
+
 
 
 

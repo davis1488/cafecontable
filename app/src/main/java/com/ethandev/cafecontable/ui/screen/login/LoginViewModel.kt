@@ -112,27 +112,38 @@ class LoginViewModel(
                         // Credenciales y sesión local solo después de vincular.
                         // Si falla la persistencia, no confirmar login.
                         try {
-                            AuthTokenManager.guardarRefreshToken(refreshToken)
-                            AuthTokenManager.guardarToken(usuario.accessToken)
-                            sessionManager.guardarUsuario(
+
+                            AuthTokenManager.guardarCredencialesAtomicas(
+                                nuevoAccessToken = usuario.accessToken,
+                                nuevoRefreshToken = refreshToken
+                            )
+
+                            sessionManager.guardarSesionAutorizada(
                                 usuarioId = usuario.usuarioId,
                                 empresaId = usuario.empresaId,
                                 nombre = usuario.nombre,
                                 rol = usuario.rol
                             )
-                            sessionManager.habilitarAccesoOffline()
+
                         } catch (e: CancellationException) {
                             throw e
+
                         } catch (e: Exception) {
-                            try {
-                                cerrarSesionUseCase()
-                            } catch (_: Exception) {
-                                // El login no debe confirmarse si falla el borrado.
-                            }
+                            android.util.Log.e(
+                                "CafeContableSeguridad",
+                                "Error al persistir las credenciales del login",
+                                e
+                            )
+
+                            // No ejecutar cerrarSesionUseCase()
+                            // porque podría revocar una sesión válida.
+
                             throw IllegalStateException(
-                                "No se pudo guardar la sesión local", e
+                                "No se pudo guardar la sesión local",
+                                e
                             )
                         }
+
 
                         _uiState.value = LoginUiState(usuario = usuario)
 

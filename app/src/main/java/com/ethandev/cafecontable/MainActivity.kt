@@ -207,10 +207,16 @@ class MainActivity : ComponentActivity() {
                             sessionManager.obtenerSesionOfflineValida() != null
 
                         // JWT local vigente no equivale a autenticación online.
+
                         val jwtVigenteLocal =
                             usuario != null &&
                                     !token.isNullOrBlank() &&
-                                    AuthTokenManager.tokenVigente(token)
+                                    AuthTokenManager.tokenCorrespondeASesion(
+                                        token = token,
+                                        usuarioId = usuario.usuarioId,
+                                        empresaId = usuario.empresaId
+                                    )
+
 
                         // Si el plazo offline expiró, exigir una comprobación real
                         // contra una ruta de la API protegida por JWT.

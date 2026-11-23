@@ -533,4 +533,86 @@ object AuthTokenManager {
     }
 
 
+    @Synchronized
+    fun guardarCredencialesAtomicas(
+        nuevoAccessToken: String,
+        nuevoRefreshToken: String
+    ) {
+        check(::appContext.isInitialized) {
+            "AuthTokenManager no está inicializado"
+        }
+
+        require(nuevoAccessToken.isNotBlank()) {
+            "Access token obligatorio"
+        }
+
+        require(nuevoRefreshToken.isNotBlank()) {
+            "Refresh token obligatorio"
+        }
+
+        require(tokenVigente(nuevoAccessToken)) {
+            "Access token vencido o inválido"
+        }
+
+        // Preparar ambos valores antes de modificar
+        // las credenciales almacenadas.
+        val accessCifrado = cifrarTexto(nuevoAccessToken)
+        val refreshCifrado = cifrarTexto(nuevoRefreshToken)
+
+        // Una sola escritura de SharedPreferences.
+        val guardado = preferences().edit()
+            .putString(TOKEN, accessCifrado)
+            .putString(REFRESH_TOKEN, refreshCifrado)
+            .commit()
+
+        check(guardado) {
+            "No se pudieron guardar las credenciales"
+        }
+
+        // Actualizar memoria solo después de
+        // confirmar el almacenamiento.
+        accessToken = nuevoAccessToken
+    }
+
+
+    fun tokenCorrespondeASesion(
+        token: String,
+        usuarioId: String,
+        empresaId: String
+    ): Boolean {
+        return try {
+            if (!tokenVigente(token)) return false
+
+            val partes = token.split(".")
+            if (partes.size != 3) return false
+
+            val payload = String(
+                Base64.decode(
+                    partes[1],
+                    Base64.URL_SAFE or
+                            Base64.NO_WRAP or
+                            Base64.NO_PADDING
+                ),
+                Charsets.UTF_8
+            )
+
+            val json = JSONObject(payload)
+
+            // ClaimTypes.NameIdentifier de ASP.NET Identity.
+            val claimUsuario =
+                "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+
+            val usuarioToken = json.optString(claimUsuario)
+            val empresaToken = json.optString("EmpresaId")
+
+            usuarioToken.equals(usuarioId, ignoreCase = true) &&
+                    empresaToken.equals(empresaId, ignoreCase = true)
+
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+
+
 }
