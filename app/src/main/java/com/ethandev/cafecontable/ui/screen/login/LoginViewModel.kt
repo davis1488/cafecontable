@@ -4,10 +4,12 @@ package com.ethandev.cafecontable.ui.screen.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ethandev.cafecontable.data.local.session.SessionManager
-import com.ethandev.cafecontable.data.remote.AuthTokenManager
-import com.ethandev.cafecontable.data.remote.LoginResponseDto
+import com.ethandev.cafecontable.data.remote.auth.AuthTokenManager
+import com.ethandev.cafecontable.data.remote.auth.LoginResponseDto
+import com.ethandev.cafecontable.data.repository.DispositivoRepositoryImpl
 import com.ethandev.cafecontable.domain.usecase.CerrarSesionUseCase
 import com.ethandev.cafecontable.domain.usecase.IniciarSesionUseCase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -22,7 +24,8 @@ data class LoginUiState(
 class LoginViewModel(
     private val iniciarSesionUseCase: IniciarSesionUseCase,
     private val sessionManager: SessionManager,
-    private val cerrarSesionUseCase: CerrarSesionUseCase
+    private val cerrarSesionUseCase: CerrarSesionUseCase,
+    private val dispositivoRepository: DispositivoRepositoryImpl
 
 ) : ViewModel() {
 
@@ -45,91 +48,240 @@ class LoginViewModel(
         if (_uiState.value.cargando) return
 
         viewModelScope.launch {
-
             _uiState.value = LoginUiState(cargando = true)
 
-            val sesionAnterior = if (soloRenovacion) {
-                sessionManager.usuarioSesion.first()
-            } else null
+            try {
+                // No permitir cambiar de usuario/empresa conservando datos offline.
+                val sesionAnterior = sessionManager.usuarioSesion.first()
 
-            if (soloRenovacion && sesionAnterior == null) {
-                _uiState.value = LoginUiState(
-                    error = "No hay sesión local para renovar"
+                if (soloRenovacion && sesionAnterior == null) {
+                    _uiState.value = LoginUiState(
+                        error = "No hay sesión local para renovar"
+                    )
+                    return@launch
+                }
+
+
+
+
+                val resultado = iniciarSesionUseCase(
+                    correo = correo,
+                    password = password
                 )
-                return@launch
-            }
 
-            val resultado = iniciarSesionUseCase(
-                correo = correo,
-                password = password
-            )
-
-            resultado.fold(
-                onSuccess = { usuario ->
-
-                    try {
-                        // La renovación no puede cambiar de usuario ni de empresa.
-                        // Las compras pendientes pertenecen a la sesión local actual.
-                        if (soloRenovacion && sesionAnterior != null &&
+                resultado.fold(
+                    onSuccess = { usuario ->
+                        // Impedir sustituir la sesión local de otra identidad.
+                        if (sesionAnterior != null &&
                             (usuario.usuarioId != sesionAnterior.usuarioId ||
                                     usuario.empresaId != sesionAnterior.empresaId)
                         ) {
                             _uiState.value = LoginUiState(
-                                error = "Debes ingresar con el mismo usuario y empresa"
+                                error = "Cierra la sesión actual antes de cambiar de usuario o empresa"
                             )
                             return@fold
                         }
 
-                        sessionManager.guardarUsuario(
+                        val refreshToken = usuario.refreshToken
+                            ?.takeIf { it.isNotBlank() }
+
+                        if (refreshToken == null) {
+                            _uiState.value = LoginUiState(
+                                error = "El servidor no entregó el token de renovación"
+                            )
+                            return@fold
+                        }
+                        android.util.Log.e(
+                            "CafeContableSeguridad",
+                            "LOGIN: Iniciando preparacion del dispositivo"
+                        )
+                        // Primero registrar/vincular con el servidor. No activar acceso
+                        // local si falla el desafío o la firma ECDSA.
+                        dispositivoRepository.prepararDispositivo(
+                            accessToken = usuario.accessToken,
                             usuarioId = usuario.usuarioId,
-                            empresaId = usuario.empresaId,
-                            nombre = usuario.nombre,
-                            rol = usuario.rol
+                            refreshToken = refreshToken
                         )
 
-                        sessionManager.habilitarAccesoOffline()
-
-                        AuthTokenManager.guardarToken(usuario.accessToken)
-
-                        _uiState.value = LoginUiState(
-                            usuario = usuario
+                        android.util.Log.e(
+                            "CafeContableSeguridad",
+                            "LOGIN: Preparacion del dispositivo completada"
                         )
 
-                    } catch (e: Exception) {
+
+                        // Credenciales y sesión local solo después de vincular.
+                        // Si falla la persistencia, no confirmar login.
+                        try {
+                            AuthTokenManager.guardarRefreshToken(refreshToken)
+                            AuthTokenManager.guardarToken(usuario.accessToken)
+                            sessionManager.guardarUsuario(
+                                usuarioId = usuario.usuarioId,
+                                empresaId = usuario.empresaId,
+                                nombre = usuario.nombre,
+                                rol = usuario.rol
+                            )
+                            sessionManager.habilitarAccesoOffline()
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            try {
+                                cerrarSesionUseCase()
+                            } catch (_: Exception) {
+                                // El login no debe confirmarse si falla el borrado.
+                            }
+                            throw IllegalStateException(
+                                "No se pudo guardar la sesión local", e
+                            )
+                        }
+
+                        _uiState.value = LoginUiState(usuario = usuario)
+
+
+                        // PRUEBA TEMPORAL P20.7 - BLOQUE 15
+                        if (com.ethandev.cafecontable.BuildConfig.DEBUG) {
+                            android.util.Log.d(
+                                "CafeContableSeguridad",
+                                "TEST: iniciando prueba de recuperación"
+                            )
+
+                          //  probarRenovacionFirmada()
+                        }
+//                        //////////pru
+//
+//                        if (com.ethandev.cafecontable.BuildConfig.DEBUG) {
+//                            android.util.Log.d(
+//                                "CafeContableSeguridad",
+//                                "Iniciando prueba de renovacion firmada"
+//                            )
+//
+//                            probarRenovacionFirmada()
+//                        }
+//
+//                        //////////////////pru
+
+
+                    },
+                    onFailure = { error ->
                         _uiState.value = LoginUiState(
-                            error = "No se pudo guardar la sesión local"
+                            error = error.message ?: "No se pudo iniciar sesión"
                         )
                     }
-                },
-
-                onFailure = { error ->
-
-                    _uiState.value = LoginUiState(
-                        error = error.message
-                            ?: "No se pudo iniciar sesión"
-                    )
-                }
-            )
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.value = LoginUiState(
+                    error = e.message ?: "No se pudo vincular el dispositivo"
+                )
+            }
         }
     }
+
 
 
     fun cerrarSesion(
         onSuccess: () -> Unit
     ) {
+        if (_uiState.value.cargando) return
+
         viewModelScope.launch {
+
+            _uiState.value = _uiState.value.copy(
+                cargando = true,
+                error = null
+            )
+
             try {
                 cerrarSesionUseCase()
 
                 _uiState.value = LoginUiState()
 
                 onSuccess()
+
+            } catch (e: CancellationException) {
+                throw e
+
             } catch (e: Exception) {
-                _uiState.value = LoginUiState(
-                    error = "No se pudo cerrar la sesión"
+                android.util.Log.e(
+                    "CafeContableSeguridad",
+                    "Error al cerrar sesión",
+                    e
+                )
+
+                _uiState.value = _uiState.value.copy(
+                    cargando = false,
+                    error = "No se pudo cerrar la sesión de forma segura"
                 )
             }
         }
     }
+
+
+//    fun probarRenovacionFirmada() {
+//
+//
+//   //     if (_uiState.value.cargando) return
+//
+//        android.util.Log.e(
+//            "CafeContableSeguridad",
+//            "PRUEBA: entrando a probarRenovacionFirmada"
+//        )
+//
+//        if (_uiState.value.cargando) {
+//            android.util.Log.e(
+//                "CafeContableSeguridad",
+//                "PRUEBA BLOQUEADA: cargando = true"
+//            )
+//            return
+//        }
+//        viewModelScope.launch {
+//            val dispositivoId =
+//                AuthTokenManager.obtenerDispositivoId()
+//
+//            val refreshToken =
+//                AuthTokenManager.obtenerRefreshToken()
+//
+//            if (dispositivoId.isNullOrBlank() ||
+//                refreshToken.isNullOrBlank()) {
+//                android.util.Log.e(
+//                    "CafeContableSeguridad",
+//                    "Faltan credenciales para renovar"
+//                )
+//                return@launch
+//            }
+//
+//            try {
+//                val respuesta = dispositivoRepository.renovarSesion(
+//                    dispositivoId = dispositivoId,
+//                    refreshToken = refreshToken
+//                )
+//
+//                val nuevoRefresh = respuesta.refreshToken
+//                    ?.takeIf { it.isNotBlank() }
+//                    ?: error("El servidor no devolvió refresh token")
+//
+//                // Persistir las nuevas credenciales.
+////                AuthTokenManager.guardarRefreshToken(nuevoRefresh)
+////                AuthTokenManager.guardarToken(
+////                    respuesta.accessToken
+////                )
+//
+//                android.util.Log.d(
+//                    "CafeContableSeguridad",
+//                    "PASS: renovación firmada HTTP 200 y tokens guardados"
+//                )
+//
+//            } catch (e: Exception) {
+//                android.util.Log.e(
+//                    "CafeContableSeguridad",
+//                    "FALLO: renovación firmada. " +
+//                            e.javaClass.simpleName
+//                )
+//            }
+//        }
+//    }
+//
+//
+
 
 }

@@ -1,13 +1,16 @@
 
-package com.ethandev.cafecontable.data.remote
+package com.ethandev.cafecontable.data.remote.core
 
+import com.ethandev.cafecontable.data.remote.auth.LoginRequestDto
+import com.ethandev.cafecontable.data.remote.auth.LoginResponseDto
+import com.ethandev.cafecontable.data.remote.compra.CompraApiDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
-import com.ethandev.cafecontable.data.remote.dto.SincronizarCompraRequest
-import com.ethandev.cafecontable.data.remote.dto.SincronizarCompraResponse
+import com.ethandev.cafecontable.data.remote.compra.SincronizarCompraRequest
+import com.ethandev.cafecontable.data.remote.compra.SincronizarCompraResponse
 
 interface CafeContableApi {
 

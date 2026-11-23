@@ -15,20 +15,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.ethandev.cafecontable.core.AppModule
 import com.ethandev.cafecontable.data.local.session.SessionManager
-import com.ethandev.cafecontable.data.remote.AuthTokenManager
-import com.ethandev.cafecontable.data.remote.RetrofitClient
-import com.ethandev.cafecontable.data.repository.PrestamoRepositoryImpl
-import com.ethandev.cafecontable.domain.usecase.ActualizarCompraUseCase
-import com.ethandev.cafecontable.domain.usecase.AnularCompraUseCase
-import com.ethandev.cafecontable.domain.usecase.ObtenerCompraPorIdUseCase
-import com.ethandev.cafecontable.domain.usecase.ObtenerHistorialComprasUseCase
+import com.ethandev.cafecontable.data.remote.auth.AuthTokenManager
+import com.ethandev.cafecontable.data.remote.core.RetrofitClient
 import com.ethandev.cafecontable.ui.navigation.AppNavGraph
-import com.ethandev.cafecontable.ui.screen.compras.CompraCafeViewModel
 import com.ethandev.cafecontable.ui.screen.cuentasporcobrar.CuentasPorCobrarViewModel
 import com.ethandev.cafecontable.ui.screen.cuentasporpagar.CuentasPorPagarViewModel
 import com.ethandev.cafecontable.ui.screen.historialcompras.HistorialComprasViewModel
 import com.ethandev.cafecontable.ui.screen.historialventas.HistorialVentasViewModel
-import com.ethandev.cafecontable.ui.screen.inventario.InventarioViewModel
 import com.ethandev.cafecontable.ui.screen.login.LoginScreen
 import com.ethandev.cafecontable.ui.screen.prestamos.PrestamosViewModel
 import com.ethandev.cafecontable.ui.screen.ventas.VentaCafeViewModel
@@ -39,7 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.first
 import com.ethandev.cafecontable.data.worker.ProgramadorSyncCompras
-
+import com.ethandev.cafecontable.data.worker.ProgramadorLogoutPendiente
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -51,6 +44,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.ethandev.cafecontable.BuildConfig
 
 
 class MainActivity : ComponentActivity() {
@@ -59,6 +53,51 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         AuthTokenManager.inicializar(applicationContext)
+
+
+
+        // P20.11: recuperar revocaciones pendientes
+        // incluso cuando el usuario esté en Login.
+        try {
+            val pendientes =
+                AuthTokenManager.obtenerLogoutsPendientes()
+
+            if (pendientes.isNotEmpty()) {
+                ProgramadorLogoutPendiente.programar(
+                    applicationContext
+                )
+
+                Log.d(
+                    "LOGOUT_PENDIENTE",
+                    "Recuperación programada. " +
+                            "Solicitudes pendientes: ${pendientes.size}"
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(
+                "LOGOUT_PENDIENTE",
+                "No se pudo recuperar la cola de revocaciones",
+                e
+            )
+        }
+
+
+        /////////////////////////prueba
+
+        if (BuildConfig.DEBUG) {
+            val dispositivoId =
+                AuthTokenManager.obtenerDispositivoId()
+
+            android.util.Log.d(
+                "CafeContableSeguridad",
+                "Dispositivo local: ${dispositivoId ?: "NO REGISTRADO"}"
+            )
+        }
+
+        /////////////////////////prueba
+
+
+
 
         val sessionManager = SessionManager(applicationContext)
 
@@ -347,7 +386,6 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onCerrarSesion = {
                                         loginVm.cerrarSesion {
-                                            AuthTokenManager.limpiarToken()
                                             sesionIniciada = false
                                         }
                                     }

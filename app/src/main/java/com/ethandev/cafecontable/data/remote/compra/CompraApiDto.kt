@@ -1,5 +1,5 @@
 
-package com.ethandev.cafecontable.data.remote
+package com.ethandev.cafecontable.data.remote.compra
 
 data class CompraApiDto(
     val id: Int,

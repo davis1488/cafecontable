@@ -1,9 +1,9 @@
 
 package com.ethandev.cafecontable.data.repository
 
-import com.ethandev.cafecontable.data.remote.LoginRequestDto
-import com.ethandev.cafecontable.data.remote.LoginResponseDto
-import com.ethandev.cafecontable.data.remote.RetrofitClient
+import com.ethandev.cafecontable.data.remote.auth.LoginRequestDto
+import com.ethandev.cafecontable.data.remote.auth.LoginResponseDto
+import com.ethandev.cafecontable.data.remote.core.RetrofitClient
 import com.ethandev.cafecontable.domain.repository.LoginRepository
 
 class LoginRepositoryImpl : LoginRepository {

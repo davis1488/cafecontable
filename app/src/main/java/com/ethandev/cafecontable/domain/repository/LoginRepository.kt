@@ -1,7 +1,7 @@
 
 package com.ethandev.cafecontable.domain.repository
 
-import com.ethandev.cafecontable.data.remote.LoginResponseDto
+import com.ethandev.cafecontable.data.remote.auth.LoginResponseDto
 
 interface LoginRepository {
 

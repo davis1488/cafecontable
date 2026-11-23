@@ -15,15 +15,20 @@ interface OperacionPendienteSyncDao {
         operacion: OperacionPendienteSyncEntity
     )
 
+
     @Query("""
-        SELECT * FROM operaciones_pendientes_sync
-        WHERE empresaId = :empresaId
-        AND estado = 'PENDIENTE'
-        ORDER BY fechaCreacion ASC
-    """)
+    SELECT * FROM operaciones_pendientes_sync
+    WHERE empresaId = :empresaId
+      AND usuarioId = :usuarioId
+      AND tipoOperacion = 'COMPRA'
+      AND estado = 'PENDIENTE'
+    ORDER BY fechaCreacion ASC
+""")
     suspend fun obtenerPendientes(
-        empresaId: String
+        empresaId: String,
+        usuarioId: String
     ): List<OperacionPendienteSyncEntity>
+
 
     @Query("""
         SELECT * FROM operaciones_pendientes_sync

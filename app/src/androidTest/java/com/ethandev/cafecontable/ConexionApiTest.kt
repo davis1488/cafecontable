@@ -2,7 +2,7 @@
 //package com.ethandev.cafecontable
 //
 //import androidx.test.ext.junit.runners.AndroidJUnit4
-//import com.ethandev.cafecontable.data.remote.RetrofitClient
+//import com.ethandev.cafecontable.data.remote.core.RetrofitClient
 //import kotlinx.coroutines.runBlocking
 //import org.junit.Assert.assertEquals
 //import org.junit.Assert.assertNotNull
@@ -29,12 +29,12 @@
 package com.ethandev.cafecontable
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.ethandev.cafecontable.data.remote.RetrofitClient
+import com.ethandev.cafecontable.data.remote.core.RetrofitClient
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
-import com.ethandev.cafecontable.data.remote.LoginRequestDto
+import com.ethandev.cafecontable.data.remote.auth.LoginRequestDto
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 //import org.junit.Assert.assertNotNull
